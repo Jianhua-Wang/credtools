@@ -1,0 +1,1661 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://Jianhua-Wang.github.io/credtools/tutorial/single-input/">
+      
+      
+        <link rel="prev" href="../quick-start/">
+      
+      
+        <link rel="next" href="../multi-input/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>Single-Input Fine-Mapping - credtools</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="preference" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#single-input-fine-mapping" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="credtools" class="md-header__button md-logo" aria-label="credtools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            credtools
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Single-Input Fine-Mapping
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Jianhua-Wang/credtools" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Jianhua-Wang/credtools
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="credtools" class="md-nav__button md-logo" aria-label="credtools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    credtools
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Jianhua-Wang/credtools" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Jianhua-Wang/credtools
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Usage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Tutorial
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tutorial
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Single-Input Fine-Mapping
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Single-Input Fine-Mapping
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-single-input-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to Use Single-Input Strategy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-by-Step Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-prepare-single-study-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Prepare Single-Study Input
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-quality-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Quality Control
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Quality Control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qc-metrics-for-single-studies" class="md-nav__link">
+    <span class="md-ellipsis">
+      QC Metrics for Single Studies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-fine-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Fine-Mapping
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-tools-for-single-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Tools for Single-Input
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported Tools for Single-Input">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#susie-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE (Recommended)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      FINEMAP
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#abf-approximate-bayes-factors" class="md-nav__link">
+    <span class="md-ellipsis">
+      ABF (Approximate Bayes Factors)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#carma" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rsparsepro" class="md-nav__link">
+    <span class="md-ellipsis">
+      RSparsePro
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparing-single-input-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparing Single-Input Tools
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-parameter-setting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automatic Parameter Setting
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output Files
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Output Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#posterior-inclusion-probabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Posterior Inclusion Probabilities
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credible-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Credible Sets
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues-and-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Issues and Solutions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-complete-single-study-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example: Complete Single-Study Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Multi-Input Fine-Mapping
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Web Visualization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Web Example
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    API
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/credtools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    credtools
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    utils
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/locus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    locus
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/ldmatrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ldmatrix
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/meta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    meta
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/qc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    qc
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/sumstats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    sumstats
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/credibleset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    credibleset
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../API/cojo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    cojo
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-single-input-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to Use Single-Input Strategy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-by-Step Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-prepare-single-study-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Prepare Single-Study Input
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-quality-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Quality Control
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Quality Control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qc-metrics-for-single-studies" class="md-nav__link">
+    <span class="md-ellipsis">
+      QC Metrics for Single Studies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-fine-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Fine-Mapping
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-tools-for-single-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Tools for Single-Input
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported Tools for Single-Input">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#susie-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE (Recommended)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      FINEMAP
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#abf-approximate-bayes-factors" class="md-nav__link">
+    <span class="md-ellipsis">
+      ABF (Approximate Bayes Factors)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#carma" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rsparsepro" class="md-nav__link">
+    <span class="md-ellipsis">
+      RSparsePro
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparing-single-input-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparing Single-Input Tools
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-parameter-setting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automatic Parameter Setting
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output Files
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Output Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#posterior-inclusion-probabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Posterior Inclusion Probabilities
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credible-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Credible Sets
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues-and-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Issues and Solutions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-complete-single-study-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example: Complete Single-Study Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="single-input-fine-mapping">Single-Input Fine-Mapping<a class="headerlink" href="#single-input-fine-mapping" title="Permanent link">&para;</a></h1>
+<p>Single-input fine-mapping is the traditional approach where you analyze one cohort or ancestry at a time. This strategy is ideal when you have well-powered individual studies or want to understand ancestry-specific genetic architecture.</p>
+<h2 id="when-to-use-single-input-strategy">When to Use Single-Input Strategy<a class="headerlink" href="#when-to-use-single-input-strategy" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Single-Input Use Cases</p>
+<dl>
+<dt><strong>Well-powered individual studies</strong></dt>
+<dd>When each study has sufficient power for fine-mapping alone</dd>
+<dt><strong>Ancestry-specific analysis</strong></dt>
+<dd>When you want to understand population-specific causal variants</dd>
+<dt><strong>Exploratory analysis</strong></dt>
+<dd>When investigating individual study characteristics before meta-analysis</dd>
+<dt><strong>Heterogeneous effects</strong></dt>
+<dd>When effect sizes vary significantly across populations</dd>
+</dl>
+</div>
+<h2 id="step-by-step-workflow">Step-by-Step Workflow<a class="headerlink" href="#step-by-step-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="1-prepare-single-study-input">1. Prepare Single-Study Input<a class="headerlink" href="#1-prepare-single-study-input" title="Permanent link">&para;</a></h3>
+<p>For single-input analysis, your loci file should contain only one row per locus:</p>
+<div class="highlight"><span class="filename">single_study_loci.txt</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>chr<span class="w"> </span>start<span class="w">   </span>end<span class="w"> </span>popu<span class="w">    </span>sample_size<span class="w"> </span>cohort<span class="w">  </span>prefix<span class="w">  </span>locus_id
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>EUR<span class="w"> </span><span class="m">442817</span><span class="w">  </span>UKBB<span class="w">    </span>data/EUR.UKBB.chr8_41242482_42492482<span class="w">    </span>chr8_41242482_42492482
+</code></pre></div>
+<h3 id="2-quality-control">2. Quality Control<a class="headerlink" href="#2-quality-control" title="Permanent link">&para;</a></h3>
+<p>Quality control for single studies focuses on internal consistency:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>credtools<span class="w"> </span>qc<span class="w"> </span>single_study_loci.txt<span class="w"> </span>qc_output/
+</code></pre></div>
+<h4 id="qc-metrics-for-single-studies">QC Metrics for Single Studies<a class="headerlink" href="#qc-metrics-for-single-studies" title="Permanent link">&para;</a></h4>
+<dl>
+<dt><strong>Inconsistency Parameter (s)</strong></dt>
+<dd>Measures consistency between z-scores and LD matrix</dd>
+<dd>Values &gt; 0.2 suggest potential issues</dd>
+<dt><strong>Kriging RSS</strong></dt>
+<dd>Detects potential allele switches or data quality issues</dd>
+<dd>Flags variants with unexpected z-scores given LD structure</dd>
+<dt><strong>LD Structure Analysis</strong></dt>
+<dd>Eigenvalue decomposition of LD matrix</dd>
+<dd>Identifies problematic LD patterns</dd>
+<dt><strong>MAF Comparison</strong></dt>
+<dd>Compares allele frequencies between summary stats and LD reference</dd>
+<dd>Large differences suggest potential strand issues</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Single-Study QC Limitations</p>
+<p>Single-study QC cannot detect:
+- Cross-study heterogeneity<br />
+- Population-specific biases
+- Cohort-specific technical artifacts</p>
+<p>Consider multi-study QC when possible.</p>
+</div>
+<h3 id="3-fine-mapping">3. Fine-Mapping<a class="headerlink" href="#3-fine-mapping" title="Permanent link">&para;</a></h3>
+<p>Run fine-mapping on your single study:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>single_study_loci.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span>--coverage<span class="w"> </span><span class="m">0</span>.95
+</code></pre></div>
+<h2 id="supported-tools-for-single-input">Supported Tools for Single-Input<a class="headerlink" href="#supported-tools-for-single-input" title="Permanent link">&para;</a></h2>
+<h3 id="susie-recommended">SuSiE (Recommended)<a class="headerlink" href="#susie-recommended" title="Permanent link">&para;</a></h3>
+<p><strong>Best for</strong>: General purpose, robust across different scenarios</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span>--max-iter<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span>--estimate-residual-variance<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span>--convergence-tol<span class="w"> </span>1e-3
+</code></pre></div>
+<p><strong>Key Parameters:</strong></p>
+<ul>
+<li><code>--max-causal</code>: Maximum number of causal variants (default: 1)</li>
+<li><code>--max-iter</code>: Maximum iterations (default: 100)  </li>
+<li><code>--estimate-residual-variance</code>: Estimate phenotype variance (default: False)</li>
+<li><code>--convergence-tol</code>: Convergence tolerance (default: 1e-3)</li>
+</ul>
+<h3 id="finemap">FINEMAP<a class="headerlink" href="#finemap" title="Permanent link">&para;</a></h3>
+<p><strong>Best for</strong>: Bayesian model averaging, comprehensive uncertainty quantification</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>--tool<span class="w"> </span>finemap<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span>--n-iter<span class="w"> </span><span class="m">100000</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span>--n-threads<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p><strong>Key Parameters:</strong></p>
+<ul>
+<li><code>--n-iter</code>: Number of MCMC iterations (default: 100000)</li>
+<li><code>--n-threads</code>: Number of parallel threads (default: 1)</li>
+</ul>
+<h3 id="abf-approximate-bayes-factors">ABF (Approximate Bayes Factors)<a class="headerlink" href="#abf-approximate-bayes-factors" title="Permanent link">&para;</a></h3>
+<p><strong>Best for</strong>: Fast, simple analysis with minimal assumptions</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span>--tool<span class="w"> </span>abf<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span>--var-prior<span class="w"> </span><span class="m">0</span>.2
+</code></pre></div>
+<p><strong>Key Parameters:</strong></p>
+<ul>
+<li><code>--var-prior</code>: Prior variance (0.15 for quantitative, 0.2 for binary traits)</li>
+</ul>
+<h3 id="carma">CARMA<a class="headerlink" href="#carma" title="Permanent link">&para;</a></h3>
+<p><strong>Best for</strong>: Model uncertainty quantification, outlier detection  </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span>--tool<span class="w"> </span>carma<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>--effect-size-prior<span class="w"> </span><span class="s2">&quot;Spike-slab&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>--y-var<span class="w"> </span><span class="m">1</span>.0
+</code></pre></div>
+<p><strong>Key Parameters:</strong></p>
+<ul>
+<li><code>--effect-size-prior</code>: "Spike-slab" or "Cauchy" (default: "Spike-slab")</li>
+<li><code>--y-var</code>: Phenotype variance (default: 1.0)</li>
+<li><code>--bf-threshold</code>: Bayes factor threshold (default: 10.0)</li>
+</ul>
+<h3 id="rsparsepro">RSparsePro<a class="headerlink" href="#rsparsepro" title="Permanent link">&para;</a></h3>
+<p><strong>Best for</strong>: Sparse regression approach, computational efficiency</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>--tool<span class="w"> </span>rsparsepro<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span>--eps<span class="w"> </span>1e-5<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span>--cthres<span class="w"> </span><span class="m">0</span>.7
+</code></pre></div>
+<p><strong>Key Parameters:</strong></p>
+<ul>
+<li><code>--eps</code>: Convergence criterion (default: 1e-5)</li>
+<li><code>--cthres</code>: Coverage threshold (default: 0.7)</li>
+<li><code>--minldthres</code>: Minimum LD within effect groups (default: 0.7)</li>
+</ul>
+<h2 id="comparing-single-input-tools">Comparing Single-Input Tools<a class="headerlink" href="#comparing-single-input-tools" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Speed</th>
+<th>Memory</th>
+<th>Uncertainty</th>
+<th>Best Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SuSiE</strong></td>
+<td>Fast</td>
+<td>Low</td>
+<td>Good</td>
+<td>General purpose</td>
+</tr>
+<tr>
+<td><strong>FINEMAP</strong></td>
+<td>Moderate</td>
+<td>Moderate</td>
+<td>Excellent</td>
+<td>Comprehensive analysis</td>
+</tr>
+<tr>
+<td><strong>ABF</strong></td>
+<td>Very Fast</td>
+<td>Very Low</td>
+<td>Basic</td>
+<td>Quick screening</td>
+</tr>
+<tr>
+<td><strong>CARMA</strong></td>
+<td>Slow</td>
+<td>High</td>
+<td>Excellent</td>
+<td>Research applications</td>
+</tr>
+<tr>
+<td><strong>RSparsePro</strong></td>
+<td>Fast</td>
+<td>Low</td>
+<td>Good</td>
+<td>Large regions</td>
+</tr>
+</tbody>
+</table>
+<h2 id="automatic-parameter-setting">Automatic Parameter Setting<a class="headerlink" href="#automatic-parameter-setting" title="Permanent link">&para;</a></h2>
+<p>CREDTOOLS can automatically determine the maximum number of causal variants using COJO:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span>--set-L-by-cojo<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>--p-cutoff<span class="w"> </span>5e-8<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span>--collinear-cutoff<span class="w"> </span><span class="m">0</span>.9
+</code></pre></div>
+<p><strong>COJO Parameters:</strong></p>
+<ul>
+<li><code>--p-cutoff</code>: P-value threshold for conditioning (default: 5e-8)</li>
+<li><code>--collinear-cutoff</code>: Collinearity threshold (default: 0.9)</li>
+<li><code>--window-size</code>: Window for conditional analysis (default: 10Mb)</li>
+<li><code>--maf-cutoff</code>: MAF cutoff (default: 0.01)</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">COJO Integration</p>
+<p>COJO (Conditional and Joint analysis) estimates the number of independent signals in a region. CREDTOOLS uses this to set <code>--max-causal</code> automatically, which often works better than arbitrary values.</p>
+</div>
+<h2 id="output-files">Output Files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
+<h3 id="posterior-inclusion-probabilities">Posterior Inclusion Probabilities<a class="headerlink" href="#posterior-inclusion-probabilities" title="Permanent link">&para;</a></h3>
+<div class="highlight"><span class="filename">output/pips.txt</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># SNPID PIP</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="m">8</span>-41234567-A-G<span class="w">  </span><span class="m">0</span>.0234
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="m">8</span>-41235678-C-T<span class="w">  </span><span class="m">0</span>.8765
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="m">8</span>-41236789-G-A<span class="w">  </span><span class="m">0</span>.0456
+</code></pre></div>
+<h3 id="credible-sets">Credible Sets<a class="headerlink" href="#credible-sets" title="Permanent link">&para;</a></h3>
+<div class="highlight"><span class="filename">output/creds.json</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;credible_sets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">&quot;cs1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">      </span><span class="nt">&quot;variants&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;8-41235678-C-T&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;8-41235680-A-G&quot;</span><span class="p">],</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">      </span><span class="nt">&quot;coverage&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.95</span><span class="p">,</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="nt">&quot;total_pip&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.96</span><span class="p">,</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span><span class="nt">&quot;min_abs_corr&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.34</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">  </span><span class="nt">&quot;tool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;susie&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">  </span><span class="nt">&quot;strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;single_input&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">}</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="common-issues-and-solutions">Common Issues and Solutions<a class="headerlink" href="#common-issues-and-solutions" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Troubleshooting Single-Input Analysis</p>
+<dl>
+<dt><strong>No credible sets found</strong></dt>
+<dd>Try increasing <code>--max-causal</code> </dd>
+<dd>Check if region has sufficient signal (<code>--p-cutoff</code>)</dd>
+<dd>Verify LD matrix quality</dd>
+<dt><strong>Very large credible sets</strong></dt>
+<dd>May indicate weak signal or LD issues</dd>
+<dd>Try more stringent <code>--coverage</code> (e.g., 0.99)</dd>
+<dd>Consider region subdivision</dd>
+<dt><strong>Tool convergence issues</strong></dt>
+<dd>Increase <code>--max-iter</code> for iterative methods</dd>
+<dd>Try different <code>--convergence-tol</code> values</dd>
+<dd>Switch to more robust tool (SuSiE)</dd>
+<dt><strong>Memory issues with large regions</strong></dt>
+<dd>Use RSparsePro for efficiency</dd>
+<dd>Consider region subdivision</dd>
+<dd>Reduce LD matrix precision if possible</dd>
+</dl>
+</div>
+<h2 id="example-complete-single-study-analysis">Example: Complete Single-Study Analysis<a class="headerlink" href="#example-complete-single-study-analysis" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># 1. Quality control</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>credtools<span class="w"> </span>qc<span class="w"> </span>my_study.txt<span class="w"> </span>qc_results/
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># 2. Review QC metrics (check s_estimate.txt, kriging_rss.txt)</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># 3. Fine-mapping with automatic L setting</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>my_study.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">    </span>--set-L-by-cojo<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">    </span>--coverage<span class="w"> </span><span class="m">0</span>.95<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">    </span>--max-iter<span class="w"> </span><span class="m">100</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="c1"># 4. Review results (pips.txt, creds.json)</span>
+</code></pre></div>
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><a href="../multi-input/">Multi-Input Fine-Mapping</a></strong> - Learn how to analyze multiple studies together</li>
+<li><strong><a href="../advanced/">Advanced Topics</a></strong> - Deep dive into tool-specific parameters and optimization </li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "toc.follow"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
