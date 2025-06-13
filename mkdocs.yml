@@ -16,7 +16,16 @@ nav:
     - Web Visualization: tutorial/web-visualization.md
     - Web Example: tutorial/web-example.md
     - Advanced Topics: tutorial/advanced.md
-  - Modules: api.md
+  - API:
+    - credtools: API/credtools.md
+    - utils: API/utils.md
+    - locus: API/locus.md
+    - ldmatrix: API/ldmatrix.md
+    - meta: API/meta.md
+    - qc: API/qc.md
+    - sumstats: API/sumstats.md
+    - credibleset: API/credibleset.md
+    - cojo: API/cojo.md
   - Changelog: changelog.md
 theme:
   name: material
