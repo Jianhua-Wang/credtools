@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "credtools"
-version = "0.0.27"
+version = "0.0.28"
 homepage = "https://github.com/Jianhua-Wang/credtools"
 description = "multi-ancestry fine-mapping pipeline."
 authors = ["Jianhua Wang <jianhua.mert@gmail.com>"]
