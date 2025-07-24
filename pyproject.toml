@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "credtools"
-version = "0.0.28"
+version = "0.0.29"
 homepage = "https://github.com/Jianhua-Wang/credtools"
 description = "multi-ancestry fine-mapping pipeline."
 authors = ["Jianhua Wang <jianhua.mert@gmail.com>"]
@@ -28,7 +28,6 @@ scikit-learn = ">=1.5.2"
 matplotlib = ">=3.9.2"
 numba = "^0.60.0"
 tqdm = "^4.66.5"
-rpy2 = "^3.5.16"
 cojopy = "0.1.2"
 
 # Web visualization dependencies (optional)

@@ -50,7 +50,6 @@ class Tool(str, Enum):
     """The tool to perform fine-mapping."""
 
     abf = "abf"
-    carma = "carma"
     finemap = "finemap"
     rsparsepro = "rsparsepro"
     susie = "susie"
@@ -84,7 +83,6 @@ def main(
             "SuSiE",
             "MULTISUSIE",
             "SUSIEX",
-            "CARMA",
             "ABF",
             "Locus",
             "LDMatrix",
@@ -94,9 +92,6 @@ def main(
         ]:
             logging.getLogger(name).setLevel(logging.INFO)
         # logging.getLogger().setLevel(logging.INFO)
-        # from rpy2.rinterface_lib.callbacks import logger as rpy2_logger
-
-        # rpy2_logger.setLevel(logging.ERROR)
 
 
 @app.command(
@@ -382,84 +377,6 @@ def run_pipeline(
         help="Minimum error parameter.",
         rich_help_panel="RSparsePro",
     ),
-    # CARMA parameters
-    effect_size_prior: str = typer.Option(
-        "Spike-slab",
-        "--effect-size-prior",
-        "-es",
-        help="Prior distribution for effect sizes ('Cauchy' or 'Spike-slab'), by default Spike-slab.",
-        rich_help_panel="CARMA",
-    ),
-    input_alpha: float = typer.Option(
-        0.0,
-        "--input-alpha",
-        "-ia",
-        help="Elastic net mixing parameter (0 ≤ input_alpha ≤ 1).",
-        rich_help_panel="CARMA",
-    ),
-    y_var: float = typer.Option(
-        1.0,
-        "--y-var",
-        "-yv",
-        help="Variance of the summary statistics.",
-        rich_help_panel="CARMA",
-    ),
-    bf_threshold: float = typer.Option(
-        10.0,
-        "--bf-threshold",
-        "-bf",
-        help="Bayes factor threshold for credible models.",
-        rich_help_panel="CARMA",
-    ),
-    outlier_bf_threshold: float = typer.Option(
-        1 / 3.2,
-        "--outlier-bf-threshold",
-        "-obf",
-        help="Bayes factor threshold for outlier detection.",
-        rich_help_panel="CARMA",
-    ),
-    max_model_dim: int = typer.Option(
-        200000,
-        "--max-model-dim",
-        "-mmd",
-        help="Maximum number of top candidate models.",
-        rich_help_panel="CARMA",
-    ),
-    all_inner_iter: int = typer.Option(
-        10,
-        "--all-inner-iter",
-        "-aie",
-        help="Maximum iterations for Shotgun algorithm within EM.",
-        rich_help_panel="CARMA",
-    ),
-    all_iter: int = typer.Option(
-        3,
-        "--all-iter",
-        "-ai",
-        help="Maximum iterations for EM algorithm.",
-        rich_help_panel="CARMA",
-    ),
-    tau: float = typer.Option(
-        0.04,
-        "--tau",
-        "-t",
-        help="Prior precision parameter of effect size.",
-        rich_help_panel="CARMA",
-    ),
-    epsilon_threshold: float = typer.Option(
-        1e-5,
-        "--epsilon-threshold",
-        "-et",
-        help="Convergence threshold for Bayes factors.",
-        rich_help_panel="CARMA",
-    ),
-    em_dist: str = typer.Option(
-        "logistic",
-        "--em-dist",
-        "-ed",
-        help="Distribution for modeling prior probability.",
-        rich_help_panel="CARMA",
-    ),
     # SuSiEx parameters
     # pval_thresh: float = typer.Option(1e-5, "--pval-thresh", "-pt", help="P-value threshold for SuSiEx.", rich_help_panel="SuSiEx"),
     # maf_thresh: float = typer.Option(0.005, "--maf-thresh", "-mt", help="MAF threshold for SuSiEx.", rich_help_panel="SuSiEx"),
@@ -595,18 +512,6 @@ def run_pipeline(
             maxldthres=maxldthres,
             varemax=varemax,
             varemin=varemin,
-            # CARMA parameters
-            effect_size_prior=effect_size_prior,
-            input_alpha=input_alpha,
-            y_var=y_var,
-            bf_threshold=bf_threshold,
-            outlier_bf_threshold=outlier_bf_threshold,
-            max_model_dim=max_model_dim,
-            all_inner_iter=all_inner_iter,
-            all_iter=all_iter,
-            tau=tau,
-            epsilon_threshold=epsilon_threshold,
-            em_dist=em_dist,
             # SuSiEx parameters
             mult_step=mult_step,
             keep_ambig=keep_ambig,

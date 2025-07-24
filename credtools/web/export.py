@@ -239,7 +239,7 @@ def export_for_web(
     # Process allmeta if provided
     if allmeta_loci_file and os.path.exists(allmeta_loci_file):
         allmeta_loci = pd.read_csv(allmeta_loci_file, sep="\t")
-        tool_list = ["abf", "susie", "finemap", "rsparsepro", "carma"]
+        tool_list = ["abf", "susie", "finemap", "rsparsepro"]
 
         # Process loci
         partial_func = partial(
@@ -280,7 +280,6 @@ def export_for_web(
             "susie",
             "finemap",
             "rsparsepro",
-            "carma",
             "susiex",
             "multisusie",
         ]

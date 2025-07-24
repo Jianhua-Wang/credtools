@@ -18,7 +18,6 @@ from credtools.meta import meta
 from credtools.qc import locus_qc
 from credtools.wrappers import (
     run_abf,
-    run_carma,
     run_finemap,
     run_multisusie,
     run_rsparsepro,
@@ -55,12 +54,12 @@ def fine_map(
     strategy : str
         Fine-mapping strategy. Choose from ["single_input", "multi_input", "post_hoc_combine"]
         single_input: use fine-mapping tools which take a single locus as input, these tools are:
-            abf, carma, finemap, rsparsepro, susie
+            abf, finemap, rsparsepro, susie
         multi_input: use fine-mapping tools which take multiple loci as input, these tools are:
             multisusie, susiex
         post_hoc_combine: use fine-mapping tools which take single loci as input (see single_input options), and then combine the results,
     tool : str
-        Fine-mapping tool. Choose from ["abf", "carma", "finemap", "rsparsepro", "susie", "multisusie", "susiex"]
+        Fine-mapping tool. Choose from ["abf", "finemap", "rsparsepro", "susie", "multisusie", "susiex"]
     combine_cred : str, optional
         Method to combine credible sets, by default "union".
         Options: "union", "intersection", "cluster".
@@ -84,7 +83,6 @@ def fine_map(
     """
     tool_func_dict: Dict[str, Callable[..., Any]] = {
         "abf": run_abf,
-        "carma": run_carma,
         "finemap": run_finemap,
         "rsparsepro": run_rsparsepro,
         "susie": run_susie,
@@ -93,7 +91,6 @@ def fine_map(
     }
     inspect_dict = {
         "abf": set(inspect.signature(run_abf).parameters),
-        "carma": set(inspect.signature(run_carma).parameters),
         "finemap": set(inspect.signature(run_finemap).parameters),
         "rsparsepro": set(inspect.signature(run_rsparsepro).parameters),
         "susie": set(inspect.signature(run_susie).parameters),
@@ -108,7 +105,7 @@ def fine_map(
             raise ValueError(
                 "Locus set must contain only one locus for single-input strategy"
             )
-        if tool in ["abf", "carma", "finemap", "rsparsepro", "susie"]:
+        if tool in ["abf", "finemap", "rsparsepro", "susie"]:
             if set_L_by_cojo:
                 max_causal = len(
                     conditional_selection(
@@ -142,7 +139,7 @@ def fine_map(
     elif strategy == "post_hoc_combine":
         # if locus_set.n_loci < 2:
         #     raise ValueError("Locus set must contain at least two loci for post-hoc combine strategy")
-        if tool in ["abf", "carma", "finemap", "rsparsepro", "susie"]:
+        if tool in ["abf", "finemap", "rsparsepro", "susie"]:
             all_creds = []
             for locus in locus_set.loci:
                 creds = tool_func_dict[tool](

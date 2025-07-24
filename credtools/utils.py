@@ -2,7 +2,6 @@
 
 import logging
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -90,72 +89,6 @@ def io_in_tempdir(dir: str = "./tmp") -> Callable[[F], F]:
     return decorator
 
 
-def check_r_package(package_name: str) -> None:
-    """
-    Check if R version is 4.0 or later and if a specified R package is installed.
-
-    This function first checks the R version, then verifies if the specified
-    R package is installed on the system.
-
-    Parameters
-    ----------
-    package_name : str
-        The name of the R package to check.
-
-    Returns
-    -------
-    None
-        If the R version is 4.0 or later and the package is installed.
-
-    Raises
-    ------
-    RuntimeError
-        If R version is earlier than 4.0 or if the specified package is not installed.
-    subprocess.CalledProcessError
-        If there's an error executing the R commands.
-    FileNotFoundError
-        If R is not installed or not found in the system PATH.
-
-    Examples
-    --------
-    >>> check_r_package("ggplot2")
-    >>> # No output if successful
-    >>> check_r_package("nonexistentpackage")
-    RuntimeError: R package 'nonexistentpackage' is not installed.
-    """
-    # Check R version
-    try:
-        r_version_cmd = "R --version"
-        r_version_output = subprocess.check_output(
-            r_version_cmd, shell=True, universal_newlines=True
-        )
-        version_match = re.search(r"R version (\d+\.\d+\.\d+)", r_version_output)
-        if version_match:
-            r_version = version_match.group(1)
-            if tuple(map(int, r_version.split("."))) < (4, 0, 0):
-                raise RuntimeError(f"R version {r_version} is earlier than 4.0")
-        else:
-            raise RuntimeError("Unable to determine R version")
-    except subprocess.CalledProcessError:
-        raise RuntimeError("Failed to check R version")
-    except FileNotFoundError:
-        raise FileNotFoundError("R is not installed or not found in the system PATH.")
-
-    # Check if the package is installed
-    r_command = f"R --slave -e \"if (requireNamespace('{package_name}', quietly = TRUE)) quit(status = 0) else quit(status = 1)\""
-
-    try:
-        result = subprocess.run(
-            r_command,
-            shell=True,
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"R package '{package_name}' is not installed.")
-    except subprocess.CalledProcessError:
-        raise RuntimeError(f"R package '{package_name}' is not installed.")
 
 
 class ExternalTool:
