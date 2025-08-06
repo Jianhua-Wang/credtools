@@ -118,3 +118,7 @@ tmp/
 *.ipynb
 
 exampledata/
+
+CLAUDE.local.md
+
+.claude/
