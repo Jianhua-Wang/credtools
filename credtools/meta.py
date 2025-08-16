@@ -468,7 +468,7 @@ def meta_loci(
                 (locus_id, locus_info, outdir, meta_method)
                 for locus_id, locus_info in grouped_loci
             ]
-            for result in pool.imap_unordered(meta_locus, args):
+            for result in pool.imap_unordered(meta_locus, args):  # type: ignore
                 # Update results
                 for i, res in enumerate(result):
                     new_loci_info.loc[len(new_loci_info)] = res

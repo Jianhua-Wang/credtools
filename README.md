@@ -20,6 +20,9 @@ Multi-ancestry fine-mapping pipeline with interactive web visualization.
 
 ## Features
 
+- **Whole-genome preprocessing**: Start from raw GWAS summary statistics and genotype data
+  - Standardize and munge summary statistics from various formats
+  - Prepare LD matrices and fine-mapping inputs automatically
 - **Multi-ancestry fine-mapping**: Support for multiple fine-mapping tools (SuSiE, FINEMAP, etc.)
 - **Meta-analysis capabilities**: Combine results across populations and cohorts
 - **Quality control**: Built-in QC metrics and visualizations
@@ -44,9 +47,26 @@ pip install credtools[web]
 ### Command Line Usage
 
 ```bash
-# Run complete fine-mapping pipeline
-credtools pipeline input_loci.txt output_dir/
+# Complete workflow: from whole-genome data to fine-mapping results
+# Step 1: Standardize summary statistics
+credtools munge raw_gwas_eur.txt,raw_gwas_asn.txt output/munged/
 
+# Step 2: Identify independent loci and chunk data
+credtools chunk output/munged/*.munged.txt.gz output/chunks/
+
+# Step 3: Prepare LD matrices and final inputs
+credtools prepare output/chunks/chunk_info.txt genotype_config.json output/prepared/
+
+# Step 4: Run fine-mapping pipeline
+credtools pipeline output/prepared/final_loci_list.txt output/results/
+
+# Step 5: Launch web visualization interface
+credtools web output/results --port 8080
+```
+
+### Advanced Usage
+
+```bash
 # Launch web visualization interface
 credtools web /path/to/results --port 8080
 
@@ -66,6 +86,42 @@ The web interface provides:
 - **Multi-tool comparison**: Compare results across different fine-mapping methods
 
 Access the web interface at `http://localhost:8080` after running `credtools web`.
+
+## Preprocessing Workflow
+
+credtools now supports starting from whole-genome summary statistics and genotype data, eliminating the need for manual preprocessing:
+
+### Step 1: Munge Summary Statistics (`credtools munge`)
+- **Purpose**: Standardize and clean GWAS summary statistics from various formats
+- **Features**: 
+  - Automatic header detection and mapping
+  - Data validation and quality control
+  - Support for multiple file formats
+- **Input**: Raw GWAS files with various column headers
+- **Output**: Standardized `.munged.txt.gz` files
+
+### Step 2: Chunk Loci (`credtools chunk`)  
+- **Purpose**: Identify independent loci and create regional chunks for fine-mapping
+- **Features**:
+  - Distance-based independent SNP identification
+  - Cross-ancestry loci coordination
+  - Configurable significance thresholds
+- **Input**: Munged summary statistics files
+- **Output**: Locus-specific chunked files and metadata
+
+### Step 3: Prepare Inputs (`credtools prepare`)
+- **Purpose**: Generate LD matrices and final fine-mapping input files
+- **Features**:
+  - LD matrix computation from genotype data
+  - Variant intersection and quality control  
+  - Multi-threaded processing
+- **Input**: Chunked files + genotype data configuration
+- **Output**: credtools-ready input files (`.sumstats.gz`, `.ld.npz`, `.ldmap.gz`)
+
+### Multi-Ancestry Support
+- **Consistent loci definition**: Union approach across ancestries
+- **Flexible input formats**: Support for various GWAS summary statistics formats
+- **Coordinated processing**: Ensure compatibility across populations
 
 ## Documentation
 

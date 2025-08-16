@@ -5,6 +5,7 @@ import logging
 import os
 from enum import Enum
 from multiprocessing import Pool
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -92,6 +93,230 @@ def main(
         ]:
             logging.getLogger(name).setLevel(logging.INFO)
         # logging.getLogger().setLevel(logging.INFO)
+
+
+@app.command(
+    name="munge",
+    help="Reformat and standardize GWAS summary statistics.",
+)
+def run_munge(
+    input_files: str = typer.Argument(..., help="Input sumstats file(s). Can be a single file, comma-separated list, or config file."),
+    output_dir: str = typer.Argument(..., help="Output directory for munged files."),
+    config_file: Optional[str] = typer.Option(None, "--config", "-c", help="Configuration file for column mappings."),
+    force_overwrite: bool = typer.Option(False, "--force", "-f", help="Overwrite existing output files."),
+    interactive_config: bool = typer.Option(False, "--interactive", "-i", help="Create configuration interactively."),
+):
+    """Reformat and standardize GWAS summary statistics using smunger integration."""
+    try:
+        from credtools.preprocessing import munge_sumstats
+        from credtools.preprocessing.munge import create_munge_config, validate_munged_files
+    except ImportError as e:
+        console = Console()
+        console.print("[red]Error: Preprocessing dependencies not found.[/red]")
+        console.print("Please ensure smunger is installed: pip install smunger")
+        raise typer.Exit(1) from e
+    
+    console = Console()
+    console.print(f"[cyan]Munging summary statistics...[/cyan]")
+    
+    # Parse input files
+    if "," in input_files:
+        # Comma-separated list
+        file_list = [f.strip() for f in input_files.split(",")]
+        input_dict = {Path(f).stem: f for f in file_list}
+    elif input_files.endswith((".json", ".yaml", ".yml")):
+        # Configuration file with file mappings
+        import json
+        with open(input_files) as f:
+            input_dict = json.load(f)
+    else:
+        # Single file
+        input_dict = input_files
+    
+    # Create interactive config if requested
+    if interactive_config and isinstance(input_dict, dict):
+        config_output = config_file or os.path.join(output_dir, "munge_config.json")
+        console.print(f"[yellow]Creating configuration file: {config_output}[/yellow]")
+        create_munge_config(input_dict, config_output, interactive=True)
+        config_file = config_output
+    
+    # Perform munging
+    try:
+        result = munge_sumstats(
+            input_files=input_dict,
+            output_dir=output_dir,
+            config_file=config_file,
+            force_overwrite=force_overwrite
+        )
+        
+        # Validate results
+        validation = validate_munged_files(result)
+        
+        # Print summary
+        console.print(f"[green]Successfully munged {len(result)} files[/green]")
+        for identifier, file_path in result.items():
+            val = validation[identifier]
+            status = "✓" if val["validation_passed"] else "✗"
+            console.print(f"  {status} {identifier}: {val['n_variants']} variants -> {file_path}")
+            
+    except Exception as e:
+        console.print(f"[red]Error during munging: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command(
+    name="chunk",
+    help="Identify independent loci and chunk summary statistics.",
+)
+def run_chunk(
+    input_files: str = typer.Argument(..., help="Munged sumstats file(s). Can be single file, comma-separated list, or config file."),
+    output_dir: str = typer.Argument(..., help="Output directory for chunked files."),
+    distance_threshold: int = typer.Option(500000, "--distance", "-d", help="Distance threshold for independence (bp)."),
+    pvalue_threshold: float = typer.Option(5e-8, "--pvalue", "-p", help="P-value threshold for significance."),
+    merge_overlapping: bool = typer.Option(True, "--merge-overlapping", "-m", help="Merge overlapping loci across ancestries."),
+    use_most_sig_if_no_sig: bool = typer.Option(True, "--use-most-sig", "-u", help="Use most significant SNP if no significant SNPs."),
+    min_variants_per_locus: int = typer.Option(10, "--min-variants", "-v", help="Minimum variants per locus."),
+    threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
+):
+    """Identify independent loci and chunk summary statistics for fine-mapping."""
+    try:
+        from credtools.preprocessing import chunk_sumstats, identify_independent_loci
+        from credtools.preprocessing.chunk import create_loci_list_for_credtools
+    except ImportError as e:
+        console = Console()
+        console.print("[red]Error: Preprocessing module not found.[/red]")
+        raise typer.Exit(1) from e
+    
+    from pathlib import Path
+    console = Console()
+    console.print(f"[cyan]Identifying independent loci...[/cyan]")
+    
+    # Parse input files
+    if "," in input_files:
+        file_list = [f.strip() for f in input_files.split(",")]
+        input_dict = {Path(f).stem.replace(".munged", ""): f for f in file_list}
+    elif input_files.endswith((".json", ".yaml", ".yml")):
+        import json
+        with open(input_files) as f:
+            input_dict = json.load(f)
+    else:
+        input_dict = input_files
+    
+    try:
+        # Identify loci
+        loci_df = identify_independent_loci(
+            sumstats_files=input_dict,
+            output_dir=output_dir,
+            distance_threshold=distance_threshold,
+            pvalue_threshold=pvalue_threshold,
+            merge_overlapping=merge_overlapping,
+            use_most_sig_if_no_sig=use_most_sig_if_no_sig,
+            min_variants_per_locus=min_variants_per_locus
+        )
+        
+        if len(loci_df) == 0:
+            console.print("[yellow]No loci identified[/yellow]")
+            return
+        
+        # Chunk summary statistics
+        console.print(f"[cyan]Chunking {len(loci_df)} loci...[/cyan]")
+        chunk_info_df = chunk_sumstats(
+            loci_df=loci_df,
+            sumstats_files=input_dict,
+            output_dir=os.path.join(output_dir, "chunks"),
+            threads=threads
+        )
+        
+        # Create credtools-compatible loci list
+        loci_list_file = os.path.join(output_dir, "loci_list.txt")
+        credtools_df = create_loci_list_for_credtools(
+            chunk_info_df=chunk_info_df,
+            output_file=loci_list_file
+        )
+        
+        # Print summary
+        console.print(f"[green]Successfully processed {len(loci_df)} loci[/green]")
+        console.print(f"[green]Generated {len(chunk_info_df)} chunked files[/green]")
+        console.print(f"[green]Credtools loci list: {loci_list_file}[/green]")
+        
+    except Exception as e:
+        console.print(f"[red]Error during chunking: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command(
+    name="prepare",
+    help="Prepare LD matrices and final fine-mapping inputs.",
+)
+def run_prepare(
+    chunk_info: str = typer.Argument(..., help="Chunk info file from 'chunk' command."),
+    genotype_config: str = typer.Argument(..., help="Genotype configuration file (JSON) mapping ancestries to file prefixes."),
+    output_dir: str = typer.Argument(..., help="Output directory for prepared files."),
+    threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
+    ld_format: str = typer.Option("plink", "--ld-format", "-f", help="LD computation format (plink/vcf)."),
+    keep_intermediate: bool = typer.Option(False, "--keep-intermediate", "-k", help="Keep intermediate files."),
+):
+    """Prepare LD matrices and final fine-mapping input files."""
+    try:
+        from credtools.preprocessing import prepare_finemap_inputs
+        from credtools.preprocessing.chunk import create_loci_list_for_credtools
+    except ImportError as e:
+        console = Console()
+        console.print("[red]Error: Preprocessing module not found.[/red]")
+        raise typer.Exit(1) from e
+    
+    import json
+    console = Console()
+    console.print(f"[cyan]Preparing fine-mapping inputs...[/cyan]")
+    
+    # Load chunk info
+    if not os.path.exists(chunk_info):
+        console.print(f"[red]Chunk info file not found: {chunk_info}[/red]")
+        raise typer.Exit(1)
+    
+    chunk_info_df = pd.read_csv(chunk_info, sep="\t")
+    console.print(f"Loaded {len(chunk_info_df)} chunks")
+    
+    # Load genotype configuration
+    if not os.path.exists(genotype_config):
+        console.print(f"[red]Genotype config file not found: {genotype_config}[/red]")
+        raise typer.Exit(1)
+    
+    with open(genotype_config) as f:
+        genotype_files = json.load(f)
+    
+    console.print(f"Genotype files for {len(genotype_files)} ancestries")
+    
+    try:
+        # Prepare files
+        prepared_df = prepare_finemap_inputs(
+            chunk_info_df=chunk_info_df,
+            genotype_files=genotype_files,
+            output_dir=output_dir,
+            threads=threads,
+            ld_format=ld_format,
+            keep_intermediate=keep_intermediate
+        )
+        
+        # Create final loci list for credtools
+        final_loci_file = os.path.join(output_dir, "final_loci_list.txt")
+        final_df = create_loci_list_for_credtools(
+            chunk_info_df=prepared_df,
+            output_file=final_loci_file
+        )
+        
+        # Print summary
+        console.print(f"[green]Successfully prepared {len(prepared_df)} files[/green]")
+        console.print(f"[green]Final loci list: {final_loci_file}[/green]")
+        
+        # Print ancestry summary
+        ancestry_summary = prepared_df.groupby("ancestry").size()
+        for ancestry, count in ancestry_summary.items():
+            console.print(f"  {ancestry}: {count} loci")
+        
+    except Exception as e:
+        console.print(f"[red]Error during preparation: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command(
@@ -642,4 +867,4 @@ def run_web(
 
 
 if __name__ == "__main__":
-    app(main)
+    app()
