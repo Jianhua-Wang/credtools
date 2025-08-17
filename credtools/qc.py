@@ -5,7 +5,7 @@ import os
 from multiprocessing import Pool
 from typing import Any, Dict, List, Optional, Tuple
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt  # Not used in this module
 import numpy as np
 import pandas as pd
 from rich.progress import (
@@ -18,7 +18,30 @@ from rich.progress import (
 )
 from scipy import stats
 from scipy.optimize import curve_fit, minimize_scalar
-from sklearn.mixture import GaussianMixture
+
+try:
+    from sklearn.mixture import GaussianMixture
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+    # Create a mock class that will raise an error if used
+    class GaussianMixture:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("sklearn not available - install scikit-learn for full functionality")
+        def fit(self, *args): pass
+        @property
+        def weights_(self): return None
+
+try:
+    from numba import jit
+    NUMBA_AVAILABLE = True
+except ImportError:
+    NUMBA_AVAILABLE = False
+    # Fallback decorator that does nothing
+    def jit(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
 from credtools.constants import ColName
 from credtools.locus import Locus, LocusSet, intersect_sumstat_ld, load_locus_set
@@ -26,7 +49,7 @@ from credtools.locus import Locus, LocusSet, intersect_sumstat_ld, load_locus_se
 logger = logging.getLogger("QC")
 
 
-def get_eigen(ldmatrix: np.ndarray) -> Dict[str, np.ndarray]:
+def get_eigen(ldmatrix: np.ndarray, dtype: Optional[np.dtype] = None) -> Dict[str, np.ndarray]:
     """
     Compute eigenvalues and eigenvectors of LD matrix.
 
@@ -34,6 +57,9 @@ def get_eigen(ldmatrix: np.ndarray) -> Dict[str, np.ndarray]:
     ----------
     ldmatrix : np.ndarray
         A p by p symmetric, positive semidefinite correlation matrix.
+    dtype : Optional[np.dtype], optional
+        Data type for computation. If None, uses the input matrix dtype.
+        Use np.float32 for reduced memory usage with minimal precision loss.
 
     Returns
     -------
@@ -49,7 +75,8 @@ def get_eigen(ldmatrix: np.ndarray) -> Dict[str, np.ndarray]:
     This function uses numpy.linalg.eigh which is optimized for symmetric matrices
     and returns eigenvalues in ascending order.
     """
-    # ldmatrix = ldmatrix.astype(np.float32)
+    if dtype is not None:
+        ldmatrix = ldmatrix.astype(dtype)
     eigvals, eigvecs = np.linalg.eigh(ldmatrix)
     return {"eigvals": eigvals, "eigvecs": eigvecs}
 
@@ -59,6 +86,7 @@ def estimate_s_rss(
     r_tol: float = 1e-8,
     method: str = "null-mle",
     eigvens: Optional[Dict[str, np.ndarray]] = None,
+    dtype: Optional[np.dtype] = None,
 ) -> float:
     """
     Estimate s parameter in the susie_rss Model Using Regularized LD.
@@ -74,6 +102,9 @@ def estimate_s_rss(
         Options: "null-mle", "null-partialmle", or "null-pseudomle".
     eigvens : Optional[Dict[str, np.ndarray]], optional
         Pre-computed eigenvalues and eigenvectors, by default None.
+    dtype : Optional[np.dtype], optional
+        Data type for computation. If None, uses float64.
+        Use np.float32 for reduced memory usage with minimal precision loss.
 
     Returns
     -------
@@ -114,7 +145,7 @@ def estimate_s_rss(
         eigvals = eigvens["eigvals"]
         eigvecs = eigvens["eigvecs"]
     else:
-        eigens = get_eigen(input_locus.ld.r)
+        eigens = get_eigen(input_locus.ld.r, dtype)
         eigvals = eigens["eigvals"]
         eigvecs = eigens["eigvecs"]
 
@@ -130,6 +161,7 @@ def estimate_s_rss(
 
     if method == "null-mle":
 
+        @jit(nopython=True, cache=True)
         def negloglikelihood(s, ztv, d):
             denom = (1 - s) * d + s
             term1 = 0.5 * np.sum(np.log(denom))
@@ -186,6 +218,7 @@ def kriging_rss(
     r_tol: float = 1e-8,
     s: Optional[float] = None,
     eigvens: Optional[Dict[str, np.ndarray]] = None,
+    dtype: Optional[np.dtype] = None,
 ) -> pd.DataFrame:
     """
     Compute distribution of z-scores of variant j given other z-scores, and detect possible allele switch issues.
@@ -201,6 +234,9 @@ def kriging_rss(
         If None, s will be estimated automatically.
     eigvens : Optional[Dict[str, np.ndarray]], optional
         Pre-computed eigenvalues and eigenvectors, by default None.
+    dtype : Optional[np.dtype], optional
+        Data type for computation. If None, uses float64.
+        Use np.float32 for reduced memory usage with minimal precision loss.
 
     Returns
     -------
@@ -249,7 +285,7 @@ def kriging_rss(
         eigvals = eigvens["eigvals"]
         eigvecs = eigvens["eigvecs"]
     else:
-        eigens = get_eigen(input_locus.ld.r)
+        eigens = get_eigen(input_locus.ld.r, dtype)
         eigvals = eigens["eigvals"]
         eigvecs = eigens["eigvecs"]
     if s is None:
@@ -268,47 +304,69 @@ def kriging_rss(
     dinv = 1 / ((1 - s) * eigvals + s)
     dinv[np.isinf(dinv)] = 0
     precision = eigvecs @ (eigvecs * dinv).T
-    condmean = np.zeros_like(z)
-    condvar = np.zeros_like(z)
-    for i in range(len(z)):
-        condmean[i] = -(1 / precision[i, i]) * precision[i, :i].dot(z[:i]) - (
-            1 / precision[i, i]
-        ) * precision[i, i + 1 :].dot(z[i + 1 :])
-        condvar[i] = 1 / precision[i, i]
+    
+    # Vectorized conditional mean and variance calculation
+    diag_prec = np.diag(precision)
+    condvar = 1 / diag_prec
+    
+    # Compute conditional means vectorized
+    precision_off_diag = precision - np.diag(diag_prec)
+    condmean = -(precision_off_diag @ z) / diag_prec
+    
     z_std_diff = (z - condmean) / np.sqrt(condvar)
 
     # Obtain grid
     a_min = 0.8
-    a_max = 2 if np.max(z_std_diff**2) < 1 else 2 * np.sqrt(np.max(z_std_diff**2))
+    z_std_diff_max_sq = np.max(z_std_diff**2)
+    a_max = 2 if z_std_diff_max_sq < 1 else 2 * np.sqrt(z_std_diff_max_sq)
     npoint = int(np.ceil(np.log2(a_max / a_min) / np.log2(1.05)))
     # Ensure npoint doesn't exceed number of samples
     npoint = min(npoint, len(z) - 1)
     a_grid = 1.05 ** np.arange(-npoint, 1) * a_max
 
-    # Compute likelihood
-    sd_mtx = np.outer(np.sqrt(condvar), a_grid)
-    matrix_llik = stats.norm.logpdf(
-        z[:, np.newaxis] - condmean[:, np.newaxis], scale=sd_mtx
-    )
+    # Compute likelihood more efficiently
+    sqrt_condvar = np.sqrt(condvar)
+    z_centered = z - condmean
+    
+    # Use broadcasting to avoid creating large temporary matrices
+    matrix_llik = np.empty((len(z), len(a_grid)))
+    for i, a in enumerate(a_grid):
+        scale = sqrt_condvar * a
+        matrix_llik[:, i] = stats.norm.logpdf(z_centered, scale=scale)
+    
     lfactors = np.max(matrix_llik, axis=1)
-    matrix_llik = matrix_llik - lfactors[:, np.newaxis]
+    matrix_llik -= lfactors[:, np.newaxis]
 
     # Estimate weight using Gaussian Mixture Model
+    # Limit components for better performance and numerical stability
+    n_components = min(len(a_grid), max(2, len(z) // 10))
     gmm = GaussianMixture(
-        n_components=len(a_grid), covariance_type="diag", max_iter=1000
+        n_components=n_components, 
+        covariance_type="diag", 
+        max_iter=500,
+        init_params='k-means++',
+        random_state=42
     )
     gmm.fit(matrix_llik)
-    w = gmm.weights_
+    
+    # If we reduced components, pad weights with zeros
+    if n_components < len(a_grid):
+        w = np.zeros(len(a_grid))
+        w[:n_components] = gmm.weights_
+    else:
+        w = gmm.weights_
 
     # Compute denominators in likelihood ratios
     logl0mix = np.log(np.sum(np.exp(matrix_llik) * (w + 1e-15), axis=1)) + lfactors  # type: ignore
 
     # Compute numerators in likelihood ratios
-    matrix_llik = stats.norm.logpdf(
-        z[:, np.newaxis] + condmean[:, np.newaxis], scale=sd_mtx
-    )
+    z_plus_condmean = z + condmean
+    for i, a in enumerate(a_grid):
+        scale = sqrt_condvar * a
+        matrix_llik[:, i] = stats.norm.logpdf(z_plus_condmean, scale=scale)
+    
     lfactors = np.max(matrix_llik, axis=1)
-    matrix_llik = matrix_llik - lfactors[:, np.newaxis]
+    matrix_llik -= lfactors[:, np.newaxis]
     logl1mix = np.log(np.sum(np.exp(matrix_llik) * (w + 1e-15), axis=1)) + lfactors  # type: ignore
 
     # Compute (log) likelihood ratios
@@ -585,9 +643,9 @@ def ld_decay(locus_set: LocusSet) -> pd.DataFrame:
     - Founder effects
     """
 
+    @jit(nopython=True, cache=True)
     def fit_exp(x: np.ndarray, a: float, b: float) -> np.ndarray:
-        with np.errstate(over="ignore"):
-            return a * np.exp(-b * x)
+        return a * np.exp(-b * x)
 
     binsize = 1000
     decay_res = []
@@ -724,6 +782,7 @@ def locus_qc(
     r_tol: float = 1e-3,
     method: str = "null-mle",
     out_dir: Optional[str] = None,
+    dtype: Optional[np.dtype] = None,
 ) -> Dict[str, pd.DataFrame]:
     """
     Perform comprehensive quality control analysis for a locus.
@@ -739,6 +798,9 @@ def locus_qc(
         Options: "null-mle", "null-partialmle", or "null-pseudomle".
     out_dir : Optional[str], optional
         Output directory to save results, by default None.
+    dtype : Optional[np.dtype], optional
+        Data type for computation. If None, uses float64.
+        Use np.float32 for reduced memory usage with minimal precision loss.
 
     Returns
     -------
@@ -777,9 +839,10 @@ def locus_qc(
     all_compare_maf = []
     for locus in locus_set.loci:
         lo = intersect_sumstat_ld(locus)
-        eigens = get_eigen(lo.ld.r)
-        lambda_s = estimate_s_rss(locus, r_tol, method, eigens)
-        expected_z = kriging_rss(locus, r_tol, lambda_s, eigens)
+        # Compute eigendecomposition once and reuse for both functions
+        eigens = get_eigen(lo.ld.r, dtype)
+        lambda_s = estimate_s_rss(locus, r_tol, method, eigens, dtype)
+        expected_z = kriging_rss(locus, r_tol, lambda_s, eigens, dtype)
         expected_z["lambda_s"] = lambda_s
         expected_z["cohort"] = f"{locus.popu}_{locus.cohort}"
         dentist_s = compute_dentist_s(locus)
