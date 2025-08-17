@@ -12,14 +12,7 @@ import numpy as np
 import pandas as pd
 import typer
 from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeRemainingColumn
 
 from credtools import __version__
 from credtools.credtools import fine_map, pipeline
@@ -100,7 +93,9 @@ def main(
     help="Reformat and standardize GWAS summary statistics.",
 )
 def run_munge(
-    input_files: str = typer.Argument(..., help="Input sumstats file(s). Can be a single file, comma-separated list, or config file."),
+    input_files: str = typer.Argument(
+        ..., help="Input sumstats file(s). Can be a single file, comma-separated list, or config file."
+    ),
     output_dir: str = typer.Argument(..., help="Output directory for munged files."),
     config_file: Optional[str] = typer.Option(None, "--config", "-c", help="Configuration file for column mappings."),
     force_overwrite: bool = typer.Option(False, "--force", "-f", help="Overwrite existing output files."),
@@ -115,10 +110,10 @@ def run_munge(
         console.print("[red]Error: Preprocessing dependencies not found.[/red]")
         console.print("Please ensure smunger is installed: pip install smunger")
         raise typer.Exit(1) from e
-    
+
     console = Console()
     console.print(f"[cyan]Munging summary statistics...[/cyan]")
-    
+
     # Parse input files
     if "," in input_files:
         # Comma-separated list
@@ -127,38 +122,36 @@ def run_munge(
     elif input_files.endswith((".json", ".yaml", ".yml")):
         # Configuration file with file mappings
         import json
+
         with open(input_files) as f:
             input_dict = json.load(f)
     else:
         # Single file
         input_dict = input_files
-    
+
     # Create interactive config if requested
     if interactive_config and isinstance(input_dict, dict):
         config_output = config_file or os.path.join(output_dir, "munge_config.json")
         console.print(f"[yellow]Creating configuration file: {config_output}[/yellow]")
         create_munge_config(input_dict, config_output, interactive=True)
         config_file = config_output
-    
+
     # Perform munging
     try:
         result = munge_sumstats(
-            input_files=input_dict,
-            output_dir=output_dir,
-            config_file=config_file,
-            force_overwrite=force_overwrite
+            input_files=input_dict, output_dir=output_dir, config_file=config_file, force_overwrite=force_overwrite
         )
-        
+
         # Validate results
         validation = validate_munged_files(result)
-        
+
         # Print summary
         console.print(f"[green]Successfully munged {len(result)} files[/green]")
         for identifier, file_path in result.items():
             val = validation[identifier]
             status = "✓" if val["validation_passed"] else "✗"
             console.print(f"  {status} {identifier}: {val['n_variants']} variants -> {file_path}")
-            
+
     except Exception as e:
         console.print(f"[red]Error during munging: {e}[/red]")
         raise typer.Exit(1)
@@ -169,12 +162,20 @@ def run_munge(
     help="Identify independent loci and chunk summary statistics.",
 )
 def run_chunk(
-    input_files: str = typer.Argument(..., help="Munged sumstats file(s). Can be single file, comma-separated list, or config file."),
+    input_files: str = typer.Argument(
+        ..., help="Munged sumstats file(s). Can be single file, comma-separated list, or config file."
+    ),
     output_dir: str = typer.Argument(..., help="Output directory for chunked files."),
-    distance_threshold: int = typer.Option(500000, "--distance", "-d", help="Distance threshold for independence (bp)."),
+    distance_threshold: int = typer.Option(
+        500000, "--distance", "-d", help="Distance threshold for independence (bp)."
+    ),
     pvalue_threshold: float = typer.Option(5e-8, "--pvalue", "-p", help="P-value threshold for significance."),
-    merge_overlapping: bool = typer.Option(True, "--merge-overlapping", "-m", help="Merge overlapping loci across ancestries."),
-    use_most_sig_if_no_sig: bool = typer.Option(True, "--use-most-sig", "-u", help="Use most significant SNP if no significant SNPs."),
+    merge_overlapping: bool = typer.Option(
+        True, "--merge-overlapping", "-m", help="Merge overlapping loci across ancestries."
+    ),
+    use_most_sig_if_no_sig: bool = typer.Option(
+        True, "--use-most-sig", "-u", help="Use most significant SNP if no significant SNPs."
+    ),
     min_variants_per_locus: int = typer.Option(10, "--min-variants", "-v", help="Minimum variants per locus."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
 ):
@@ -186,22 +187,24 @@ def run_chunk(
         console = Console()
         console.print("[red]Error: Preprocessing module not found.[/red]")
         raise typer.Exit(1) from e
-    
+
     from pathlib import Path
+
     console = Console()
     console.print(f"[cyan]Identifying independent loci...[/cyan]")
-    
+
     # Parse input files
     if "," in input_files:
         file_list = [f.strip() for f in input_files.split(",")]
         input_dict = {Path(f).stem.replace(".munged", ""): f for f in file_list}
     elif input_files.endswith((".json", ".yaml", ".yml")):
         import json
+
         with open(input_files) as f:
             input_dict = json.load(f)
     else:
         input_dict = input_files
-    
+
     try:
         # Identify loci
         loci_df = identify_independent_loci(
@@ -211,34 +214,28 @@ def run_chunk(
             pvalue_threshold=pvalue_threshold,
             merge_overlapping=merge_overlapping,
             use_most_sig_if_no_sig=use_most_sig_if_no_sig,
-            min_variants_per_locus=min_variants_per_locus
+            min_variants_per_locus=min_variants_per_locus,
         )
-        
+
         if len(loci_df) == 0:
             console.print("[yellow]No loci identified[/yellow]")
             return
-        
+
         # Chunk summary statistics
         console.print(f"[cyan]Chunking {len(loci_df)} loci...[/cyan]")
         chunk_info_df = chunk_sumstats(
-            loci_df=loci_df,
-            sumstats_files=input_dict,
-            output_dir=os.path.join(output_dir, "chunks"),
-            threads=threads
+            loci_df=loci_df, sumstats_files=input_dict, output_dir=os.path.join(output_dir, "chunks"), threads=threads
         )
-        
+
         # Create credtools-compatible loci list
         loci_list_file = os.path.join(output_dir, "loci_list.txt")
-        credtools_df = create_loci_list_for_credtools(
-            chunk_info_df=chunk_info_df,
-            output_file=loci_list_file
-        )
-        
+        credtools_df = create_loci_list_for_credtools(chunk_info_df=chunk_info_df, output_file=loci_list_file)
+
         # Print summary
         console.print(f"[green]Successfully processed {len(loci_df)} loci[/green]")
         console.print(f"[green]Generated {len(chunk_info_df)} chunked files[/green]")
         console.print(f"[green]Credtools loci list: {loci_list_file}[/green]")
-        
+
     except Exception as e:
         console.print(f"[red]Error during chunking: {e}[/red]")
         raise typer.Exit(1)
@@ -250,7 +247,9 @@ def run_chunk(
 )
 def run_prepare(
     chunk_info: str = typer.Argument(..., help="Chunk info file from 'chunk' command."),
-    genotype_config: str = typer.Argument(..., help="Genotype configuration file (JSON) mapping ancestries to file prefixes."),
+    genotype_config: str = typer.Argument(
+        ..., help="Genotype configuration file (JSON) mapping ancestries to file prefixes."
+    ),
     output_dir: str = typer.Argument(..., help="Output directory for prepared files."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
     ld_format: str = typer.Option("plink", "--ld-format", "-f", help="LD computation format (plink/vcf)."),
@@ -264,29 +263,30 @@ def run_prepare(
         console = Console()
         console.print("[red]Error: Preprocessing module not found.[/red]")
         raise typer.Exit(1) from e
-    
+
     import json
+
     console = Console()
     console.print(f"[cyan]Preparing fine-mapping inputs...[/cyan]")
-    
+
     # Load chunk info
     if not os.path.exists(chunk_info):
         console.print(f"[red]Chunk info file not found: {chunk_info}[/red]")
         raise typer.Exit(1)
-    
+
     chunk_info_df = pd.read_csv(chunk_info, sep="\t")
     console.print(f"Loaded {len(chunk_info_df)} chunks")
-    
+
     # Load genotype configuration
     if not os.path.exists(genotype_config):
         console.print(f"[red]Genotype config file not found: {genotype_config}[/red]")
         raise typer.Exit(1)
-    
+
     with open(genotype_config) as f:
         genotype_files = json.load(f)
-    
+
     console.print(f"Genotype files for {len(genotype_files)} ancestries")
-    
+
     try:
         # Prepare files
         prepared_df = prepare_finemap_inputs(
@@ -295,25 +295,22 @@ def run_prepare(
             output_dir=output_dir,
             threads=threads,
             ld_format=ld_format,
-            keep_intermediate=keep_intermediate
+            keep_intermediate=keep_intermediate,
         )
-        
+
         # Create final loci list for credtools
         final_loci_file = os.path.join(output_dir, "final_loci_list.txt")
-        final_df = create_loci_list_for_credtools(
-            chunk_info_df=prepared_df,
-            output_file=final_loci_file
-        )
-        
+        final_df = create_loci_list_for_credtools(chunk_info_df=prepared_df, output_file=final_loci_file)
+
         # Print summary
         console.print(f"[green]Successfully prepared {len(prepared_df)} files[/green]")
         console.print(f"[green]Final loci list: {final_loci_file}[/green]")
-        
+
         # Print ancestry summary
         ancestry_summary = prepared_df.groupby("ancestry").size()
         for ancestry, count in ancestry_summary.items():
             console.print(f"  {ancestry}: {count} loci")
-        
+
     except Exception as e:
         console.print(f"[red]Error during preparation: {e}[/red]")
         raise typer.Exit(1)
@@ -327,9 +324,7 @@ def run_meta(
     inputs: str = typer.Argument(..., help="Input files."),
     outdir: str = typer.Argument(..., help="Output directory."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
-    meta_method: MetaMethod = typer.Option(
-        MetaMethod.meta_all, "--meta-method", "-m", help="Meta-analysis method."
-    ),
+    meta_method: MetaMethod = typer.Option(MetaMethod.meta_all, "--meta-method", "-m", help="Meta-analysis method."),
 ):
     """Meta-analysis of summary statistics and LD matrices."""
     meta_loci(inputs, outdir, threads, meta_method)
@@ -355,43 +350,23 @@ def run_qc(
 def run_fine_map(
     inputs: str = typer.Argument(..., help="Input files."),
     outdir: str = typer.Argument(..., help="Output directory."),
-    strategy: Strategy = typer.Option(
-        Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."
-    ),
+    strategy: Strategy = typer.Option(Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."),
     tool: Tool = typer.Option(Tool.susie, "--tool", "-t", help="Fine-mapping tool."),
-    max_causal: int = typer.Option(
-        1, "--max-causal", "-c", help="Maximum number of causal SNPs."
-    ),
-    set_L_by_cojo: bool = typer.Option(
-        True, "--set-L-by-cojo", "-sl", help="Set L by COJO."
-    ),
-    p_cutoff: float = typer.Option(
-        5e-8, "--p-cutoff", "-pc", help="P-value cutoff for COJO."
-    ),
-    collinear_cutoff: float = typer.Option(
-        0.9, "--collinear-cutoff", "-cc", help="Collinearity cutoff for COJO."
-    ),
-    window_size: int = typer.Option(
-        10000000, "--window-size", "-ws", help="Window size for COJO."
-    ),
-    maf_cutoff: float = typer.Option(
-        0.01, "--maf-cutoff", "-mc", help="MAF cutoff for COJO."
-    ),
+    max_causal: int = typer.Option(1, "--max-causal", "-c", help="Maximum number of causal SNPs."),
+    set_L_by_cojo: bool = typer.Option(True, "--set-L-by-cojo", "-sl", help="Set L by COJO."),
+    p_cutoff: float = typer.Option(5e-8, "--p-cutoff", "-pc", help="P-value cutoff for COJO."),
+    collinear_cutoff: float = typer.Option(0.9, "--collinear-cutoff", "-cc", help="Collinearity cutoff for COJO."),
+    window_size: int = typer.Option(10000000, "--window-size", "-ws", help="Window size for COJO."),
+    maf_cutoff: float = typer.Option(0.01, "--maf-cutoff", "-mc", help="MAF cutoff for COJO."),
     diff_freq_cutoff: float = typer.Option(
         0.2,
         "--diff-freq-cutoff",
         "-dfc",
         help="Difference in frequency cutoff for COJO.",
     ),
-    coverage: float = typer.Option(
-        0.95, "--coverage", "-cv", help="Coverage of the credible set."
-    ),
-    combine_cred: str = typer.Option(
-        "union", "--combine-cred", "-cc", help="Method to combine credible sets."
-    ),
-    combine_pip: str = typer.Option(
-        "max", "--combine-pip", "-cp", help="Method to combine PIPs."
-    ),
+    coverage: float = typer.Option(0.95, "--coverage", "-cv", help="Coverage of the credible set."),
+    combine_cred: str = typer.Option("union", "--combine-cred", "-cc", help="Method to combine credible sets."),
+    combine_pip: str = typer.Option("max", "--combine-pip", "-cp", help="Method to combine PIPs."),
     jaccard_threshold: float = typer.Option(
         0.1,
         "--jaccard-threshold",
@@ -399,18 +374,12 @@ def run_fine_map(
         help="Jaccard threshold for combining credible sets.",
     ),
     # susie parameters
-    max_iter: int = typer.Option(
-        100, "--max-iter", "-i", help="Maximum number of iterations."
-    ),
+    max_iter: int = typer.Option(100, "--max-iter", "-i", help="Maximum number of iterations."),
     estimate_residual_variance: bool = typer.Option(
         False, "--estimate-residual-variance", "-er", help="Estimate residual variance."
     ),
-    min_abs_corr: float = typer.Option(
-        0.5, "--min-abs-corr", "-mc", help="Minimum absolute correlation."
-    ),
-    convergence_tol: float = typer.Option(
-        1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."
-    ),
+    min_abs_corr: float = typer.Option(0.5, "--min-abs-corr", "-mc", help="Minimum absolute correlation."),
+    convergence_tol: float = typer.Option(1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."),
 ):
     """Perform fine-mapping on three strategies."""
     loci_info = pd.read_csv(inputs, sep="\t")
@@ -470,31 +439,15 @@ def run_fine_map(
 def run_pipeline(
     inputs: str = typer.Argument(..., help="Input files."),
     outdir: str = typer.Argument(..., help="Output directory."),
-    meta_method: MetaMethod = typer.Option(
-        MetaMethod.meta_all, "--meta-method", "-m", help="Meta-analysis method."
-    ),
-    skip_qc: bool = typer.Option(
-        False, "--skip-qc", "-q", help="Skip quality control."
-    ),
-    strategy: Strategy = typer.Option(
-        Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."
-    ),
+    meta_method: MetaMethod = typer.Option(MetaMethod.meta_all, "--meta-method", "-m", help="Meta-analysis method."),
+    skip_qc: bool = typer.Option(False, "--skip-qc", "-q", help="Skip quality control."),
+    strategy: Strategy = typer.Option(Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."),
     tool: Tool = typer.Option(Tool.susie, "--tool", "-t", help="Fine-mapping tool."),
-    max_causal: int = typer.Option(
-        1, "--max-causal", "-c", help="Maximum number of causal SNPs."
-    ),
-    set_L_by_cojo: bool = typer.Option(
-        True, "--set-L-by-cojo", "-sl", help="Set L by COJO."
-    ),
-    coverage: float = typer.Option(
-        0.95, "--coverage", "-cv", help="Coverage of the credible set."
-    ),
-    combine_cred: str = typer.Option(
-        "union", "--combine-cred", "-cc", help="Method to combine credible sets."
-    ),
-    combine_pip: str = typer.Option(
-        "max", "--combine-pip", "-cp", help="Method to combine PIPs."
-    ),
+    max_causal: int = typer.Option(1, "--max-causal", "-c", help="Maximum number of causal SNPs."),
+    set_L_by_cojo: bool = typer.Option(True, "--set-L-by-cojo", "-sl", help="Set L by COJO."),
+    coverage: float = typer.Option(0.95, "--coverage", "-cv", help="Coverage of the credible set."),
+    combine_cred: str = typer.Option("union", "--combine-cred", "-cc", help="Method to combine credible sets."),
+    combine_pip: str = typer.Option("max", "--combine-pip", "-cp", help="Method to combine PIPs."),
     jaccard_threshold: float = typer.Option(
         0.1,
         "--jaccard-threshold",
@@ -517,9 +470,7 @@ def run_pipeline(
         help="Number of iterations.",
         rich_help_panel="FINEMAP",
     ),
-    n_threads: int = typer.Option(
-        1, "--n-threads", "-nt", help="Number of threads.", rich_help_panel="FINEMAP"
-    ),
+    n_threads: int = typer.Option(1, "--n-threads", "-nt", help="Number of threads.", rich_help_panel="FINEMAP"),
     # susie parameters
     max_iter: int = typer.Option(
         100,
@@ -550,9 +501,7 @@ def run_pipeline(
         rich_help_panel="SuSie",
     ),
     # RSparsePro parameters
-    eps: float = typer.Option(
-        1e-5, "--eps", "-e", help="Convergence criterion.", rich_help_panel="RSparsePro"
-    ),
+    eps: float = typer.Option(1e-5, "--eps", "-e", help="Convergence criterion.", rich_help_panel="RSparsePro"),
     ubound: int = typer.Option(
         100000,
         "--ubound",
@@ -628,9 +577,7 @@ def run_pipeline(
         rich_help_panel="SuSiEx",
     ),
     # max_iter: int = typer.Option(100, "--max-iter", "-i", help="Maximum number of iterations.", rich_help_panel="SuSiEx"),
-    tol: float = typer.Option(
-        1e-3, "--tol", "-t", help="Convergence tolerance.", rich_help_panel="SuSiEx"
-    ),
+    tol: float = typer.Option(1e-3, "--tol", "-t", help="Convergence tolerance.", rich_help_panel="SuSiEx"),
     # MULTISUSIE parameters
     rho: float = typer.Option(
         0.75,
@@ -760,31 +707,15 @@ def run_pipeline(
     help="Launch web visualization interface for fine-mapping results.",
 )
 def run_web(
-    data_dir: str = typer.Argument(
-        ".", help="Base directory containing fine-mapping data."
-    ),
-    webdata_dir: str = typer.Option(
-        "webdata", "--webdata-dir", "-w", help="Directory for processed web data."
-    ),
-    allmeta_loci: Optional[str] = typer.Option(
-        None, "--allmeta-loci", "-a", help="Path to allmeta loci info file."
-    ),
-    popumeta_loci: Optional[str] = typer.Option(
-        None, "--popumeta-loci", "-p", help="Path to popumeta loci info file."
-    ),
-    nometa_loci: Optional[str] = typer.Option(
-        None, "--nometa-loci", "-n", help="Path to nometa loci info file."
-    ),
-    force_regenerate: bool = typer.Option(
-        False, "--force-regenerate", "-f", help="Force regeneration of web data."
-    ),
-    threads: int = typer.Option(
-        10, "--threads", "-t", help="Number of threads for data processing."
-    ),
+    data_dir: str = typer.Argument(".", help="Base directory containing fine-mapping data."),
+    webdata_dir: str = typer.Option("webdata", "--webdata-dir", "-w", help="Directory for processed web data."),
+    allmeta_loci: Optional[str] = typer.Option(None, "--allmeta-loci", "-a", help="Path to allmeta loci info file."),
+    popumeta_loci: Optional[str] = typer.Option(None, "--popumeta-loci", "-p", help="Path to popumeta loci info file."),
+    nometa_loci: Optional[str] = typer.Option(None, "--nometa-loci", "-n", help="Path to nometa loci info file."),
+    force_regenerate: bool = typer.Option(False, "--force-regenerate", "-f", help="Force regeneration of web data."),
+    threads: int = typer.Option(10, "--threads", "-t", help="Number of threads for data processing."),
     port: int = typer.Option(8080, "--port", help="Port to run the web server on."),
-    host: str = typer.Option(
-        "0.0.0.0", "--host", help="Host to bind the web server to."
-    ),
+    host: str = typer.Option("0.0.0.0", "--host", help="Host to bind the web server to."),
     debug: bool = typer.Option(False, "--debug", help="Run in debug mode."),
 ):
     """Launch web visualization interface for fine-mapping results."""
@@ -795,9 +726,7 @@ def run_web(
         console = Console()
         console.print("[red]Error: Web dependencies not found.[/red]")
         console.print("Please install web dependencies with:")
-        console.print(
-            "pip install dash dash-bootstrap-components dash-mantine-components plotly"
-        )
+        console.print("pip install dash dash-bootstrap-components dash-mantine-components plotly")
         raise typer.Exit(1) from e
 
     # Check if web data exists and is up to date
@@ -814,12 +743,8 @@ def run_web(
         console = Console()
         if not any([allmeta_loci, popumeta_loci, nometa_loci]):
             # Try to find default loci files
-            default_allmeta = os.path.join(
-                data_dir, "data/real/meta/all/all_meta_loci_sig.txt"
-            )
-            default_popumeta = os.path.join(
-                data_dir, "data/real/meta/ancestry/loci_info_sig.txt"
-            )
+            default_allmeta = os.path.join(data_dir, "data/real/meta/all/all_meta_loci_sig.txt")
+            default_popumeta = os.path.join(data_dir, "data/real/meta/ancestry/loci_info_sig.txt")
             default_nometa = os.path.join(data_dir, "data/real/all_loci_list_sig.txt")
 
             if os.path.exists(default_allmeta):
@@ -830,9 +755,7 @@ def run_web(
                 nometa_loci = default_nometa
 
             if not any([allmeta_loci, popumeta_loci, nometa_loci]):
-                console.print(
-                    "[red]Error: No loci files found and none provided.[/red]"
-                )
+                console.print("[red]Error: No loci files found and none provided.[/red]")
                 console.print("Please provide at least one of:")
                 console.print("  --allmeta-loci: Path to allmeta loci info file")
                 console.print("  --popumeta-loci: Path to popumeta loci info file")
