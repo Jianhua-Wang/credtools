@@ -8,40 +8,44 @@ from typing import Any, Dict, List, Optional, Tuple
 # import matplotlib.pyplot as plt  # Not used in this module
 import numpy as np
 import pandas as pd
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeRemainingColumn
 from scipy import stats
 from scipy.optimize import curve_fit, minimize_scalar
 
 try:
     from sklearn.mixture import GaussianMixture
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
+
     # Create a mock class that will raise an error if used
     class GaussianMixture:
         def __init__(self, *args, **kwargs):
             raise ImportError("sklearn not available - install scikit-learn for full functionality")
-        def fit(self, *args): pass
+
+        def fit(self, *args):
+            pass
+
         @property
-        def weights_(self): return None
+        def weights_(self):
+            return None
+
 
 try:
     from numba import jit
+
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
+
     # Fallback decorator that does nothing
     def jit(*args, **kwargs):
         def decorator(func):
             return func
+
         return decorator
+
 
 from credtools.constants import ColName
 from credtools.locus import Locus, LocusSet, intersect_sumstat_ld, load_locus_set
@@ -135,9 +139,7 @@ def estimate_s_rss(
     # make sure the LD matrix and sumstats file are matched
     input_locus = locus.copy()
     input_locus = intersect_sumstat_ld(input_locus)
-    z = (
-        input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]
-    ).to_numpy()
+    z = (input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]).to_numpy()
     n = input_locus.sample_size
     # Check and process input arguments z, R
     z = np.where(np.isnan(z), 0, z)
@@ -188,9 +190,7 @@ def estimate_s_rss(
 
     elif method == "null-pseudomle":
 
-        def pseudolikelihood(
-            s: float, z: np.ndarray, eigvals: np.ndarray, eigvecs: np.ndarray
-        ) -> float:
+        def pseudolikelihood(s: float, z: np.ndarray, eigvals: np.ndarray, eigvecs: np.ndarray) -> float:
             precision = eigvecs @ (eigvecs.T / ((1 - s) * eigvals + s))
             postmean = np.zeros_like(z)
             postvar = np.zeros_like(z)
@@ -274,9 +274,7 @@ def kriging_rss(
     # Check and process input arguments z, R
     input_locus = locus.copy()
     input_locus = intersect_sumstat_ld(input_locus)
-    z = (
-        input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]
-    ).to_numpy()
+    z = (input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]).to_numpy()
     n = input_locus.sample_size
     z = np.where(np.isnan(z), 0, z)
 
@@ -304,15 +302,15 @@ def kriging_rss(
     dinv = 1 / ((1 - s) * eigvals + s)
     dinv[np.isinf(dinv)] = 0
     precision = eigvecs @ (eigvecs * dinv).T
-    
+
     # Vectorized conditional mean and variance calculation
     diag_prec = np.diag(precision)
     condvar = 1 / diag_prec
-    
+
     # Compute conditional means vectorized
     precision_off_diag = precision - np.diag(diag_prec)
     condmean = -(precision_off_diag @ z) / diag_prec
-    
+
     z_std_diff = (z - condmean) / np.sqrt(condvar)
 
     # Obtain grid
@@ -327,13 +325,13 @@ def kriging_rss(
     # Compute likelihood more efficiently
     sqrt_condvar = np.sqrt(condvar)
     z_centered = z - condmean
-    
+
     # Use broadcasting to avoid creating large temporary matrices
     matrix_llik = np.empty((len(z), len(a_grid)))
     for i, a in enumerate(a_grid):
         scale = sqrt_condvar * a
         matrix_llik[:, i] = stats.norm.logpdf(z_centered, scale=scale)
-    
+
     lfactors = np.max(matrix_llik, axis=1)
     matrix_llik -= lfactors[:, np.newaxis]
 
@@ -341,14 +339,10 @@ def kriging_rss(
     # Limit components for better performance and numerical stability
     n_components = min(len(a_grid), max(2, len(z) // 10))
     gmm = GaussianMixture(
-        n_components=n_components, 
-        covariance_type="diag", 
-        max_iter=500,
-        init_params='k-means++',
-        random_state=42
+        n_components=n_components, covariance_type="diag", max_iter=500, init_params="k-means++", random_state=42
     )
     gmm.fit(matrix_llik)
-    
+
     # If we reduced components, pad weights with zeros
     if n_components < len(a_grid):
         w = np.zeros(len(a_grid))
@@ -364,7 +358,7 @@ def kriging_rss(
     for i, a in enumerate(a_grid):
         scale = sqrt_condvar * a
         matrix_llik[:, i] = stats.norm.logpdf(z_plus_condmean, scale=scale)
-    
+
     lfactors = np.max(matrix_llik, axis=1)
     matrix_llik -= lfactors[:, np.newaxis]
     logl1mix = np.log(np.sum(np.exp(matrix_llik) * (w + 1e-15), axis=1)) + lfactors  # type: ignore
@@ -542,9 +536,7 @@ def snp_missingness(locus_set: LocusSet) -> pd.DataFrame:
     missingness_df.fillna(0, inplace=True)
     # log warning if missing rate > 0.1
     for col in missingness_df.columns:
-        missing_rate = float(
-            round(1 - missingness_df[col].sum() / missingness_df.shape[0], 3)
-        )
+        missing_rate = float(round(1 - missingness_df[col].sum() / missingness_df.shape[0], 3))
         if missing_rate > 0.1:
             logger.warning(f"The missing rate of {col} is {missing_rate}")
         else:
@@ -592,13 +584,9 @@ def ld_4th_moment(locus_set: LocusSet) -> pd.DataFrame:
         overlap_snps = overlap_snps.intersection(set(locus.sumstats[ColName.SNPID]))
     for locus in locus_set.loci:
         locus = locus.copy()
-        locus.sumstats = locus.sumstats[
-            locus.sumstats[ColName.SNPID].isin(overlap_snps)
-        ]
+        locus.sumstats = locus.sumstats[locus.sumstats[ColName.SNPID].isin(overlap_snps)]
         locus = intersect_sumstat_ld(locus)
-        r_4th = pd.Series(
-            index=locus.ld.map[ColName.SNPID], data=np.power(locus.ld.r, 4).sum(axis=0)
-        )
+        r_4th = pd.Series(index=locus.ld.map[ColName.SNPID], data=np.power(locus.ld.r, 4).sum(axis=0))
         r_4th = r_4th - 1
         r_4th.name = f"{locus.popu}_{locus.cohort}"
         ld_4th_res.append(r_4th)
@@ -652,9 +640,7 @@ def ld_decay(locus_set: LocusSet) -> pd.DataFrame:
     for locus in locus_set.loci:
         ldmap = locus.ld.map.copy()
         r = locus.ld.r.copy()
-        distance_mat = np.array(
-            [ldmap["BP"] - ldmap["BP"].values[i] for i in range(len(ldmap))]
-        )
+        distance_mat = np.array([ldmap["BP"] - ldmap["BP"].values[i] for i in range(len(ldmap))])
         distance_mat = distance_mat[np.tril_indices_from(distance_mat, k=-1)].flatten()
         distance_mat = np.abs(distance_mat)
         r = r[np.tril_indices_from(r, k=-1)].flatten()
@@ -725,9 +711,7 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
     """
     merged_df = locus_set.loci[0].original_sumstats[[ColName.SNPID]].copy()
     for i, locus_obj in enumerate(locus_set.loci):
-        locus_df = locus_obj.sumstats[
-            [ColName.SNPID, ColName.BETA, ColName.SE, ColName.EAF]
-        ].copy()
+        locus_df = locus_obj.sumstats[[ColName.SNPID, ColName.BETA, ColName.SE, ColName.EAF]].copy()
         locus_df.rename(
             columns={
                 ColName.BETA: f"BETA_{i}",
@@ -736,9 +720,7 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
             },
             inplace=True,
         )
-        merged_df = pd.merge(
-            merged_df, locus_df, on=ColName.SNPID, how="inner", suffixes=("", f"_{i}")
-        )
+        merged_df = pd.merge(merged_df, locus_df, on=ColName.SNPID, how="inner", suffixes=("", f"_{i}"))
 
     k: int = len(locus_set.loci)
     weights = []
@@ -748,9 +730,7 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
         effects.append(merged_df[f"BETA_{i}"])
 
     # Calculate weighted mean effect size
-    weighted_mean = np.sum([w * e for w, e in zip(weights, effects)], axis=0) / np.sum(
-        weights, axis=0
-    )
+    weighted_mean = np.sum([w * e for w, e in zip(weights, effects)], axis=0) / np.sum(weights, axis=0)
 
     # Calculate Q statistic
     Q = np.sum([w * (e - weighted_mean) ** 2 for w, e in zip(weights, effects)], axis=0)
@@ -975,10 +955,7 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
     )
 
     # Prepare arguments for multiprocessing
-    locus_groups = [
-        (locus_id, locus_info, out_dir)
-        for locus_id, locus_info in loci_info.groupby("locus_id")
-    ]
+    locus_groups = [(locus_id, locus_info, out_dir) for locus_id, locus_info in loci_info.groupby("locus_id")]
 
     with progress:
         task = progress.add_task("[cyan]Processing loci...", total=len(locus_groups))
