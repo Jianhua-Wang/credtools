@@ -44,6 +44,7 @@ class Tool(str, Enum):
     """The tool to perform fine-mapping."""
 
     abf = "abf"
+    abf_cojo = "abf_cojo"
     finemap = "finemap"
     rsparsepro = "rsparsepro"
     susie = "susie"
@@ -78,6 +79,7 @@ def main(
             "MULTISUSIE",
             "SUSIEX",
             "ABF",
+            "ABF_COJO",
             "Locus",
             "LDMatrix",
             "QC",

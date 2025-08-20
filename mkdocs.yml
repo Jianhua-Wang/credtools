@@ -7,6 +7,15 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Usage: usage.md
+  - Commands:
+    - Munge: munge.md
+    - Chunk: chunk.md
+    - Prepare: prepare.md
+    - Meta-analysis: meta.md
+    - Quality Control: qc.md
+    - Fine-mapping: finemap.md
+    - Pipeline: pipeline.md
+    - Web Interface: web.md
   - Tutorial:
     - Overview: tutorial.md
     - Getting Started: tutorial/getting-started.md
