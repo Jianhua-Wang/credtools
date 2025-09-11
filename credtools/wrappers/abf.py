@@ -155,8 +155,8 @@ def run_abf(
         cs_snps = []
         lead_snps = []
     logger.info(f"Finished ABF on {locus}")
-    logger.info(f"N of credible set: {len(cs_snps)}")
-    logger.info(f"Credible set size: {len(cs_snps)}")
+    logger.info(f"N of credible set: {len(lead_snps)}")
+    logger.info(f"Credible set size: [{len(cs_snps)}]")
     return CredibleSet(
         tool=Method.ABF,
         n_cs=1 if len(cs_snps) > 0 else 0,

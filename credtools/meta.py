@@ -335,7 +335,7 @@ def meta(inputs: LocusSet, meta_method: str = "meta_all") -> LocusSet:
         raise ValueError(f"Unsupported meta-analysis method: {meta_method}")
 
 
-def meta_locus(args: Tuple[str, pd.DataFrame, str, str]) -> List[List[Any]]:
+def meta_locus(args: Tuple[str, pd.DataFrame, str, str, bool]) -> List[List[Any]]:
     """
     Process a single locus for meta-analysis.
 
@@ -368,9 +368,9 @@ def meta_locus(args: Tuple[str, pd.DataFrame, str, str]) -> List[List[Any]]:
     4. Saves results to compressed files (sumstats.gz, ld.npz, ldmap.gz)
     5. Returns metadata for each processed locus
     """
-    locus_id, locus_info, outdir, meta_method = args
+    locus_id, locus_info, outdir, meta_method, calculate_lambda_s = args
     results = []
-    locus_set = load_locus_set(locus_info)
+    locus_set = load_locus_set(locus_info, calculate_lambda_s=calculate_lambda_s)
     locus_set = meta(locus_set, meta_method)
     out_dir = f"{outdir}/{locus_id}"
     out_dir = os.path.abspath(out_dir)
@@ -406,6 +406,7 @@ def meta_loci(
     outdir: str,
     threads: int = 1,
     meta_method: str = "meta_all",
+    calculate_lambda_s: bool = False,
 ) -> None:
     """
     Perform meta-analysis on multiple loci in parallel.
@@ -421,6 +422,8 @@ def meta_loci(
         Number of parallel threads to use, by default 1.
     meta_method : str, optional
         Meta-analysis method to use, by default "meta_all".
+    calculate_lambda_s : bool, optional
+        Whether to calculate lambda_s parameter using estimate_s_rss function, by default False.
         See meta() function for available options.
 
     Returns
@@ -465,7 +468,7 @@ def meta_loci(
 
         with Pool(threads) as pool:
             args = [
-                (locus_id, locus_info, outdir, meta_method)
+                (locus_id, locus_info, outdir, meta_method, calculate_lambda_s)
                 for locus_id, locus_info in grouped_loci
             ]
             for result in pool.imap_unordered(meta_locus, args):  # type: ignore

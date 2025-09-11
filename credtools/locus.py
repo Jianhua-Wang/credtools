@@ -55,6 +55,8 @@ class Locus:
         Unique identifier for the locus.
     is_matched : bool
         Whether the LD matrix and summary statistics file are matched.
+    lambda_s : Optional[float]
+        The estimated lambda_s parameter from estimate_s_rss function, None if not calculated.
 
     Notes
     -----
@@ -97,6 +99,7 @@ class Locus:
         self._popu = popu
         self._cohort = cohort
         self._sample_size = sample_size
+        self.lambda_s = None
         if ld:
             self.ld = ld
             if if_intersect:
@@ -185,7 +188,7 @@ class Locus:
         Locus
             A copy of the Locus object.
         """
-        return Locus(
+        new_locus = Locus(
             self.popu,
             self.cohort,
             self.sample_size,
@@ -193,6 +196,8 @@ class Locus:
             self.ld.copy(),
             if_intersect=False,
         )
+        new_locus.lambda_s = self.lambda_s
+        return new_locus
 
 
 class LocusSet:
@@ -411,6 +416,7 @@ def load_locus(
     cohort: str,
     sample_size: int,
     if_intersect: bool = False,
+    calculate_lambda_s: bool = False,
     **kwargs: Any,
 ) -> Locus:
     """
@@ -428,6 +434,8 @@ def load_locus(
         Sample size of the input data.
     if_intersect : bool, optional
         Whether to intersect the input data with the LD matrix, by default False.
+    calculate_lambda_s : bool, optional
+        Whether to calculate lambda_s parameter using estimate_s_rss function, by default False.
     **kwargs : Any
         Additional keyword arguments passed to loading functions.
 
@@ -479,13 +487,25 @@ def load_locus(
         raise ValueError("LD map file not found.")
     ld = load_ld(ld_path, ldmap_path, if_sort_alleles=True, **kwargs)
 
-    return Locus(
+    locus = Locus(
         popu, cohort, sample_size, sumstats=sumstats, ld=ld, if_intersect=if_intersect
     )
+    
+    if calculate_lambda_s:
+        try:
+            # Import here to avoid circular imports
+            from credtools.qc import estimate_s_rss
+            locus.lambda_s = estimate_s_rss(locus)
+            logger.info(f"Calculated lambda_s for locus {locus.locus_id}: {locus.lambda_s}")
+        except Exception as e:
+            logger.warning(f"Failed to calculate lambda_s for locus {locus.locus_id}: {e}")
+            locus.lambda_s = None
+    
+    return locus
 
 
 def load_locus_set(
-    locus_info: pd.DataFrame, if_intersect: bool = False, **kwargs: Any
+    locus_info: pd.DataFrame, if_intersect: bool = False, calculate_lambda_s: bool = False, **kwargs: Any
 ) -> LocusSet:
     """
     Load the input data of the fine-mapping analysis for multiple loci.
@@ -497,6 +517,8 @@ def load_locus_set(
         ['prefix', 'popu', 'cohort', 'sample_size'].
     if_intersect : bool, optional
         Whether to intersect the input data with the LD matrix, by default False.
+    calculate_lambda_s : bool, optional
+        Whether to calculate lambda_s parameter using estimate_s_rss function, by default False.
     **kwargs : Any
         Additional keyword arguments passed to load_locus function.
 
@@ -548,6 +570,7 @@ def load_locus_set(
                 row["cohort"],
                 row["sample_size"],
                 if_intersect,
+                calculate_lambda_s,
                 **kwargs,
             )
         )

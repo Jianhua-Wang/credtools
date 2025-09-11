@@ -2,6 +2,7 @@
 
 import json
 import logging
+import logging.handlers
 import os
 from enum import Enum
 from multiprocessing import Pool
@@ -52,10 +53,53 @@ class Tool(str, Enum):
     susiex = "susiex"
 
 
+def setup_file_logging(log_file: Optional[str], verbose: bool = False) -> None:
+    """Set up file and console logging configuration."""
+    if log_file is None:
+        return
+    
+    # Create formatter
+    formatter = logging.Formatter(
+        fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    
+    # Set up file handler
+    try:
+        file_handler = logging.FileHandler(log_file, mode='a')
+        file_handler.setFormatter(formatter)
+        
+        # Set logging level
+        if verbose:
+            file_handler.setLevel(logging.DEBUG)
+        else:
+            file_handler.setLevel(logging.INFO)
+        
+        # Add file handler to root logger and specific loggers
+        root_logger = logging.getLogger()
+        root_logger.addHandler(file_handler)
+        
+        # Add to specific credtools loggers
+        for name in [
+            "CREDTOOLS", "FINEMAP", "RSparsePro", "COJO", "SuSiE",
+            "MULTISUSIE", "SUSIEX", "ABF", "ABF_COJO", "Locus",
+            "LDMatrix", "QC", "Sumstats", "Utils"
+        ]:
+            logger = logging.getLogger(name)
+            logger.addHandler(file_handler)
+            
+        logging.info(f"Logging to file: {log_file}")
+        
+    except (OSError, IOError) as e:
+        console = Console()
+        console.print(f"[red]Warning: Could not set up log file {log_file}: {e}[/red]")
+
+
 @app.callback(invoke_without_command=True, no_args_is_help=True)
 def main(
     version: bool = typer.Option(False, "--version", "-V", help="Show version."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show verbose info."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """CREDTOOLS: Credible Set Tools for fine-mapping analysis."""
     console = Console()
@@ -88,6 +132,9 @@ def main(
         ]:
             logging.getLogger(name).setLevel(logging.INFO)
         # logging.getLogger().setLevel(logging.INFO)
+    
+    # Set up file logging if requested
+    setup_file_logging(log_file, verbose)
 
 
 @app.command(
@@ -102,8 +149,11 @@ def run_munge(
     config_file: Optional[str] = typer.Option(None, "--config", "-c", help="Configuration file for column mappings."),
     force_overwrite: bool = typer.Option(False, "--force", "-f", help="Overwrite existing output files."),
     interactive_config: bool = typer.Option(False, "--interactive", "-i", help="Create configuration interactively."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Reformat and standardize GWAS summary statistics using smunger integration."""
+    setup_file_logging(log_file)
+    
     try:
         from credtools.preprocessing import munge_sumstats
         from credtools.preprocessing.munge import create_munge_config, validate_munged_files
@@ -180,8 +230,11 @@ def run_chunk(
     ),
     min_variants_per_locus: int = typer.Option(10, "--min-variants", "-v", help="Minimum variants per locus."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Identify independent loci and chunk summary statistics for fine-mapping."""
+    setup_file_logging(log_file)
+    
     try:
         from credtools.preprocessing import chunk_sumstats, identify_independent_loci
         from credtools.preprocessing.chunk import create_loci_list_for_credtools
@@ -256,8 +309,10 @@ def run_prepare(
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
     ld_format: str = typer.Option("plink", "--ld-format", "-f", help="LD computation format (plink/vcf)."),
     keep_intermediate: bool = typer.Option(False, "--keep-intermediate", "-k", help="Keep intermediate files."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Prepare LD matrices and final fine-mapping input files."""
+    setup_file_logging(log_file)
     try:
         from credtools.preprocessing import prepare_finemap_inputs
         from credtools.preprocessing.chunk import create_loci_list_for_credtools
@@ -327,9 +382,12 @@ def run_meta(
     outdir: str = typer.Argument(..., help="Output directory."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
     meta_method: MetaMethod = typer.Option(MetaMethod.meta_all, "--meta-method", "-m", help="Meta-analysis method."),
+    calculate_lambda_s: bool = typer.Option(False, "--calculate-lambda-s", "-cls", help="Calculate lambda_s parameter using estimate_s_rss function."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Meta-analysis of summary statistics and LD matrices."""
-    meta_loci(inputs, outdir, threads, meta_method)
+    setup_file_logging(log_file)
+    meta_loci(inputs, outdir, threads, meta_method, calculate_lambda_s)
 
 
 @app.command(
@@ -340,8 +398,10 @@ def run_qc(
     inputs: str = typer.Argument(..., help="Input files."),
     outdir: str = typer.Argument(..., help="Output directory."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Quality control of summary statistics and LD matrices."""
+    setup_file_logging(log_file)
     loci_qc(inputs, outdir, threads)
 
 
@@ -354,7 +414,8 @@ def run_fine_map(
     outdir: str = typer.Argument(..., help="Output directory."),
     strategy: Strategy = typer.Option(Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."),
     tool: Tool = typer.Option(Tool.susie, "--tool", "-t", help="Fine-mapping tool."),
-    max_causal: int = typer.Option(1, "--max-causal", "-c", help="Maximum number of causal SNPs."),
+    max_causal: int = typer.Option(5, "--max-causal", "-c", help="Maximum number of causal SNPs."),
+    adaptive_max_causal: bool = typer.Option(False, "--adaptive-max-causal", "-amc", help="Enable adaptive max_causal parameter tuning."),
     set_L_by_cojo: bool = typer.Option(True, "--set-L-by-cojo", "-sl", help="Set L by COJO."),
     p_cutoff: float = typer.Option(5e-8, "--p-cutoff", "-pc", help="P-value cutoff for COJO."),
     collinear_cutoff: float = typer.Option(0.9, "--collinear-cutoff", "-cc", help="Collinearity cutoff for COJO."),
@@ -382,8 +443,11 @@ def run_fine_map(
     ),
     min_abs_corr: float = typer.Option(0.5, "--min-abs-corr", "-mc", help="Minimum absolute correlation."),
     convergence_tol: float = typer.Option(1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."),
+    calculate_lambda_s: bool = typer.Option(False, "--calculate-lambda-s", "-cls", help="Calculate lambda_s parameter using estimate_s_rss function."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Perform fine-mapping on three strategies."""
+    setup_file_logging(log_file)
     loci_info = pd.read_csv(inputs, sep="\t")
     # Create progress bar
     progress = Progress(
@@ -403,12 +467,13 @@ def run_fine_map(
         task = progress.add_task("[cyan]Fine-mapping loci...", total=total_loci)
 
         for locus_id, locus_info in locus_groups:
-            locus_set = load_locus_set(locus_info)
+            locus_set = load_locus_set(locus_info, calculate_lambda_s=calculate_lambda_s)
             creds = fine_map(
                 locus_set,
                 strategy=strategy,
                 tool=tool,
                 max_causal=max_causal,
+                adaptive_max_causal=adaptive_max_causal,
                 set_L_by_cojo=set_L_by_cojo,
                 p_cutoff=p_cutoff,
                 collinear_cutoff=collinear_cutoff,
@@ -445,7 +510,8 @@ def run_pipeline(
     skip_qc: bool = typer.Option(False, "--skip-qc", "-q", help="Skip quality control."),
     strategy: Strategy = typer.Option(Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."),
     tool: Tool = typer.Option(Tool.susie, "--tool", "-t", help="Fine-mapping tool."),
-    max_causal: int = typer.Option(1, "--max-causal", "-c", help="Maximum number of causal SNPs."),
+    max_causal: int = typer.Option(5, "--max-causal", "-c", help="Maximum number of causal SNPs."),
+    adaptive_max_causal: bool = typer.Option(False, "--adaptive-max-causal", "-amc", help="Enable adaptive max_causal parameter tuning."),
     set_L_by_cojo: bool = typer.Option(True, "--set-L-by-cojo", "-sl", help="Set L by COJO."),
     coverage: float = typer.Option(0.95, "--coverage", "-cv", help="Coverage of the credible set."),
     combine_cred: str = typer.Option("union", "--combine-cred", "-cc", help="Method to combine credible sets."),
@@ -648,8 +714,11 @@ def run_pipeline(
     # min_abs_corr: float = typer.Option(0, "--min-abs-corr", "-mc", help="Minimum absolute correlation.", rich_help_panel="MULTISUSIE"),
     # max_iter: int = typer.Option(100, "--max-iter", "-i", help="Maximum number of iterations.", rich_help_panel="MULTISUSIE"),
     # tol: float = typer.Option(1e-3, "--tol", "-t", help="Convergence tolerance.", rich_help_panel="MULTISUSIE"),
+    calculate_lambda_s: bool = typer.Option(False, "--calculate-lambda-s", "-cls", help="Calculate lambda_s parameter using estimate_s_rss function."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Run whole fine-mapping pipeline on a list of loci."""
+    setup_file_logging(log_file)
     loci_info = pd.read_csv(inputs, sep="\t")
     for locus_id, locus_info in loci_info.groupby("locus_id"):
         out_dir = f"{outdir}/{locus_id}"
@@ -662,6 +731,7 @@ def run_pipeline(
             strategy=strategy,
             tool=tool,
             max_causal=max_causal,
+            adaptive_max_causal=adaptive_max_causal,
             set_L_by_cojo=set_L_by_cojo,
             coverage=coverage,
             combine_cred=combine_cred,
@@ -701,6 +771,7 @@ def run_pipeline(
             pop_spec_effect_priors=pop_spec_effect_priors,
             iter_before_zeroing_effects=iter_before_zeroing_effects,
             prior_tol=prior_tol,
+            calculate_lambda_s=calculate_lambda_s,
         )
 
 
@@ -719,8 +790,10 @@ def run_web(
     port: int = typer.Option(8080, "--port", help="Port to run the web server on."),
     host: str = typer.Option("0.0.0.0", "--host", help="Host to bind the web server to."),
     debug: bool = typer.Option(False, "--debug", help="Run in debug mode."),
+    log_file: Optional[str] = typer.Option(None, "--log-file", "-l", help="Log output to specified file."),
 ):
     """Launch web visualization interface for fine-mapping results."""
+    setup_file_logging(log_file)
     try:
         from credtools.web.app import run_app
         from credtools.web.export import export_for_web
