@@ -39,7 +39,25 @@ class ColName:
     NEGLOG10P = "NEGLOG10P"
 
     # All standard columns
-    sumstat_cols = [CHR, BP, SNPID, EA, NEA, EAF, BETA, SE, P, RSID, MAF, N, INFO, Z, OR, OR_SE, NEGLOG10P]
+    sumstat_cols = [
+        CHR,
+        BP,
+        SNPID,
+        EA,
+        NEA,
+        EAF,
+        BETA,
+        SE,
+        P,
+        RSID,
+        MAF,
+        N,
+        INFO,
+        Z,
+        OR,
+        OR_SE,
+        NEGLOG10P,
+    ]
 
     # Mandatory columns for basic functionality
     mandatory_cols = [CHR, BP, EA, NEA, BETA, SE, P]
@@ -272,7 +290,10 @@ def suggest_column_mapping(header_list):
 
     for header in header_list:
         if header in COMMON_COLNAMES:
-            suggestions[header] = {"suggested": COMMON_COLNAMES[header], "confidence": "high"}
+            suggestions[header] = {
+                "suggested": COMMON_COLNAMES[header],
+                "confidence": "high",
+            }
         else:
             # Try fuzzy matching for common patterns
             header_lower = header.lower()
@@ -282,7 +303,10 @@ def suggest_column_mapping(header_list):
             elif any(x in header_lower for x in ["pos", "bp"]):
                 suggestions[header] = {"suggested": ColName.BP, "confidence": "medium"}
             elif any(x in header_lower for x in ["beta", "effect"]):
-                suggestions[header] = {"suggested": ColName.BETA, "confidence": "medium"}
+                suggestions[header] = {
+                    "suggested": ColName.BETA,
+                    "confidence": "medium",
+                }
             elif any(x in header_lower for x in ["pval", "p_val", "pvalue"]):
                 suggestions[header] = {"suggested": ColName.P, "confidence": "medium"}
             else:

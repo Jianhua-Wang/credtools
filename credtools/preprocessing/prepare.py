@@ -76,12 +76,22 @@ def prepare_finemap_inputs(
             continue
 
         prepare_args.append(
-            (ancestry, genotype_files[ancestry], group, output_dir, ld_format, keep_intermediate, kwargs)
+            (
+                ancestry,
+                genotype_files[ancestry],
+                group,
+                output_dir,
+                ld_format,
+                keep_intermediate,
+                kwargs,
+            )
         )
 
     # Process ancestries in parallel
     if threads > 1:
-        logger.info(f"Processing {len(prepare_args)} ancestries using {threads} threads")
+        logger.info(
+            f"Processing {len(prepare_args)} ancestries using {threads} threads"
+        )
         with Pool(threads) as pool:
             results = list(
                 tqdm(
@@ -92,7 +102,10 @@ def prepare_finemap_inputs(
             )
     else:
         logger.info(f"Processing {len(prepare_args)} ancestries sequentially")
-        results = [_prepare_ancestry_files(*args) for args in tqdm(prepare_args, desc="Preparing ancestries")]
+        results = [
+            _prepare_ancestry_files(*args)
+            for args in tqdm(prepare_args, desc="Preparing ancestries")
+        ]
 
     # Combine results
     all_prepared_files = []
@@ -128,13 +141,21 @@ def _prepare_ancestry_files(
     for _, chunk_info in chunk_group.iterrows():
         try:
             result = _prepare_single_locus(
-                chunk_info, ancestry, genotype_prefix, output_dir, ld_format, keep_intermediate, **kwargs
+                chunk_info,
+                ancestry,
+                genotype_prefix,
+                output_dir,
+                ld_format,
+                keep_intermediate,
+                **kwargs,
             )
             if result:
                 prepared_files.append(result)
 
         except Exception as e:
-            logger.error(f"Failed to process {chunk_info['locus_id']} for {ancestry}: {str(e)}")
+            logger.error(
+                f"Failed to process {chunk_info['locus_id']} for {ancestry}: {str(e)}"
+            )
             continue
 
     return prepared_files
@@ -164,7 +185,11 @@ def _prepare_single_locus(
     output_prefix = os.path.join(output_dir, f"{ancestry}.{locus_id}")
 
     # Check if output files already exist
-    expected_files = [f"{output_prefix}.sumstats.gz", f"{output_prefix}.ld.npz", f"{output_prefix}.ldmap.gz"]
+    expected_files = [
+        f"{output_prefix}.sumstats.gz",
+        f"{output_prefix}.ld.npz",
+        f"{output_prefix}.ldmap.gz",
+    ]
 
     if all(os.path.exists(f) for f in expected_files):
         logger.info(f"Output files exist for {ancestry} {locus_id}, skipping")
@@ -206,7 +231,9 @@ def _prepare_single_locus(
 
         # Intersect sumstats and LD data
         logger.debug(f"Intersecting data for {ancestry} {locus_id}")
-        intersected_sumstats, intersected_ld, intersected_ldmap = _intersect_sumstats_ld(sumstats, ld_matrix, ldmap)
+        intersected_sumstats, intersected_ld, intersected_ldmap = (
+            _intersect_sumstats_ld(sumstats, ld_matrix, ldmap)
+        )
 
         if len(intersected_sumstats) == 0:
             logger.warning(f"No common variants found for {ancestry} {locus_id}")
@@ -220,7 +247,9 @@ def _prepare_single_locus(
         subprocess.run(f"gzip -f {output_prefix}.sumstats", shell=True, check=True)
 
         # Save LD matrix
-        np.savez_compressed(f"{output_prefix}.ld.npz", intersected_ld.astype(np.float16))
+        np.savez_compressed(
+            f"{output_prefix}.ld.npz", intersected_ld.astype(np.float16)
+        )
 
         # Save LD map
         intersected_ldmap.to_csv(f"{output_prefix}.ldmap", sep="\t", index=False)
@@ -247,19 +276,34 @@ def _prepare_single_locus(
 
 
 def _extract_ld_matrix(
-    genotype_prefix: str, chrom: int, start: int, end: int, output_prefix: str, ld_format: str, keep_intermediate: bool
+    genotype_prefix: str,
+    chrom: int,
+    start: int,
+    end: int,
+    output_prefix: str,
+    ld_format: str,
+    keep_intermediate: bool,
 ) -> Optional[Tuple[pd.DataFrame, np.ndarray]]:
     """Extract LD matrix from genotype data for a genomic region."""
     if ld_format.lower() == "plink":
-        return _extract_ld_plink(genotype_prefix, chrom, start, end, output_prefix, keep_intermediate)
+        return _extract_ld_plink(
+            genotype_prefix, chrom, start, end, output_prefix, keep_intermediate
+        )
     elif ld_format.lower() == "vcf":
-        return _extract_ld_vcf(genotype_prefix, chrom, start, end, output_prefix, keep_intermediate)
+        return _extract_ld_vcf(
+            genotype_prefix, chrom, start, end, output_prefix, keep_intermediate
+        )
     else:
         raise ValueError(f"Unsupported LD format: {ld_format}")
 
 
 def _extract_ld_plink(
-    genotype_prefix: str, chrom: int, start: int, end: int, output_prefix: str, keep_intermediate: bool
+    genotype_prefix: str,
+    chrom: int,
+    start: int,
+    end: int,
+    output_prefix: str,
+    keep_intermediate: bool,
 ) -> Optional[Tuple[pd.DataFrame, np.ndarray]]:
     """Extract LD matrix using PLINK format files."""
     try:
@@ -295,7 +339,10 @@ def _extract_ld_plink(
 
         # Read variant information
         bim_df = pd.read_csv(
-            f"{temp_prefix}.bim", sep="\t", header=None, names=["CHR", "SNPID", "CM", "BP", "A1", "A2"]
+            f"{temp_prefix}.bim",
+            sep="\t",
+            header=None,
+            names=["CHR", "SNPID", "CM", "BP", "A1", "A2"],
         )
 
         if len(bim_df) < 2:
@@ -303,7 +350,16 @@ def _extract_ld_plink(
             return None
 
         # Compute LD matrix
-        ld_cmd = ["plink", "--bfile", temp_prefix, "--r", "square", "--out", temp_prefix, "--silent"]
+        ld_cmd = [
+            "plink",
+            "--bfile",
+            temp_prefix,
+            "--r",
+            "square",
+            "--out",
+            temp_prefix,
+            "--silent",
+        ]
 
         result = subprocess.run(ld_cmd, capture_output=True, text=True)
         if result.returncode != 0:
@@ -343,7 +399,12 @@ def _extract_ld_plink(
 
 
 def _extract_ld_vcf(
-    genotype_prefix: str, chrom: int, start: int, end: int, output_prefix: str, keep_intermediate: bool
+    genotype_prefix: str,
+    chrom: int,
+    start: int,
+    end: int,
+    output_prefix: str,
+    keep_intermediate: bool,
 ) -> Optional[Tuple[pd.DataFrame, np.ndarray]]:
     """Extract LD matrix from VCF format files."""
     # This would require vcftools or similar
@@ -392,20 +453,26 @@ def _intersect_sumstats_ld(
     intersected_ld = ld_matrix[np.ix_(original_indices, original_indices)]  # type: ignore
 
     # Clean up ldmap
-    intersected_ldmap = intersected_ldmap.drop("original_index", axis=1).reset_index(drop=True)
+    intersected_ldmap = intersected_ldmap.drop("original_index", axis=1).reset_index(
+        drop=True
+    )
 
     # Ensure diagonal is 1
     np.fill_diagonal(intersected_ld, 1.0)
 
     # Handle allele flipping if needed
-    intersected_ldmap, intersected_ld = _handle_allele_flipping(intersected_ldmap, intersected_ld)
+    intersected_ldmap, intersected_ld = _handle_allele_flipping(
+        intersected_ldmap, intersected_ld
+    )
 
     logger.info(f"Intersected {len(intersected_sumstats)} variants")
 
     return intersected_sumstats, intersected_ld, intersected_ldmap
 
 
-def _handle_allele_flipping(ldmap: pd.DataFrame, ld_matrix: np.ndarray) -> Tuple[pd.DataFrame, np.ndarray]:
+def _handle_allele_flipping(
+    ldmap: pd.DataFrame, ld_matrix: np.ndarray
+) -> Tuple[pd.DataFrame, np.ndarray]:
     """
     Handle allele flipping to ensure consistent allele ordering.
 

@@ -54,7 +54,11 @@ def test_data_files():
             file_path = Path(file_prefix + ext)
             assert file_path.exists(), f"Missing genotype file: {file_path}"
 
-    return {"sumstats": sumstats_files, "genotypes": genotype_files, "loci_file": TEST_DATA_DIR / "test_loci.txt"}
+    return {
+        "sumstats": sumstats_files,
+        "genotypes": genotype_files,
+        "loci_file": TEST_DATA_DIR / "test_loci.txt",
+    }
 
 
 class TestMungeCommand:
@@ -68,15 +72,27 @@ class TestMungeCommand:
         # Test with EUR data
         eur_sumstats = test_data_files["sumstats"]["EUR"]
 
-        cmd = ["python", "-m", "credtools.cli", "munge", str(eur_sumstats), str(output_dir), "--force"]
+        cmd = [
+            "python",
+            "-m",
+            "credtools.cli",
+            "munge",
+            str(eur_sumstats),
+            str(output_dir),
+            "--force",
+        ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
 
         assert result.returncode == 0, f"Munge command failed: {result.stderr}"
 
         # Check output file exists
         expected_output = output_dir / f"{eur_sumstats.stem}.munged.txt.gz"
-        assert expected_output.exists(), f"Expected output file not found: {expected_output}"
+        assert (
+            expected_output.exists()
+        ), f"Expected output file not found: {expected_output}"
 
         # Validate output format
         df = pd.read_csv(expected_output, sep="\t", compression="gzip")
@@ -97,18 +113,32 @@ class TestMungeCommand:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Create input file list
-        input_files = ",".join([str(path) for path in test_data_files["sumstats"].values()])
+        input_files = ",".join(
+            [str(path) for path in test_data_files["sumstats"].values()]
+        )
 
-        cmd = ["python", "-m", "credtools.cli", "munge", input_files, str(output_dir), "--force"]
+        cmd = [
+            "python",
+            "-m",
+            "credtools.cli",
+            "munge",
+            input_files,
+            str(output_dir),
+            "--force",
+        ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
 
         assert result.returncode == 0, f"Munge command failed: {result.stderr}"
 
         # Check all output files exist
         for ancestry, orig_path in test_data_files["sumstats"].items():
             expected_output = output_dir / f"{orig_path.stem}.munged.txt.gz"
-            assert expected_output.exists(), f"Expected output file not found: {expected_output}"
+            assert (
+                expected_output.exists()
+            ), f"Expected output file not found: {expected_output}"
 
             # Quick validation
             df = pd.read_csv(expected_output, sep="\t", compression="gzip")
@@ -125,11 +155,23 @@ class TestChunkCommand:
         munge_dir.mkdir(parents=True, exist_ok=True)
 
         # Munge all files first
-        input_files = ",".join([str(path) for path in test_data_files["sumstats"].values()])
+        input_files = ",".join(
+            [str(path) for path in test_data_files["sumstats"].values()]
+        )
 
-        cmd = ["python", "-m", "credtools.cli", "munge", input_files, str(munge_dir), "--force"]
+        cmd = [
+            "python",
+            "-m",
+            "credtools.cli",
+            "munge",
+            input_files,
+            str(munge_dir),
+            "--force",
+        ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
         assert result.returncode == 0, "Failed to create munged files for chunk test"
 
         # Return paths to munged files
@@ -162,7 +204,9 @@ class TestChunkCommand:
             "--use-most-sig",
         ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
 
         assert result.returncode == 0, f"Chunk command failed: {result.stderr}"
 
@@ -174,7 +218,16 @@ class TestChunkCommand:
         chunk_df = pd.read_csv(loci_list_file, sep="\t")
 
         # Validate loci list structure
-        required_cols = ["locus_id", "chr", "start", "end", "popu", "cohort", "sample_size", "prefix"]
+        required_cols = [
+            "locus_id",
+            "chr",
+            "start",
+            "end",
+            "popu",
+            "cohort",
+            "sample_size",
+            "prefix",
+        ]
         for col in required_cols:
             assert col in chunk_df.columns, f"Missing column in loci list: {col}"
 
@@ -198,11 +251,23 @@ class TestPrepareCommand:
         munge_dir = test_workspace / "prepare_test_munge"
         munge_dir.mkdir(parents=True, exist_ok=True)
 
-        input_files = ",".join([str(path) for path in test_data_files["sumstats"].values()])
+        input_files = ",".join(
+            [str(path) for path in test_data_files["sumstats"].values()]
+        )
 
-        munge_cmd = ["python", "-m", "credtools.cli", "munge", input_files, str(munge_dir), "--force"]
+        munge_cmd = [
+            "python",
+            "-m",
+            "credtools.cli",
+            "munge",
+            input_files,
+            str(munge_dir),
+            "--force",
+        ]
 
-        result = subprocess.run(munge_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            munge_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
         assert result.returncode == 0, "Failed to create munged files for prepare test"
 
         # Then chunk
@@ -226,7 +291,9 @@ class TestPrepareCommand:
             "5e-8",
         ]
 
-        result = subprocess.run(chunk_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            chunk_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
         assert result.returncode == 0, "Failed to create chunk files for prepare test"
 
         # Find loci list file
@@ -235,13 +302,18 @@ class TestPrepareCommand:
 
         return loci_list_files[0]
 
-    def test_prepare_finemap_inputs(self, test_workspace, test_data_files, chunk_output):
+    def test_prepare_finemap_inputs(
+        self, test_workspace, test_data_files, chunk_output
+    ):
         """Test preparing final fine-mapping inputs."""
         output_dir = test_workspace / "prepare_output" / "test"
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Create genotype config file
-        genotype_config = {ancestry: file_prefix for ancestry, file_prefix in test_data_files["genotypes"].items()}
+        genotype_config = {
+            ancestry: file_prefix
+            for ancestry, file_prefix in test_data_files["genotypes"].items()
+        }
 
         config_file = test_workspace / "genotype_config.json"
         with open(config_file, "w") as f:
@@ -261,7 +333,9 @@ class TestPrepareCommand:
             "plink",
         ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
 
         # Note: Currently there's a bug in the prepare command - it expects 'ancestry' column
         # but chunk creates 'popu' column. For now we test that the command executes.
@@ -269,7 +343,9 @@ class TestPrepareCommand:
 
         # Future improvement: fix the column name mismatch in prepare command
         # For now, just ensure command can be called
-        assert result.returncode != 127, "Prepare command not found"  # 127 = command not found
+        assert (
+            result.returncode != 127
+        ), "Prepare command not found"  # 127 = command not found
 
         # The command should fail with the current bug but not due to missing command
         # This tests that the command interface works even if implementation has bugs
@@ -291,12 +367,26 @@ class TestIntegratedPipeline:
             dir_path.mkdir(exist_ok=True)
 
         # Step 1: Munge
-        input_files = ",".join([str(path) for path in test_data_files["sumstats"].values()])
+        input_files = ",".join(
+            [str(path) for path in test_data_files["sumstats"].values()]
+        )
 
-        munge_cmd = ["python", "-m", "credtools.cli", "munge", input_files, str(munge_dir), "--force"]
+        munge_cmd = [
+            "python",
+            "-m",
+            "credtools.cli",
+            "munge",
+            input_files,
+            str(munge_dir),
+            "--force",
+        ]
 
-        result = subprocess.run(munge_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
-        assert result.returncode == 0, f"Integration test: Munge step failed: {result.stderr}"
+        result = subprocess.run(
+            munge_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
+        assert (
+            result.returncode == 0
+        ), f"Integration test: Munge step failed: {result.stderr}"
 
         # Step 2: Chunk
         munged_files = []
@@ -316,8 +406,12 @@ class TestIntegratedPipeline:
             "5e-8",
         ]
 
-        result = subprocess.run(chunk_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
-        assert result.returncode == 0, f"Integration test: Chunk step failed: {result.stderr}"
+        result = subprocess.run(
+            chunk_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
+        )
+        assert (
+            result.returncode == 0
+        ), f"Integration test: Chunk step failed: {result.stderr}"
 
         # Find loci list file
         loci_list_files = list(chunk_dir.glob("*loci_list.txt"))
@@ -325,7 +419,10 @@ class TestIntegratedPipeline:
         chunk_info_file = loci_list_files[0]
 
         # Step 3: Prepare
-        genotype_config = {ancestry: file_prefix for ancestry, file_prefix in test_data_files["genotypes"].items()}
+        genotype_config = {
+            ancestry: file_prefix
+            for ancestry, file_prefix in test_data_files["genotypes"].items()
+        }
 
         config_file = base_dir / "genotype_config.json"
         with open(config_file, "w") as f:
@@ -343,7 +440,12 @@ class TestIntegratedPipeline:
             "1",
         ]
 
-        result = subprocess.run(prepare_cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent)
+        result = subprocess.run(
+            prepare_cmd,
+            capture_output=True,
+            text=True,
+            cwd=test_workspace.parent.parent,
+        )
 
         # Note: The prepare step currently has a bug, so we expect it to fail
         # but we can still validate the earlier steps worked correctly
@@ -355,11 +457,15 @@ class TestIntegratedPipeline:
 
         # Verify we have data for multiple ancestries from the chunk step
         ancestries = chunk_df["popu"].unique()
-        assert len(ancestries) >= 2, f"Integration test: Expected multiple ancestries, got: {ancestries}"
+        assert (
+            len(ancestries) >= 2
+        ), f"Integration test: Expected multiple ancestries, got: {ancestries}"
 
         # Verify we have multiple loci
         loci = chunk_df["locus_id"].unique()
-        assert len(loci) >= 2, f"Integration test: Expected multiple loci, got: {len(loci)}"
+        assert (
+            len(loci) >= 2
+        ), f"Integration test: Expected multiple loci, got: {len(loci)}"
 
 
 if __name__ == "__main__":

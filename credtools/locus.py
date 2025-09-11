@@ -490,22 +490,30 @@ def load_locus(
     locus = Locus(
         popu, cohort, sample_size, sumstats=sumstats, ld=ld, if_intersect=if_intersect
     )
-    
+
     if calculate_lambda_s:
         try:
             # Import here to avoid circular imports
             from credtools.qc import estimate_s_rss
+
             locus.lambda_s = estimate_s_rss(locus)
-            logger.info(f"Calculated lambda_s for locus {locus.locus_id}: {locus.lambda_s}")
+            logger.info(
+                f"Calculated lambda_s for locus {locus.locus_id}: {locus.lambda_s}"
+            )
         except Exception as e:
-            logger.warning(f"Failed to calculate lambda_s for locus {locus.locus_id}: {e}")
+            logger.warning(
+                f"Failed to calculate lambda_s for locus {locus.locus_id}: {e}"
+            )
             locus.lambda_s = None
-    
+
     return locus
 
 
 def load_locus_set(
-    locus_info: pd.DataFrame, if_intersect: bool = False, calculate_lambda_s: bool = False, **kwargs: Any
+    locus_info: pd.DataFrame,
+    if_intersect: bool = False,
+    calculate_lambda_s: bool = False,
+    **kwargs: Any,
 ) -> LocusSet:
     """
     Load the input data of the fine-mapping analysis for multiple loci.

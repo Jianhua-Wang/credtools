@@ -89,8 +89,6 @@ def io_in_tempdir(dir: str = "./tmp") -> Callable[[F], F]:
     return decorator
 
 
-
-
 class ExternalTool:
     """
     A class to manage and run external tools.

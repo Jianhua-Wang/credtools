@@ -16,7 +16,15 @@ from credtools.credibleset import CredibleSet, combine_creds
 from credtools.locus import LocusSet, load_locus_set
 from credtools.meta import meta
 from credtools.qc import locus_qc
-from credtools.wrappers import run_abf, run_abf_cojo, run_finemap, run_multisusie, run_rsparsepro, run_susie, run_susiex
+from credtools.wrappers import (
+    run_abf,
+    run_abf_cojo,
+    run_finemap,
+    run_multisusie,
+    run_rsparsepro,
+    run_susie,
+    run_susiex,
+)
 
 logger = logging.getLogger("CREDTOOLS")
 
@@ -68,7 +76,9 @@ def _empty_credible_set(tool: str) -> CredibleSet:
     )
 
 
-def _adaptive_fine_map(locus, tool: str, initial_max_causal: int, tool_func, params: dict) -> CredibleSet:
+def _adaptive_fine_map(
+    locus, tool: str, initial_max_causal: int, tool_func, params: dict
+) -> CredibleSet:
     """
     Implement adaptive max_causal logic for fine-mapping tools.
 
@@ -91,27 +101,39 @@ def _adaptive_fine_map(locus, tool: str, initial_max_causal: int, tool_func, par
         Fine-mapping result or empty result if all attempts fail.
     """
     max_causal = initial_max_causal
-    logger.info(f"Starting adaptive fine-mapping with {tool}, initial max_causal={max_causal}")
+    logger.info(
+        f"Starting adaptive fine-mapping with {tool}, initial max_causal={max_causal}"
+    )
 
     # Phase 1: Try initial max_causal and increase if needed
     try:
         result = tool_func(locus, max_causal=max_causal, **params)
-        logger.info(f"Initial attempt: found {result.n_cs} credible sets with max_causal={max_causal}")
+        logger.info(
+            f"Initial attempt: found {result.n_cs} credible sets with max_causal={max_causal}"
+        )
 
         # Success case: found some credible sets but not saturated
         if _is_success(result, max_causal):
-            logger.info(f"Adaptive fine-mapping successful with max_causal={max_causal}")
+            logger.info(
+                f"Adaptive fine-mapping successful with max_causal={max_causal}"
+            )
             return result
 
         # Too many credible sets: increase max_causal
         while result.n_cs >= max_causal and max_causal <= 20:
             max_causal += 5
-            logger.info(f"Too many credible sets found, increasing max_causal to {max_causal}")
+            logger.info(
+                f"Too many credible sets found, increasing max_causal to {max_causal}"
+            )
             try:
                 result = tool_func(locus, max_causal=max_causal, **params)
-                logger.info(f"Attempt with max_causal={max_causal}: found {result.n_cs} credible sets")
+                logger.info(
+                    f"Attempt with max_causal={max_causal}: found {result.n_cs} credible sets"
+                )
                 if result.n_cs < max_causal:
-                    logger.info(f"Adaptive fine-mapping successful after increasing max_causal to {max_causal}")
+                    logger.info(
+                        f"Adaptive fine-mapping successful after increasing max_causal to {max_causal}"
+                    )
                     return result
             except Exception as e:
                 logger.warning(f"Failed with max_causal={max_causal}: {e}")
@@ -126,7 +148,9 @@ def _adaptive_fine_map(locus, tool: str, initial_max_causal: int, tool_func, par
         logger.info(f"Trying reduced max_causal={max_causal}")
         try:
             result = tool_func(locus, max_causal=max_causal, **params)
-            logger.info(f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets")
+            logger.info(
+                f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
+            )
             return result
         except Exception as e:
             logger.info(f"Failed with max_causal={max_causal}: {e}")
@@ -220,7 +244,9 @@ def fine_map(
         params_dict[t] = {k: v for k, v in kwargs.items() if k in args}
     if strategy == "single_input":
         if locus_set.n_loci > 1:
-            raise ValueError("Locus set must contain only one locus for single-input strategy")
+            raise ValueError(
+                "Locus set must contain only one locus for single-input strategy"
+            )
         if tool in ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]:
             # abf_cojo handles its own COJO analysis, so skip set_L_by_cojo
             if set_L_by_cojo and tool != "abf_cojo":
@@ -235,22 +261,34 @@ def fine_map(
                     )
                 )
                 if max_causal_cojo == 0:
-                    logger.warning("No significant SNPs found by COJO, using max_causal=1")
+                    logger.warning(
+                        "No significant SNPs found by COJO, using max_causal=1"
+                    )
                     max_causal_cojo = 1
                 max_causal = max_causal_cojo
 
             # Use adaptive logic for finemap, susie, rsparsepro if enabled
             if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
-                return _adaptive_fine_map(locus_set.loci[0], tool, max_causal, tool_func_dict[tool], params_dict[tool])
+                return _adaptive_fine_map(
+                    locus_set.loci[0],
+                    tool,
+                    max_causal,
+                    tool_func_dict[tool],
+                    params_dict[tool],
+                )
             else:
-                return tool_func_dict[tool](locus_set.loci[0], max_causal=max_causal, **params_dict[tool])
+                return tool_func_dict[tool](
+                    locus_set.loci[0], max_causal=max_causal, **params_dict[tool]
+                )
         else:
             raise ValueError(f"Tool {tool} not supported for single-input strategy")
     elif strategy == "multi_input":
         # if locus_set.n_loci < 2:
         #     raise ValueError("Locus set must contain at least two loci for multi-input strategy")
         if tool in ["multisusie", "susiex"]:
-            return tool_func_dict[tool](locus_set, max_causal=max_causal, **params_dict[tool])
+            return tool_func_dict[tool](
+                locus_set, max_causal=max_causal, **params_dict[tool]
+            )
         else:
             raise ValueError(f"Tool {tool} not supported for multi-input strategy")
     elif strategy == "post_hoc_combine":
@@ -259,7 +297,9 @@ def fine_map(
         if tool in ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]:
             all_creds = []
             for locus in locus_set.loci:
-                creds = tool_func_dict[tool](locus, max_causal=max_causal, **params_dict[tool])
+                creds = tool_func_dict[tool](
+                    locus, max_causal=max_causal, **params_dict[tool]
+                )
                 all_creds.append(creds)
             return combine_creds(
                 all_creds,

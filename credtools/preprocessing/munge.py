@@ -65,7 +65,7 @@ def munge_sumstats(
     >>> result = munge_sumstats(files, "output/")
     """
     # Use internal munging module (adapted from smunger)
-    from .munging import munge, read_config, load_and_munge
+    from .munging import load_and_munge, munge, read_config
 
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
@@ -132,7 +132,9 @@ def munge_sumstats(
     return output_files
 
 
-def create_munge_config(sample_files: Dict[str, str], output_config: str, interactive: bool = True) -> None:
+def create_munge_config(
+    sample_files: Dict[str, str], output_config: str, interactive: bool = True
+) -> None:
     """
     Create configuration file for munging by examining sample files.
 
@@ -218,9 +220,13 @@ def validate_munged_files(
         if result["file_exists"]:
             try:
                 # Read first few lines to check structure
-                df_sample = pd.read_csv(file_path, sep="\t", nrows=5, compression="gzip")
+                df_sample = pd.read_csv(
+                    file_path, sep="\t", nrows=5, compression="gzip"
+                )
                 result["columns"] = df_sample.columns.tolist()
-                result["missing_columns"] = [col for col in required_columns if col not in result["columns"]]
+                result["missing_columns"] = [
+                    col for col in required_columns if col not in result["columns"]
+                ]
 
                 # Count total variants
                 df_full = pd.read_csv(file_path, sep="\t", compression="gzip")
@@ -229,10 +235,15 @@ def validate_munged_files(
                 # Check if validation passed
                 result["validation_passed"] = len(result["missing_columns"]) == 0
 
-                logger.info(f"{identifier}: {result['n_variants']} variants, " f"columns: {result['columns']}")
+                logger.info(
+                    f"{identifier}: {result['n_variants']} variants, "
+                    f"columns: {result['columns']}"
+                )
 
                 if result["missing_columns"]:
-                    logger.warning(f"{identifier}: Missing required columns: {result['missing_columns']}")
+                    logger.warning(
+                        f"{identifier}: Missing required columns: {result['missing_columns']}"
+                    )
 
             except Exception as e:
                 logger.error(f"Error validating {file_path}: {str(e)}")

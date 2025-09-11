@@ -47,14 +47,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-versions }}
 
-      - name: Install dependencies
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python environment
         run: |
-          python -m pip install --upgrade pip
-          pip install poetry
-          pip install mkdocs mkdocs-material mkdocstrings mkdocs-include-markdown-plugin mkdocs-autorefs mkdocstrings-python mkdocs-material-extensions
+          uv sync --extra dev
 
       - name: build documentation
-        run: mkdocs build
+        run: uv run mkdocs build
 
       - name: publish documentation
         uses: peaceiris/actions-gh-pages@v3
@@ -64,7 +68,7 @@ jobs:
 
       - name: Build wheels and source tarball
         run: >-
-          poetry build
+          uv build
 
       - name: show temporary files
         run: >-

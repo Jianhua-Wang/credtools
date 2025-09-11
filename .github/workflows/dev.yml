@@ -33,14 +33,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-versions }}
 
-      - name: Install dependencies
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python environment
         run: |
-          python -m pip install --upgrade pip
-          pip install poetry tox tox-gh-actions
-          pip install mkdocs mkdocs-material mkdocstrings mkdocs-include-markdown-plugin mkdocs-autorefs mkdocstrings-python mkdocs-material-extensions
-          pip install black isort flake8 flake8-docstrings mypy pytest pytest-cov twine pytest-mock
-          pip install 'numpy>=1.21.2' 'pandas>=1.3.3' 'rich>=12.4.0' 'scipy>=1.7.3' 'typer>=0.7.0'
-          pip install 'scikit-learn>=1.5.2' 'matplotlib>=3.9.2'
+          uv sync --extra dev
+
+      - name: Install additional tools for CI
+        run: |
+          uv add --dev tox tox-gh-actions
 
       # - name: test with tox
         # run: tox

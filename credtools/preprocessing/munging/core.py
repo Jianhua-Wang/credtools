@@ -74,7 +74,9 @@ def munge(df: pd.DataFrame) -> pd.DataFrame:
     # Process frequency columns if present
     if ColName.EAF in outdf.columns:
         outdf = _munge_eaf(outdf)
-        outdf[ColName.MAF] = outdf[ColName.EAF].apply(lambda x: min(x, 1 - x) if pd.notna(x) else x)
+        outdf[ColName.MAF] = outdf[ColName.EAF].apply(
+            lambda x: min(x, 1 - x) if pd.notna(x) else x
+        )
         outdf = _munge_maf(outdf)
 
     # Sort by chromosome and position
@@ -85,7 +87,9 @@ def munge(df: pd.DataFrame) -> pd.DataFrame:
     outdf = _finalize_columns(outdf)
 
     final_rows = len(outdf)
-    logger.info(f"Munging complete: {original_rows} -> {final_rows} rows ({original_rows - final_rows} removed)")
+    logger.info(
+        f"Munging complete: {original_rows} -> {final_rows} rows ({original_rows - final_rows} removed)"
+    )
 
     return outdf
 
@@ -130,7 +134,9 @@ def make_SNPID_unique(
 
     # Sort alleles alphabetically to ensure consistent SNP IDs
     allele_df = outdf[[col_ea, col_nea]].apply(
-        lambda row: sorted([str(row[col_ea]), str(row[col_nea])]), axis=1, result_type="expand"
+        lambda row: sorted([str(row[col_ea]), str(row[col_nea])]),
+        axis=1,
+        result_type="expand",
     )
     allele_df.columns = ["allele1", "allele2"]
 
@@ -235,12 +241,20 @@ def _munge_alleles(df: pd.DataFrame) -> pd.DataFrame:
 
     # Clean effect allele
     outdf = validate_and_clean_column(
-        df=outdf, col_name=ColName.EA, col_type=ColType.EA, allow_na=ColAllowNA.EA, transform_func=_transform_allele
+        df=outdf,
+        col_name=ColName.EA,
+        col_type=ColType.EA,
+        allow_na=ColAllowNA.EA,
+        transform_func=_transform_allele,
     )
 
     # Clean non-effect allele
     outdf = validate_and_clean_column(
-        df=outdf, col_name=ColName.NEA, col_type=ColType.NEA, allow_na=ColAllowNA.NEA, transform_func=_transform_allele
+        df=outdf,
+        col_name=ColName.NEA,
+        col_type=ColType.NEA,
+        allow_na=ColAllowNA.NEA,
+        transform_func=_transform_allele,
     )
 
     # Remove rows where EA == NEA
@@ -249,7 +263,9 @@ def _munge_alleles(df: pd.DataFrame) -> pd.DataFrame:
     after_count = len(outdf)
 
     if before_count > after_count:
-        logger.debug(f"Removed {before_count - after_count} rows with identical alleles")
+        logger.debug(
+            f"Removed {before_count - after_count} rows with identical alleles"
+        )
 
     return outdf
 
@@ -281,7 +297,9 @@ def _munge_pvalue(df: pd.DataFrame) -> pd.DataFrame:
 
 def _munge_beta(df: pd.DataFrame) -> pd.DataFrame:
     """Clean and validate beta (effect size) column."""
-    return validate_and_clean_column(df=df, col_name=ColName.BETA, col_type=ColType.BETA, allow_na=ColAllowNA.BETA)
+    return validate_and_clean_column(
+        df=df, col_name=ColName.BETA, col_type=ColType.BETA, allow_na=ColAllowNA.BETA
+    )
 
 
 def _munge_se(df: pd.DataFrame) -> pd.DataFrame:

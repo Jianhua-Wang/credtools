@@ -69,7 +69,9 @@ def identify_independent_loci(
     all_loci = []
 
     # Process each ancestry file
-    for ancestry, file_path in tqdm(sumstats_files.items(), desc="Processing ancestries"):
+    for ancestry, file_path in tqdm(
+        sumstats_files.items(), desc="Processing ancestries"
+    ):
         logger.info(f"Processing {ancestry}: {file_path}")
 
         # Load sumstats
@@ -103,7 +105,9 @@ def identify_independent_loci(
     loci_df = loci_df.sort_values(["chr", "start"]).reset_index(drop=True)
 
     # Add locus IDs
-    loci_df["locus_id"] = [f"chr{row['chr']}_{row['start']}_{row['end']}" for _, row in loci_df.iterrows()]
+    loci_df["locus_id"] = [
+        f"chr{row['chr']}_{row['start']}_{row['end']}" for _, row in loci_df.iterrows()
+    ]
 
     # Save results
     output_file = os.path.join(output_dir, "identified_loci.txt")
@@ -131,7 +135,9 @@ def _identify_independent_snps_by_distance(
 
     if len(sig_snps) == 0 and use_most_sig_if_no_sig:
         # Use most significant SNP from each chromosome
-        logger.info(f"{ancestry}: No significant SNPs, using most significant per chromosome")
+        logger.info(
+            f"{ancestry}: No significant SNPs, using most significant per chromosome"
+        )
         sig_snps = sumstats.loc[sumstats.groupby("CHR")["P"].idxmin()].copy()
     elif len(sig_snps) == 0:
         logger.warning(f"{ancestry}: No significant SNPs found")
@@ -165,7 +171,9 @@ def _identify_independent_snps_by_distance(
 
                 # Count variants in this region
                 region_variants = sumstats[
-                    (sumstats["CHR"] == chrom) & (sumstats["BP"] >= start_pos) & (sumstats["BP"] <= end_pos)
+                    (sumstats["CHR"] == chrom)
+                    & (sumstats["BP"] >= start_pos)
+                    & (sumstats["BP"] <= end_pos)
                 ]
 
                 if len(region_variants) >= min_variants_per_locus:
@@ -235,7 +243,11 @@ def _merge_overlapping_loci(loci_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def chunk_sumstats(
-    loci_df: pd.DataFrame, sumstats_files: Dict[str, str], output_dir: str, threads: int = 1, compress: bool = True
+    loci_df: pd.DataFrame,
+    sumstats_files: Dict[str, str],
+    output_dir: str,
+    threads: int = 1,
+    compress: bool = True,
 ) -> pd.DataFrame:
     """
     Chunk summary statistics files into loci-specific files.
@@ -305,11 +317,15 @@ def chunk_sumstats(
 
             # Define output file
             suffix = ".gz" if compress else ""
-            output_file = os.path.join(output_dir, f"{ancestry}.{locus_id}.sumstats{suffix}")
+            output_file = os.path.join(
+                output_dir, f"{ancestry}.{locus_id}.sumstats{suffix}"
+            )
 
             # Save chunked data
             if compress:
-                locus_data.to_csv(output_file, sep="\t", index=False, compression="gzip")
+                locus_data.to_csv(
+                    output_file, sep="\t", index=False, compression="gzip"
+                )
             else:
                 locus_data.to_csv(output_file, sep="\t", index=False)
 
@@ -340,7 +356,9 @@ def chunk_sumstats(
 
 
 def create_loci_list_for_credtools(
-    chunk_info_df: pd.DataFrame, ld_info_df: Optional[pd.DataFrame] = None, output_file: str = "loci_list.txt"
+    chunk_info_df: pd.DataFrame,
+    ld_info_df: Optional[pd.DataFrame] = None,
+    output_file: str = "loci_list.txt",
 ) -> pd.DataFrame:
     """
     Create loci list file compatible with credtools format.
@@ -382,7 +400,8 @@ def create_loci_list_for_credtools(
             # Add LD file info if available
             if ld_info_df is not None:
                 ld_match = ld_info_df[
-                    (ld_info_df["locus_id"] == locus_id) & (ld_info_df["ancestry"] == row["ancestry"])
+                    (ld_info_df["locus_id"] == locus_id)
+                    & (ld_info_df["ancestry"] == row["ancestry"])
                 ]
                 if len(ld_match) > 0:
                     locus_entry.update(ld_match.iloc[0].to_dict())

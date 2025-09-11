@@ -19,7 +19,9 @@ from .constants import COMMON_COLNAMES, ColName, suggest_column_mapping
 logger = logging.getLogger("Munging")
 
 
-def inspect_headers(file_path: str, sep: Optional[str] = None, nrows: int = 5) -> List[str]:
+def inspect_headers(
+    file_path: str, sep: Optional[str] = None, nrows: int = 5
+) -> List[str]:
     """
     Inspect file headers and return column names.
 
@@ -129,7 +131,9 @@ def map_headers_automatic(headers: List[str]) -> Dict[str, str]:
             mapped = _fuzzy_match_header(header)
             mapping[header] = mapped or header
 
-    logger.info(f"Automatically mapped {sum(1 for v in mapping.values() if v in ColName.sumstat_cols)} columns")
+    logger.info(
+        f"Automatically mapped {sum(1 for v in mapping.values() if v in ColName.sumstat_cols)} columns"
+    )
 
     return mapping
 
@@ -171,13 +175,17 @@ def _fuzzy_match_header(header: str) -> Optional[str]:
     for standard_col, pattern_list in patterns.items():
         for pattern in pattern_list:
             if pattern in header_lower:
-                logger.debug(f"Fuzzy matched '{header}' -> '{standard_col}' (pattern: '{pattern}')")
+                logger.debug(
+                    f"Fuzzy matched '{header}' -> '{standard_col}' (pattern: '{pattern}')"
+                )
                 return standard_col
 
     return None
 
 
-def create_config_template(headers: List[str], interactive: bool = False) -> Dict[str, Any]:
+def create_config_template(
+    headers: List[str], interactive: bool = False
+) -> Dict[str, Any]:
     """
     Create configuration template for column mapping.
 
@@ -272,7 +280,9 @@ def apply_header_mapping(df: pd.DataFrame, mapping: Dict[str, str]) -> pd.DataFr
     return outdf
 
 
-def validate_required_columns(df: pd.DataFrame, required: Optional[List[str]] = None) -> bool:
+def validate_required_columns(
+    df: pd.DataFrame, required: Optional[List[str]] = None
+) -> bool:
     """
     Validate that required columns are present.
 
@@ -301,7 +311,9 @@ def validate_required_columns(df: pd.DataFrame, required: Optional[List[str]] = 
     return True
 
 
-def suggest_missing_mappings(headers: List[str], mapped_headers: Dict[str, str]) -> Dict[str, str]:
+def suggest_missing_mappings(
+    headers: List[str], mapped_headers: Dict[str, str]
+) -> Dict[str, str]:
     """
     Suggest mappings for unmapped headers.
 
