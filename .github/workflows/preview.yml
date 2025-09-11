@@ -43,10 +43,16 @@ jobs:
       - name: Build wheels and source tarball
         run: |
           # For dev builds, append dev version suffix
-          current_version=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
+          current_version=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
+          
+          # Fallback if grep doesn't find the version
+          if [ -z "$current_version" ]; then
+            current_version=$(uv run python -c "import credtools; print(credtools.__version__)")
+          fi
+          
           dev_version="${current_version}.dev${GITHUB_RUN_NUMBER}"
           
-          # Update version strings for dev build
+          # Update version strings for dev build (handle both project and tool.poetry sections)
           sed -i "s/^version = \".*\"/version = \"$dev_version\"/" pyproject.toml
           sed -i "s/__version__ = \".*\"/__version__ = \"$dev_version\"/" credtools/__init__.py
           
