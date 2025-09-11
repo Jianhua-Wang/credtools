@@ -1,6 +1,6 @@
 [project]
 name = "credtools"
-version = "0.0.29"
+version = "0.0.30"
 description = "multi-ancestry fine-mapping pipeline."
 authors = [
     {name = "Jianhua Wang", email = "jianhua.mert@gmail.com"}
@@ -64,7 +64,7 @@ Repository = "https://github.com/Jianhua-Wang/credtools"
 [tool]
 [tool.poetry]
 name = "credtools"
-version = "0.0.29"
+version = "0.0.30"
 homepage = "https://github.com/Jianhua-Wang/credtools"
 description = "multi-ancestry fine-mapping pipeline."
 authors = ["Jianhua Wang <jianhua.mert@gmail.com>"]
