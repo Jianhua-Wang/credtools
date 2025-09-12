@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.33] (2025-09-12)
+
+### Added
+- **QC Summary Statistics**: Enhanced quality control with comprehensive summary reports
+  - Added locus-level QC summary files (`qc.txt.gz`) in each locus directory
+  - Added global QC summary file (`qc.txt.gz`) in output root directory
+  - Summary includes key QC metrics: SNP counts, significance thresholds, MAF correlations, lambda-s values, and outlier counts
+  - Configurable thresholds for flip detection, lambda-s outliers, and Dentist-S outliers
+  - New `locus_qc_summary()` function to generate summary statistics from detailed QC results
+  - Enhanced QC metrics:
+    - `n_1e-5`, `n_5e-8`: Count of SNPs below significance thresholds
+    - `maf_corr`: Correlation between summary statistics and LD reference MAF
+    - `n_flip`: Count of potential allele flips (logLR > 2 AND |z| > 2)
+    - `n_lambda_s_outlier`: Count of lambda-s outliers (|z_std_diff| > 3)
+    - `n_dentist_s_outlier`: Count of Dentist-S outliers (-log10p ≥ 4 AND r² ≥ 0.6)
+
+### Changed
+- Modified `locus_qc()` function to accept threshold parameters for outlier detection
+- Updated `qc_locus_cli()` to return both locus ID and summary statistics
+- Enhanced `loci_qc()` function to aggregate and save global QC summary across all loci
+- Improved QC workflow output structure with hierarchical summary files
+
 ## [0.0.32] (2025-09-12)
 
 ### Changed

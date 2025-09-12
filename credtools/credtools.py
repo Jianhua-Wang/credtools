@@ -412,7 +412,7 @@ def pipeline(
         qc_metrics = locus_qc(locus_set)
         logger.info(f"QC complete, {qc_metrics.keys()} metrics saved.")
         for k, v in qc_metrics.items():
-            v.to_csv(f"{outdir}/{k}.txt", sep="\t", index=False)
+            v.to_csv(f"{outdir}/{k}.txt", sep="\t", index=False, float_format="%.6f")
     # fine-mapping
     creds = fine_map(locus_set, tool=tool, strategy=strategy, **kwargs)
     creds.pips.to_csv(f"{outdir}/pips.txt", sep="\t", header=False, index=True)
