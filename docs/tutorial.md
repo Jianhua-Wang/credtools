@@ -8,8 +8,7 @@ Welcome to the comprehensive CREDTOOLS (Credible Set Tools) tutorial! This guide
 2. **[Quick Start](tutorial/quick-start.md)** - Jump right in with the `credtools pipeline` command
 3. **[Single Input](tutorial/single-input.md)** - Fine-map a single study
 4. **[Multi Input](tutorial/multi-input.md)** - Combine multiple studies
-5. **[Web Visualization](tutorial/web-visualization.md)** - Interactive results exploration
-6. **[Advanced Topics](tutorial/advanced.md)** - Custom workflows and optimization
+5. **[Advanced Topics](tutorial/advanced.md)** - Custom workflows and optimization
 
 ## Prerequisites
 
@@ -21,13 +20,6 @@ Welcome to the comprehensive CREDTOOLS (Credible Set Tools) tutorial! This guide
 
 Throughout this tutorial, we'll use example datasets included with CREDTOOLS. You can find them in the `exampledata/` directory after installation.
 
-## Web Visualization
-
-For interactive visualization, install with web dependencies:
-
-```bash
-pip install credtools[web]
-```
 
 ## Navigation
 

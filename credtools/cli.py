@@ -40,14 +40,6 @@ class MetaMethod(str, Enum):
     no_meta = "no_meta"
 
 
-class Strategy(str, Enum):
-    """The strategy to perform fine-mapping."""
-
-    single_input = "single_input"
-    multi_input = "multi_input"
-    post_hoc_combine = "post_hoc_combine"
-
-
 class Tool(str, Enum):
     """The tool to perform fine-mapping."""
 
@@ -58,6 +50,23 @@ class Tool(str, Enum):
     susie = "susie"
     multisusie = "multisusie"
     susiex = "susiex"
+
+
+class CombineCred(str, Enum):
+    """Method to combine credible sets from multiple analyses."""
+
+    union = "union"
+    intersection = "intersection"
+    cluster = "cluster"
+
+
+class CombinePIP(str, Enum):
+    """Method to combine posterior inclusion probabilities."""
+
+    max = "max"
+    min = "min"
+    mean = "mean"
+    meta = "meta"
 
 
 def setup_file_logging(log_file: Optional[str], verbose: bool = False) -> None:
@@ -482,15 +491,19 @@ def run_qc(
 
 @app.command(
     name="finemap",
-    help="Perform fine-mapping on three strategies.",
+    help="Perform fine-mapping analysis on genetic loci.",
 )
 def run_fine_map(
     inputs: str = typer.Argument(..., help="Input files."),
     outdir: str = typer.Argument(..., help="Output directory."),
-    strategy: Strategy = typer.Option(
-        Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."
+    tool: Tool = typer.Option(
+        Tool.susie,
+        "--tool",
+        "-t",
+        help="Fine-mapping tool. Single-input tools (abf, susie, etc.) process each locus individually. "
+            "Multi-input tools (susiex, multisusie) process all loci together. "
+            "When using single-input tools with multiple loci, results are automatically combined."
     ),
-    tool: Tool = typer.Option(Tool.susie, "--tool", "-t", help="Fine-mapping tool."),
     max_causal: int = typer.Option(
         5, "--max-causal", "-c", help="Maximum number of causal SNPs."
     ),
@@ -524,11 +537,17 @@ def run_fine_map(
     coverage: float = typer.Option(
         0.95, "--coverage", "-cv", help="Coverage of the credible set."
     ),
-    combine_cred: str = typer.Option(
-        "union", "--combine-cred", "-cc", help="Method to combine credible sets."
+    combine_cred: CombineCred = typer.Option(
+        CombineCred.union, 
+        "--combine-cred", 
+        "-cc", 
+        help="Method to combine credible sets when using single-input tools with multiple loci."
     ),
-    combine_pip: str = typer.Option(
-        "max", "--combine-pip", "-cp", help="Method to combine PIPs."
+    combine_pip: CombinePIP = typer.Option(
+        CombinePIP.max, 
+        "--combine-pip", 
+        "-cp", 
+        help="Method to combine PIPs when using single-input tools with multiple loci."
     ),
     jaccard_threshold: float = typer.Option(
         0.1,
@@ -559,7 +578,14 @@ def run_fine_map(
         None, "--log-file", "-l", help="Log output to specified file."
     ),
 ):
-    """Perform fine-mapping on three strategies."""
+    """Perform fine-mapping analysis on genetic loci.
+    
+    The appropriate analysis strategy is automatically determined based on:
+    - Tool type: Single-input tools (abf, susie, finemap, etc.) vs Multi-input tools (susiex, multisusie)
+    - Data structure: Single locus vs multiple loci
+    
+    When using single-input tools with multiple loci, results are automatically combined.
+    """
     setup_file_logging(log_file)
     loci_info = pd.read_csv(inputs, sep="\t")
     # Create progress bar
@@ -585,7 +611,6 @@ def run_fine_map(
             )
             creds = fine_map(
                 locus_set,
-                strategy=strategy,
                 tool=tool,
                 max_causal=max_causal,
                 adaptive_max_causal=adaptive_max_causal,
@@ -627,10 +652,13 @@ def run_pipeline(
     skip_qc: bool = typer.Option(
         False, "--skip-qc", "-q", help="Skip quality control."
     ),
-    strategy: Strategy = typer.Option(
-        Strategy.single_input, "--strategy", "-s", help="Fine-mapping strategy."
+    tool: Tool = typer.Option(
+        Tool.susie, 
+        "--tool", 
+        "-t", 
+        help="Fine-mapping tool. Single-input tools process each locus individually, "
+             "multi-input tools process all loci together."
     ),
-    tool: Tool = typer.Option(Tool.susie, "--tool", "-t", help="Fine-mapping tool."),
     max_causal: int = typer.Option(
         5, "--max-causal", "-c", help="Maximum number of causal SNPs."
     ),
@@ -646,11 +674,17 @@ def run_pipeline(
     coverage: float = typer.Option(
         0.95, "--coverage", "-cv", help="Coverage of the credible set."
     ),
-    combine_cred: str = typer.Option(
-        "union", "--combine-cred", "-cc", help="Method to combine credible sets."
+    combine_cred: CombineCred = typer.Option(
+        CombineCred.union, 
+        "--combine-cred", 
+        "-cc", 
+        help="Method to combine credible sets when using single-input tools with multiple loci."
     ),
-    combine_pip: str = typer.Option(
-        "max", "--combine-pip", "-cp", help="Method to combine PIPs."
+    combine_pip: CombinePIP = typer.Option(
+        CombinePIP.max, 
+        "--combine-pip", 
+        "-cp", 
+        help="Method to combine PIPs when using single-input tools with multiple loci."
     ),
     jaccard_threshold: float = typer.Option(
         0.1,
@@ -877,7 +911,6 @@ def run_pipeline(
             outdir=out_dir,
             meta_method=meta_method,
             skip_qc=skip_qc,
-            strategy=strategy,
             tool=tool,
             max_causal=max_causal,
             adaptive_max_causal=adaptive_max_causal,

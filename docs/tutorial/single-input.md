@@ -69,9 +69,7 @@ credtools qc single_study_loci.txt qc_output/
 Run fine-mapping on your single study:
 
 ```bash
-credtools finemap single_study_loci.txt output/ \
-    --strategy single_input \
-    --tool susie \
+credtools finemap single_study_loci.txt output/ \    --tool susie \
     --max-causal 5 \
     --coverage 0.95
 ```
@@ -83,9 +81,7 @@ credtools finemap single_study_loci.txt output/ \
 **Best for**: General purpose, robust across different scenarios
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool susie \
+credtools finemap input.txt output/ \    --tool susie \
     --max-causal 10 \
     --max-iter 100 \
     --estimate-residual-variance \
@@ -104,9 +100,7 @@ credtools finemap input.txt output/ \
 **Best for**: Bayesian model averaging, comprehensive uncertainty quantification
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool finemap \
+credtools finemap input.txt output/ \    --tool finemap \
     --max-causal 5 \
     --n-iter 100000 \
     --n-threads 4
@@ -122,9 +116,7 @@ credtools finemap input.txt output/ \
 **Best for**: Fast, simple analysis with minimal assumptions
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool abf \
+credtools finemap input.txt output/ \    --tool abf \
     --var-prior 0.2
 ```
 
@@ -137,9 +129,7 @@ credtools finemap input.txt output/ \
 **Best for**: Model uncertainty quantification, outlier detection  
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool carma \
+credtools finemap input.txt output/ \    --tool carma \
     --max-causal 10 \
     --effect-size-prior "Spike-slab" \
     --y-var 1.0
@@ -156,9 +146,7 @@ credtools finemap input.txt output/ \
 **Best for**: Sparse regression approach, computational efficiency
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool rsparsepro \
+credtools finemap input.txt output/ \    --tool rsparsepro \
     --max-causal 5 \
     --eps 1e-5 \
     --cthres 0.7
@@ -185,9 +173,7 @@ credtools finemap input.txt output/ \
 CREDTOOLS can automatically determine the maximum number of causal variants using COJO:
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool susie \
+credtools finemap input.txt output/ \    --tool susie \
     --set-L-by-cojo \
     --p-cutoff 5e-8 \
     --collinear-cutoff 0.9
@@ -226,8 +212,7 @@ credtools finemap input.txt output/ \
     }
   },
   "tool": "susie",
-  "strategy": "single_input",
-  "parameters": {...}
+    "parameters": {...}
 }
 ```
 
@@ -264,9 +249,7 @@ credtools qc my_study.txt qc_results/
 # 2. Review QC metrics (check s_estimate.txt, kriging_rss.txt)
 
 # 3. Fine-mapping with automatic L setting
-credtools finemap my_study.txt results/ \
-    --strategy single_input \
-    --tool susie \
+credtools finemap my_study.txt results/ \    --tool susie \
     --set-L-by-cojo \
     --coverage 0.95 \
     --max-iter 100

@@ -4,7 +4,7 @@ credtools provides a comprehensive suite of commands for multi-ancestry fine-map
 
 ## Command Summary
 
-credtools includes 8 main subcommands that can be used individually or as part of integrated workflows:
+credtools includes 7 main subcommands that can be used individually or as part of integrated workflows:
 
 ### Data Preparation Commands
 
@@ -70,19 +70,10 @@ credtools finemap loci_list.txt finemap_output/ --tool susie --max-causal 3
 Runs the full analysis workflow in a single command.
 
 ```bash
-credtools pipeline prepared_loci.txt results/ --tool multisusie --strategy multi_input
-```
+credtools pipeline prepared_loci.txt results/ --tool multisusie```
 
 **Use for:** Automated end-to-end analysis, production workflows, consistent parameter application.
 
-#### [web](web.md) - Web Visualization
-Launches interactive web interface for exploring results.
-
-```bash
-credtools web finemap_results/ --port 8080
-```
-
-**Use for:** Interactive result exploration, creating publication figures, sharing results with collaborators.
 
 ## Typical Workflows
 
@@ -102,8 +93,7 @@ credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
 # 4. Run fine-mapping
 credtools finemap prepared/final_loci_list.txt results/ --tool susie
 
-# 5. Explore results
-credtools web results/
+# 5. Results are saved in results/ directory
 ```
 
 ### Multi-Ancestry Analysis
@@ -132,10 +122,9 @@ credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
 
 # 5. Run complete pipeline with meta-analysis
 credtools pipeline prepared/final_loci_list.txt results/ \
-  --meta-method meta_all --tool multisusie --strategy multi_input
+  --meta-method meta_all --tool multisusie
 
-# 6. Launch web interface
-credtools web results/
+# 6. Results are saved in results/ directory
 ```
 
 ### Quality-Focused Workflow
@@ -153,8 +142,7 @@ credtools qc meta/meta_all/loci_list.txt qc/
 # Fine-mapping only on QC-passed loci
 credtools finemap qc/passed_loci_list.txt finemap/
 
-# Visualize results
-credtools web finemap/
+# Results are saved in finemap/ directory
 ```
 
 ### Comparative Analysis Workflow
@@ -176,8 +164,7 @@ for tool in susie abf finemap multisusie; do
   credtools finemap meta/meta_all/loci_list.txt results_${tool}/ --tool $tool
 done
 
-# Visualize comparisons
-credtools web results_comparison/
+# Compare results in results_comparison/ directory
 ```
 
 ## Command Selection Guide
@@ -206,7 +193,7 @@ credtools web results_comparison/
 → Use `pipeline` for streamlined end-to-end analysis
 
 **Need to explore results?**
-→ Use `web` for interactive visualization
+→ Examine JSON and CSV output files
 
 ### Individual Commands vs Pipeline
 
@@ -243,14 +230,9 @@ credtools web results_comparison/
 
 ```bash
 # Maximum power through combination
---meta-method meta_all --strategy multi_input
-
-# Population-specific analysis
---meta-method meta_by_population --strategy single_input
-
-# Individual ancestry analysis
---meta-method no_meta --strategy single_input
-```
+--meta-method meta_all# Population-specific analysis
+--meta-method meta_by_population# Individual ancestry analysis
+--meta-method no_meta```
 
 ### Fine-Mapping Configuration
 
@@ -265,7 +247,7 @@ credtools web results_comparison/
 --tool susie --max-causal 10 --estimate-residual-variance
 
 # State-of-the-art multi-ancestry
---tool multisusie --strategy multi_input --max-causal 5
+--tool multisusie--max-causal 5
 ```
 
 ## Getting Help
@@ -292,7 +274,6 @@ Each command has comprehensive documentation:
 - [qc](qc.md) - Quality control
 - [finemap](finemap.md) - Fine-mapping analysis
 - [pipeline](pipeline.md) - Complete pipeline
-- [web](web.md) - Web visualization
 
 ### Additional Resources
 
@@ -309,4 +290,4 @@ Each command has comprehensive documentation:
 4. **Validate inputs**: Use QC command to catch issues early
 5. **Save intermediate results**: Keep outputs from each step for troubleshooting
 6. **Document parameters**: Record command-line options for reproducibility
-7. **Explore results thoroughly**: Use web interface to understand your findings
+7. **Explore results thoroughly**: Examine output files and summary statistics

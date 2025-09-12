@@ -29,8 +29,7 @@ Use `credtools pipeline` when you have:
 ### Standard Multi-Ancestry Pipeline
 
 ```bash
-credtools pipeline prepared/final_loci_list.txt results/ \
-  --strategy multi_input --tool multisusie
+credtools pipeline prepared/final_loci_list.txt results/ \--tool multisusie
 ```
 
 ### Single-Ancestry Pipeline
@@ -55,7 +54,7 @@ credtools pipeline prepared/loci_list.txt results/ \
 |--------|-------------|---------|
 | `--meta-method` / `-m` | Meta-analysis method | meta_all |
 | `--skip-qc` / `-q` | Skip quality control step | False |
-| `--strategy` / `-s` | Fine-mapping strategy | single_input |
+
 | `--tool` / `-t` | Fine-mapping tool | susie |
 
 ### General Fine-Mapping Options
@@ -158,9 +157,7 @@ results/
 ```bash
 # Complete multi-ancestry pipeline with multiSuSiE
 credtools pipeline prepared/multi_ancestry_loci.txt results/ \
-  --meta-method meta_all \
-  --strategy multi_input \
-  --tool multisusie \
+  --meta-method meta_all \  --tool multisusie \
   --max-causal 3 \
   --coverage 0.95
 
@@ -213,9 +210,7 @@ credtools pipeline prepared/loci.txt results_quick/ \
 ```bash
 # Full-featured production analysis
 credtools pipeline prepared/production_loci.txt results_production/ \
-  --meta-method meta_all \
-  --strategy multi_input \
-  --tool susiex \
+  --meta-method meta_all \  --tool susiex \
   --max-causal 5 \
   --coverage 0.95 \
   --mult-step \

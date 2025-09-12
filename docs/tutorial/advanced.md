@@ -9,9 +9,7 @@ This section covers advanced CREDTOOLS usage including detailed parameter optimi
 SuSiE is the most commonly used tool in CREDTOOLS. Here's how to optimize its performance:
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool susie \
+credtools finemap input.txt output/ \    --tool susie \
     --max-causal 10 \
     --max-iter 100 \
     --estimate-residual-variance \
@@ -47,9 +45,7 @@ credtools finemap input.txt output/ \
 FINEMAP offers extensive Bayesian model configuration:
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool finemap \
+credtools finemap input.txt output/ \    --tool finemap \
     --max-causal 5 \
     --n-iter 1000000 \
     --n-threads 8 \
@@ -73,9 +69,7 @@ credtools finemap input.txt output/ \
 Fine-tune multi-population analysis:
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy multi_input \
-    --tool multisusie \
+credtools finemap input.txt output/ \    --tool multisusie \
     --max-causal 10 \
     --rho 0.75 \
     --scaled-prior-variance 0.2 \
@@ -103,9 +97,7 @@ credtools finemap input.txt output/ \
 CARMA offers sophisticated model uncertainty quantification:
 
 ```bash
-credtools finemap input.txt output/ \
-    --strategy single_input \
-    --tool carma \
+credtools finemap input.txt output/ \    --tool carma \
     --max-causal 10 \
     --effect-size-prior "Spike-slab" \
     --y-var 1.0 \
@@ -147,9 +139,7 @@ credtools qc meta_output/updated_loci.txt qc_output/ \
 # (Manual inspection of QC outputs)
 
 # Step 4: Fine-mapping with optimized parameters
-credtools finemap filtered_loci.txt final_output/ \
-    --strategy post_hoc_combine \
-    --tool susie \
+credtools finemap filtered_loci.txt final_output/ \    --tool susie \
     --max-causal 15 \
     --combine-cred cluster \
     --jaccard-threshold 0.2
@@ -448,13 +438,13 @@ missingness = analyze_missingness('input_loci.txt')
 
 !!! tip "Strategy Decision Tree"
     
-    **Single well-powered study** → `single_input` + `susie`
+    **Single well-powered study** →  `susie`
     
-    **Multiple studies, similar populations** → `meta_all` + `multi_input` + `multisusie`
+    **Multiple studies, similar populations** → `meta_all` +  `multisusie`
     
-    **Multiple studies, different populations** → `meta_by_population` + `post_hoc_combine` + `susie`
+    **Multiple studies, different populations** → `meta_by_population` +  `susie`
     
-    **Exploratory analysis** → `no_meta` + `post_hoc_combine` + `susie`
+    **Exploratory analysis** → `no_meta` +  `susie`
     
     **Research/publication** → Multiple strategies + comparison
 

@@ -163,7 +163,6 @@ def _adaptive_fine_map(
 
 def fine_map(
     locus_set: LocusSet,
-    strategy: str = "single_input",
     tool: str = "susie",
     max_causal: int = 5,
     adaptive_max_causal: bool = False,
@@ -176,6 +175,7 @@ def fine_map(
     combine_cred: str = "union",
     combine_pip: str = "max",
     jaccard_threshold: float = 0.1,
+    strategy: Optional[str] = None,  # Deprecated parameter
     **kwargs,
 ) -> CredibleSet:
     """
@@ -185,15 +185,11 @@ def fine_map(
     ----------
     locus_set : LocusSet
         Locus set to fine-mapping.
-    strategy : str
-        Fine-mapping strategy. Choose from ["single_input", "multi_input", "post_hoc_combine"]
-        single_input: use fine-mapping tools which take a single locus as input, these tools are:
-            abf, abf_cojo, finemap, rsparsepro, susie
-        multi_input: use fine-mapping tools which take multiple loci as input, these tools are:
-            multisusie, susiex
-        post_hoc_combine: use fine-mapping tools which take single loci as input (see single_input options), and then combine the results,
     tool : str
         Fine-mapping tool. Choose from ["abf", "abf_cojo", "finemap", "rsparsepro", "susie", "multisusie", "susiex"]
+        - Single-input tools (abf, abf_cojo, finemap, rsparsepro, susie): Process each locus individually
+        - Multi-input tools (multisusie, susiex): Process all loci together
+        When using single-input tools with multiple loci, results are automatically combined
     combine_cred : str, optional
         Method to combine credible sets, by default "union".
         Options: "union", "intersection", "cluster".
@@ -219,8 +215,26 @@ def fine_map(
         When True, automatically adjusts max_causal based on results:
         - If credible sets >= max_causal, increase by 5 (up to 20)
         - If convergence fails, decrease by 1 (down to 1)
-        Only applies to single_input strategy with finemap, susie, rsparsepro.
+        Only applies to finemap, susie, rsparsepro.
+    strategy : str, optional
+        DEPRECATED. This parameter is no longer used and will be removed in a future version.
+        The strategy is now automatically determined based on the tool and data structure.
     """
+    # Deprecation warning for strategy parameter
+    if strategy is not None:
+        import warnings
+        warnings.warn(
+            "The 'strategy' parameter is deprecated and will be removed in a future version. "
+            "The strategy is now automatically determined based on the tool and data structure.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+    
+    # Define tool categories
+    single_input_tools = ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]
+    multi_input_tools = ["multisusie", "susiex"]
+    
+    # Tool function mapping
     tool_func_dict: Dict[str, Callable[..., Any]] = {
         "abf": run_abf,
         "abf_cojo": run_abf_cojo,
@@ -230,6 +244,8 @@ def fine_map(
         "multisusie": run_multisusie,
         "susiex": run_susiex,
     }
+    
+    # Get tool-specific parameters
     inspect_dict = {
         "abf": set(inspect.signature(run_abf).parameters),
         "abf_cojo": set(inspect.signature(run_abf_cojo).parameters),
@@ -242,17 +258,26 @@ def fine_map(
     params_dict = {}
     for t, args in inspect_dict.items():
         params_dict[t] = {k: v for k, v in kwargs.items() if k in args}
-    if strategy == "single_input":
-        if locus_set.n_loci > 1:
-            raise ValueError(
-                "Locus set must contain only one locus for single-input strategy"
-            )
-        if tool in ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]:
-            # abf_cojo handles its own COJO analysis, so skip set_L_by_cojo
+    
+    # Automatic strategy selection based on tool type
+    if tool in multi_input_tools:
+        # Multi-input tools: directly process the entire LocusSet
+        logger.info(f"Using multi-input tool {tool} to process {locus_set.n_loci} loci")
+        return tool_func_dict[tool](
+            locus_set, max_causal=max_causal, **params_dict[tool]
+        )
+    
+    elif tool in single_input_tools:
+        if locus_set.n_loci == 1:
+            # Single locus: direct analysis
+            logger.info(f"Using single-input tool {tool} for single locus")
+            locus = locus_set.loci[0]
+            
+            # COJO analysis for max_causal if enabled (skip for abf_cojo as it handles its own)
             if set_L_by_cojo and tool != "abf_cojo":
                 max_causal_cojo = len(
                     conditional_selection(
-                        locus_set.loci[0],
+                        locus,
                         p_cutoff=p_cutoff,
                         collinear_cutoff=collinear_cutoff,
                         window_size=window_size,
@@ -266,11 +291,12 @@ def fine_map(
                     )
                     max_causal_cojo = 1
                 max_causal = max_causal_cojo
-
-            # Use adaptive logic for finemap, susie, rsparsepro if enabled
+                logger.info(f"COJO determined max_causal={max_causal}")
+            
+            # Use adaptive logic if enabled
             if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
                 return _adaptive_fine_map(
-                    locus_set.loci[0],
+                    locus,
                     tool,
                     max_causal,
                     tool_func_dict[tool],
@@ -278,49 +304,76 @@ def fine_map(
                 )
             else:
                 return tool_func_dict[tool](
-                    locus_set.loci[0], max_causal=max_causal, **params_dict[tool]
-                )
-        else:
-            raise ValueError(f"Tool {tool} not supported for single-input strategy")
-    elif strategy == "multi_input":
-        # if locus_set.n_loci < 2:
-        #     raise ValueError("Locus set must contain at least two loci for multi-input strategy")
-        if tool in ["multisusie", "susiex"]:
-            return tool_func_dict[tool](
-                locus_set, max_causal=max_causal, **params_dict[tool]
-            )
-        else:
-            raise ValueError(f"Tool {tool} not supported for multi-input strategy")
-    elif strategy == "post_hoc_combine":
-        # if locus_set.n_loci < 2:
-        #     raise ValueError("Locus set must contain at least two loci for post-hoc combine strategy")
-        if tool in ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]:
-            all_creds = []
-            for locus in locus_set.loci:
-                creds = tool_func_dict[tool](
                     locus, max_causal=max_causal, **params_dict[tool]
                 )
+        
+        else:
+            # Multiple loci: analyze each and combine results
+            logger.info(
+                f"Using single-input tool {tool} for {locus_set.n_loci} loci, "
+                f"will combine results using combine_cred={combine_cred}, combine_pip={combine_pip}"
+            )
+            all_creds = []
+            for i, locus in enumerate(locus_set.loci):
+                logger.info(f"Processing locus {i+1}/{locus_set.n_loci}")
+                
+                # Optionally apply COJO for each locus
+                locus_max_causal = max_causal
+                if set_L_by_cojo and tool != "abf_cojo":
+                    locus_max_causal_cojo = len(
+                        conditional_selection(
+                            locus,
+                            p_cutoff=p_cutoff,
+                            collinear_cutoff=collinear_cutoff,
+                            window_size=window_size,
+                            maf_cutoff=maf_cutoff,
+                            diff_freq_cutoff=diff_freq_cutoff,
+                        )
+                    )
+                    if locus_max_causal_cojo == 0:
+                        logger.warning(
+                            f"No significant SNPs found by COJO for locus {i+1}, using max_causal=1"
+                        )
+                        locus_max_causal_cojo = 1
+                    locus_max_causal = locus_max_causal_cojo
+                    logger.info(f"COJO determined max_causal={locus_max_causal} for locus {i+1}")
+                
+                # Run fine-mapping for this locus
+                if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
+                    creds = _adaptive_fine_map(
+                        locus,
+                        tool,
+                        locus_max_causal,
+                        tool_func_dict[tool],
+                        params_dict[tool],
+                    )
+                else:
+                    creds = tool_func_dict[tool](
+                        locus, max_causal=locus_max_causal, **params_dict[tool]
+                    )
                 all_creds.append(creds)
+            
+            # Combine results
+            logger.info("Combining credible sets from all loci")
             return combine_creds(
                 all_creds,
                 combine_cred=combine_cred,
                 combine_pip=combine_pip,
                 jaccard_threshold=jaccard_threshold,
             )
-        else:
-            raise ValueError(f"Tool {tool} not supported for post-hoc combine strategy")
+    
     else:
-        raise ValueError(f"Strategy {strategy} not supported")
+        raise ValueError(f"Tool {tool} not recognized. Available tools: {list(tool_func_dict.keys())}")
 
 
 def pipeline(
     loci_df: pd.DataFrame,
     meta_method: str = "meta_all",
     skip_qc: bool = False,
-    strategy: str = "single_input",
     tool: str = "susie",
     outdir: str = ".",
     calculate_lambda_s: bool = False,
+    strategy: Optional[str] = None,  # Deprecated parameter
     **kwargs,
 ):
     """
@@ -335,12 +388,12 @@ def pipeline(
         Options: "meta_all", "meta_by_population", "no_meta".
     skip_qc : bool, optional
         Skip QC, by default False.
-    strategy : str, optional
-        Fine-mapping strategy, by default "single_input".
     tool : str, optional
         Fine-mapping tool, by default "susie".
     calculate_lambda_s : bool, optional
         Whether to calculate lambda_s parameter using estimate_s_rss function, by default False.
+    strategy : str, optional
+        DEPRECATED. This parameter is no longer used and will be removed in a future version.
     """
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -361,7 +414,7 @@ def pipeline(
         for k, v in qc_metrics.items():
             v.to_csv(f"{outdir}/{k}.txt", sep="\t", index=False)
     # fine-mapping
-    creds = fine_map(locus_set, strategy=strategy, tool=tool, **kwargs)
+    creds = fine_map(locus_set, tool=tool, strategy=strategy, **kwargs)
     creds.pips.to_csv(f"{outdir}/pips.txt", sep="\t", header=False, index=True)
     with open(f"{outdir}/creds.json", "w") as f:
         json.dump(creds.to_dict(), f, indent=4)

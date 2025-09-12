@@ -12,13 +12,6 @@ $ pip install credtools
 
 This is the preferred method to install CREDTOOLS, as it will always install the most recent stable release.
 
-## Web Visualization
-
-To use the interactive web interface, install with web dependencies:
-
-```bash
-$ pip install credtools[web]
-```
 
 ## Development Installation
 
@@ -36,11 +29,6 @@ Check that CREDTOOLS is installed correctly:
 $ credtools --help
 ```
 
-For web visualization:
-
-```bash
-$ credtools web --help
-```
 
 ## Conda Installation
 
@@ -73,19 +61,6 @@ $ cd credtools
 $ pip install -e .
 ```
 
-## Web Dependencies
-
-The web visualization requires additional dependencies. You can install them with:
-
-```bash
-$ pip install credtools[web]
-```
-
-If you don't have root access, you can install for your user only:
-
-```bash
-$ pip install --user credtools[web]
-```
 
 ## Troubleshooting
 
@@ -95,11 +70,6 @@ If you encounter any issues during installation, please check:
 2. pip is up to date
 3. You have write permissions for the installation directory
 
-For web visualization issues, ensure all web dependencies are installed:
-
-```bash
-$ pip install credtools[web]
-```
 
 ## Links
 

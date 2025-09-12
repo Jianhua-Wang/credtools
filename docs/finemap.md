@@ -7,7 +7,7 @@ The `credtools finemap` command performs statistical fine-mapping analysis to id
 Fine-mapping in credtools uses sophisticated statistical methods to narrow down large association signals to smaller sets of likely causal variants. The fine-mapping process:
 
 - **Implements multiple algorithms** including SuSiE, ABF, FINEMAP, RSparsePro, and others
-- **Supports three strategies** for handling multi-ancestry data
+- **Automatically handles single and multi-ancestry data** with intelligent strategy selection
 - **Calculates posterior inclusion probabilities (PIPs)** for each variant
 - **Generates credible sets** of variants likely to contain causal variants
 - **Handles multi-signal loci** with conditional analysis approaches
@@ -74,28 +74,25 @@ Use `credtools finemap` when you have:
 - Models population-specific effect sizes
 - State-of-the-art for multi-ancestry studies
 
-## Fine-Mapping Strategies
+## How Fine-Mapping Works
 
-### single_input
-Analyzes each ancestry separately, then combines results post-hoc
-- Maintains ancestry-specific effects
-- Simple and interpretable
-- Good when populations differ substantially
-- Fastest approach for multi-ancestry data
+### Automatic Strategy Selection
 
-### multi_input  
-Jointly analyzes all ancestries simultaneously
-- Uses methods designed for multi-population data
-- Shares information across populations
-- More powerful when effects are similar
-- Requires compatible fine-mapping tools
+Credtools automatically selects the appropriate fine-mapping strategy based on:
 
-### post_hoc_combine
-Runs single-ancestry analysis then combines evidence
-- Flexible combination strategies
-- Can weight ancestries differently
-- Good for heterogeneous effect sizes
-- Allows for sensitivity analyses
+**For single-input tools (ABF, SuSiE, FINEMAP, RSparsePro):**
+- Single locus → Direct analysis
+- Multiple loci → Analyze each separately, then combine results using specified combination methods
+
+**For multi-input tools (multiSuSiE, SuSiEx):**
+- Process all loci together in a joint analysis
+- Leverage information across ancestries automatically
+
+### Result Combination Methods
+
+When using single-input tools with multiple loci, results are combined using:
+- **Credible set combination**: union, intersection, or clustering methods
+- **PIP combination**: max, min, mean, or meta-analysis approaches
 
 ## Basic Usage
 
@@ -109,7 +106,7 @@ credtools finemap prepared/loci_list.txt results/ --tool susie
 
 ```bash
 credtools finemap prepared/loci_list.txt results/ \
-  --strategy multi_input --tool multisusie
+  --tool multisusie
 ```
 
 ### Complex Multi-Signal Analysis
@@ -125,8 +122,7 @@ credtools finemap qc/passed_loci.txt results/ \
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--strategy` / `-s` | Fine-mapping strategy | single_input |
-| `--tool` / `-t` | Fine-mapping tool | susie |
+| `--tool` / `-t` | Fine-mapping tool (strategy auto-selected) | susie |
 | `--max-causal` / `-c` | Maximum causal variants | 1 |
 | `--coverage` / `-cv` | Credible set coverage | 0.95 |
 | `--combine-cred` / `-cc` | Method to combine credible sets | union |
@@ -223,7 +219,7 @@ credtools finemap prepared/EUR_loci.txt results_eur/ \
 ```bash
 # Use multiSuSiE for joint analysis across ancestries
 credtools finemap prepared/multi_loci.txt results_multi/ \
-  --strategy multi_input --tool multisusie \
+  --tool multisusie \
   --max-causal 5 --coverage 0.99
 
 # Leverages information across all populations simultaneously
@@ -258,7 +254,7 @@ credtools finemap complex_locus.txt results_complex/ \
 ```bash
 # Use strict parameters for high-confidence results
 credtools finemap validated_loci.txt results_strict/ \
-  --tool multisusie --strategy multi_input \
+  --tool multisusie \
   --max-causal 3 --coverage 0.99 \
   --jaccard-threshold 0.2
 
@@ -279,8 +275,7 @@ credtools qc meta/meta_all/loci_list.txt qc/
 credtools finemap qc/passed_loci.txt finemap_results/ \
   --tool susie --max-causal 3
 
-# Launch web interface to explore results
-credtools web finemap_results/
+# Results are saved in finemap_results/ directory
 ```
 
 ## Choosing the Right Tool

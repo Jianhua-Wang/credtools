@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.0.32] (2025-09-12)
+
+### Changed
+- **BREAKING**: Removed `strategy` parameter from fine-mapping interface
+  - Fine-mapping strategy is now automatically determined based on tool type and data structure
+  - Multi-input tools (susiex, multisusie) automatically process all loci together
+  - Single-input tools automatically combine results when multiple loci are provided
+  - Added deprecation warning for backward compatibility
+- Enhanced CLI with enum validation for combination methods
+  - Added `CombineCred` enum for credible set combination methods (union, intersection, cluster)
+  - Added `CombinePIP` enum for PIP combination methods (max, min, mean, meta)
+  - Improved input validation and auto-completion support
+
+### Removed
+- Web visualization feature moved to v2 (will be available in future release)
+  - Removed `credtools web` command documentation
+  - Removed web-related installation instructions
+  - Removed web tutorial files and examples
+  - Updated all workflow examples to reference output files instead
+
+### Improved
+- Simplified user interface with automatic strategy selection
+- Better CLI help with enum option display
+- Updated documentation to reflect streamlined workflow
+
 ## [0.0.31] (2025-09-11)
 
 ### Fixed

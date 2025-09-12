@@ -115,17 +115,16 @@ credtools qc input_loci.txt qc_output/ --threads 4
     └── maf_comparison.txt      # Frequency comparisons
     ```
 
-### 3. Multi-Input Fine-Mapping Strategies
+### 3. Multi-Input Fine-Mapping Approaches
 
-CREDTOOLS offers three strategies for multi-input fine-mapping:
+CREDTOOLS automatically selects the appropriate approach for multi-input fine-mapping:
 
-#### A. Multi-Input Tools (`multi_input`)
+#### A. Multi-Input Tools
 
 Use tools specifically designed for multi-population analysis:
 
 ```bash
 credtools finemap input_loci.txt output/ \
-    --strategy multi_input \
     --tool multisusie \
     --max-causal 5
 ```
@@ -135,13 +134,12 @@ credtools finemap input_loci.txt output/ \
 - **MultiSuSiE**: Multi-population extension of SuSiE
 - **SuSiEx**: Cross-ancestry fine-mapping tool
 
-#### B. Post-hoc Combination (`post_hoc_combine`)
+#### B. Post-hoc Combination
 
 Run single-input tools on each study, then intelligently combine results:
 
 ```bash
 credtools finemap input_loci.txt output/ \
-    --strategy post_hoc_combine \
     --tool susie \
     --combine-cred union \
     --combine-pip max \
@@ -186,7 +184,6 @@ credtools finemap input_loci.txt output/ \
 
 ```bash
 credtools finemap input_loci.txt output/ \
-    --strategy multi_input \
     --tool multisusie \
     --max-causal 10 \
     --rho 0.75 \
@@ -214,7 +211,6 @@ credtools finemap input_loci.txt output/ \
 
 ```bash
 credtools finemap input_loci.txt output/ \
-    --strategy multi_input \
     --tool susiex \
     --max-causal 5 \
     --mult-step \
@@ -260,7 +256,6 @@ head qc_results/cochran_q.txt
 # Meta-analyze across all populations
 credtools pipeline multi_ancestry_loci.txt results_cross_ancestry/ \
     --meta-method meta_all \
-    --strategy multi_input \
     --tool multisusie \
     --max-causal 10 \
     --rho 0.8 \
@@ -274,7 +269,6 @@ credtools pipeline multi_ancestry_loci.txt results_cross_ancestry/ \
 # Meta-analyze within populations, then combine
 credtools pipeline multi_ancestry_loci.txt results_pop_specific/ \
     --meta-method meta_by_population \
-    --strategy post_hoc_combine \
     --tool susie \
     --combine-cred cluster \
     --combine-pip meta \
@@ -329,7 +323,6 @@ When populations have internal structure:
 ```bash
 # Use more conservative thresholds
 credtools finemap input.txt output/ \
-    --strategy multi_input \
     --tool multisusie \
     --rho 0.5 \
     --min-abs-corr 0.8

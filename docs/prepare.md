@@ -246,8 +246,7 @@ credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
 # 4. Run fine-mapping (uses final_loci_list.txt)
 credtools finemap prepared/final_loci_list.txt results/
 
-# 5. Launch web visualization
-credtools web results/
+# 5. Results are saved in results/ directory
 ```
 
 ## Quality Control

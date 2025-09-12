@@ -48,9 +48,7 @@ chr	start	end	popu	sample_size	cohort	prefix	locus_id
 
 ```bash
 credtools pipeline my_loci.txt output_dir \
-    --tool susie \
-    --strategy multi_input \
-    --threads 4
+    --tool susie \    --threads 4
 ```
 
 This command:
@@ -63,9 +61,7 @@ This command:
 
 ```bash
 credtools pipeline my_loci.txt output_dir \
-    --tool susie \
-    --strategy multi_input \
-    --threads 4 \
+    --tool susie \    --threads 4 \
     --max-causal 5 \
     --credible-level 0.95
 ```
@@ -218,9 +214,7 @@ cd exampledata/
 
 # Run pipeline on example locus
 credtools pipeline test_loci.txt results/ \
-    --tool susie \
-    --strategy multi_input \
-    --threads 4
+    --tool susie \    --threads 4
 ```
 
 This will analyze the multi-ancestry example data and produce results in the `results/` directory. 
