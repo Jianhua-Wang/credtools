@@ -310,8 +310,6 @@
       
         
       
-        
-      
     
     
     
@@ -511,29 +509,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Interface
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -549,10 +524,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -709,52 +680,6 @@
   
   <span class="md-ellipsis">
     Multi-Input Fine-Mapping
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-visualization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Visualization
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Example
     
   </span>
   
@@ -1129,6 +1054,48 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0032-2025-09-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.0.32] (2025-09-12)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.32] (2025-09-12)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improved" class="md-nav__link">
+    <span class="md-ellipsis">
+      Improved
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0031-2025-09-11" class="md-nav__link">
@@ -1726,6 +1693,48 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0032-2025-09-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.0.32] (2025-09-12)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.32] (2025-09-12)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improved" class="md-nav__link">
+    <span class="md-ellipsis">
+      Improved
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0031-2025-09-11" class="md-nav__link">
     <span class="md-ellipsis">
       [0.0.31] (2025-09-11)
@@ -2306,6 +2315,33 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="0032-2025-09-12">[0.0.32] (2025-09-12)<a class="headerlink" href="#0032-2025-09-12" title="Permanent link">&para;</a></h2>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>BREAKING</strong>: Removed <code>strategy</code> parameter from fine-mapping interface</li>
+<li>Fine-mapping strategy is now automatically determined based on tool type and data structure</li>
+<li>Multi-input tools (susiex, multisusie) automatically process all loci together</li>
+<li>Single-input tools automatically combine results when multiple loci are provided</li>
+<li>Added deprecation warning for backward compatibility</li>
+<li>Enhanced CLI with enum validation for combination methods</li>
+<li>Added <code>CombineCred</code> enum for credible set combination methods (union, intersection, cluster)</li>
+<li>Added <code>CombinePIP</code> enum for PIP combination methods (max, min, mean, meta)</li>
+<li>Improved input validation and auto-completion support</li>
+</ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Web visualization feature moved to v2 (will be available in future release)</li>
+<li>Removed <code>credtools web</code> command documentation</li>
+<li>Removed web-related installation instructions</li>
+<li>Removed web tutorial files and examples</li>
+<li>Updated all workflow examples to reference output files instead</li>
+</ul>
+<h3 id="improved">Improved<a class="headerlink" href="#improved" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Simplified user interface with automatic strategy selection</li>
+<li>Better CLI help with enum option display</li>
+<li>Updated documentation to reflect streamlined workflow</li>
+</ul>
 <h2 id="0031-2025-09-11">[0.0.31] (2025-09-11)<a class="headerlink" href="#0031-2025-09-11" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>

@@ -314,8 +314,6 @@
       
         
       
-        
-      
     
     
     
@@ -620,37 +618,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fine-mapping-strategies" class="md-nav__link">
+  <a href="#how-fine-mapping-works" class="md-nav__link">
     <span class="md-ellipsis">
-      Fine-Mapping Strategies
+      How Fine-Mapping Works
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Fine-Mapping Strategies">
+    <nav class="md-nav" aria-label="How Fine-Mapping Works">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#single_input" class="md-nav__link">
+  <a href="#automatic-strategy-selection" class="md-nav__link">
     <span class="md-ellipsis">
-      single_input
+      Automatic Strategy Selection
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#multi_input" class="md-nav__link">
+  <a href="#result-combination-methods" class="md-nav__link">
     <span class="md-ellipsis">
-      multi_input
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#post_hoc_combine" class="md-nav__link">
-    <span class="md-ellipsis">
-      post_hoc_combine
+      Result Combination Methods
     </span>
   </a>
   
@@ -1074,29 +1063,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Interface
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1112,10 +1078,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -1272,52 +1234,6 @@
   
   <span class="md-ellipsis">
     Multi-Input Fine-Mapping
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-visualization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Visualization
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Example
     
   </span>
   
@@ -1782,37 +1698,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fine-mapping-strategies" class="md-nav__link">
+  <a href="#how-fine-mapping-works" class="md-nav__link">
     <span class="md-ellipsis">
-      Fine-Mapping Strategies
+      How Fine-Mapping Works
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Fine-Mapping Strategies">
+    <nav class="md-nav" aria-label="How Fine-Mapping Works">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#single_input" class="md-nav__link">
+  <a href="#automatic-strategy-selection" class="md-nav__link">
     <span class="md-ellipsis">
-      single_input
+      Automatic Strategy Selection
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#multi_input" class="md-nav__link">
+  <a href="#result-combination-methods" class="md-nav__link">
     <span class="md-ellipsis">
-      multi_input
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#post_hoc_combine" class="md-nav__link">
-    <span class="md-ellipsis">
-      post_hoc_combine
+      Result Combination Methods
     </span>
   </a>
   
@@ -2229,7 +2136,7 @@
 <p>Fine-mapping in credtools uses sophisticated statistical methods to narrow down large association signals to smaller sets of likely causal variants. The fine-mapping process:</p>
 <ul>
 <li><strong>Implements multiple algorithms</strong> including SuSiE, ABF, FINEMAP, RSparsePro, and others</li>
-<li><strong>Supports three strategies</strong> for handling multi-ancestry data</li>
+<li><strong>Automatically handles single and multi-ancestry data</strong> with intelligent strategy selection</li>
 <li><strong>Calculates posterior inclusion probabilities (PIPs)</strong> for each variant</li>
 <li><strong>Generates credible sets</strong> of variants likely to contain causal variants</li>
 <li><strong>Handles multi-signal loci</strong> with conditional analysis approaches</li>
@@ -2287,32 +2194,26 @@
 - Accounts for different LD structures
 - Models population-specific effect sizes
 - State-of-the-art for multi-ancestry studies</p>
-<h2 id="fine-mapping-strategies">Fine-Mapping Strategies<a class="headerlink" href="#fine-mapping-strategies" title="Permanent link">&para;</a></h2>
-<h3 id="single_input">single_input<a class="headerlink" href="#single_input" title="Permanent link">&para;</a></h3>
-<p>Analyzes each ancestry separately, then combines results post-hoc
-- Maintains ancestry-specific effects
-- Simple and interpretable
-- Good when populations differ substantially
-- Fastest approach for multi-ancestry data</p>
-<h3 id="multi_input">multi_input<a class="headerlink" href="#multi_input" title="Permanent link">&para;</a></h3>
-<p>Jointly analyzes all ancestries simultaneously
-- Uses methods designed for multi-population data
-- Shares information across populations
-- More powerful when effects are similar
-- Requires compatible fine-mapping tools</p>
-<h3 id="post_hoc_combine">post_hoc_combine<a class="headerlink" href="#post_hoc_combine" title="Permanent link">&para;</a></h3>
-<p>Runs single-ancestry analysis then combines evidence
-- Flexible combination strategies
-- Can weight ancestries differently
-- Good for heterogeneous effect sizes
-- Allows for sensitivity analyses</p>
+<h2 id="how-fine-mapping-works">How Fine-Mapping Works<a class="headerlink" href="#how-fine-mapping-works" title="Permanent link">&para;</a></h2>
+<h3 id="automatic-strategy-selection">Automatic Strategy Selection<a class="headerlink" href="#automatic-strategy-selection" title="Permanent link">&para;</a></h3>
+<p>Credtools automatically selects the appropriate fine-mapping strategy based on:</p>
+<p><strong>For single-input tools (ABF, SuSiE, FINEMAP, RSparsePro):</strong>
+- Single locus → Direct analysis
+- Multiple loci → Analyze each separately, then combine results using specified combination methods</p>
+<p><strong>For multi-input tools (multiSuSiE, SuSiEx):</strong>
+- Process all loci together in a joint analysis
+- Leverage information across ancestries automatically</p>
+<h3 id="result-combination-methods">Result Combination Methods<a class="headerlink" href="#result-combination-methods" title="Permanent link">&para;</a></h3>
+<p>When using single-input tools with multiple loci, results are combined using:
+- <strong>Credible set combination</strong>: union, intersection, or clustering methods
+- <strong>PIP combination</strong>: max, min, mean, or meta-analysis approaches</p>
 <h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
 <h3 id="single-ancestry-with-susie">Single Ancestry with SuSiE<a class="headerlink" href="#single-ancestry-with-susie" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>prepared/loci_list.txt<span class="w"> </span>results/<span class="w"> </span>--tool<span class="w"> </span>susie
 </code></pre></div>
 <h3 id="multi-ancestry-with-multisusie">Multi-Ancestry with multiSuSiE<a class="headerlink" href="#multi-ancestry-with-multisusie" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>prepared/loci_list.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>--strategy<span class="w"> </span>multi_input<span class="w"> </span>--tool<span class="w"> </span>multisusie
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>--tool<span class="w"> </span>multisusie
 </code></pre></div>
 <h3 id="complex-multi-signal-analysis">Complex Multi-Signal Analysis<a class="headerlink" href="#complex-multi-signal-analysis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc/passed_loci.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
@@ -2330,13 +2231,8 @@
 </thead>
 <tbody>
 <tr>
-<td><code>--strategy</code> / <code>-s</code></td>
-<td>Fine-mapping strategy</td>
-<td>single_input</td>
-</tr>
-<tr>
 <td><code>--tool</code> / <code>-t</code></td>
-<td>Fine-mapping tool</td>
+<td>Fine-mapping tool (strategy auto-selected)</td>
 <td>susie</td>
 </tr>
 <tr>
@@ -2544,7 +2440,7 @@
 <h3 id="example-2-multi-ancestry-joint-analysis">Example 2: Multi-Ancestry Joint Analysis<a class="headerlink" href="#example-2-multi-ancestry-joint-analysis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Use multiSuSiE for joint analysis across ancestries</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>prepared/multi_loci.txt<span class="w"> </span>results_multi/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--strategy<span class="w"> </span>multi_input<span class="w"> </span>--tool<span class="w"> </span>multisusie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--tool<span class="w"> </span>multisusie<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span>--coverage<span class="w"> </span><span class="m">0</span>.99
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Leverages information across all populations simultaneously</span>
@@ -2570,7 +2466,7 @@
 <h3 id="example-5-high-confidence-fine-mapping">Example 5: High-Confidence Fine-Mapping<a class="headerlink" href="#example-5-high-confidence-fine-mapping" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Use strict parameters for high-confidence results</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>validated_loci.txt<span class="w"> </span>results_strict/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>--tool<span class="w"> </span>multisusie<span class="w"> </span>--strategy<span class="w"> </span>multi_input<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>--tool<span class="w"> </span>multisusie<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>--max-causal<span class="w"> </span><span class="m">3</span><span class="w"> </span>--coverage<span class="w"> </span><span class="m">0</span>.99<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>--jaccard-threshold<span class="w"> </span><span class="m">0</span>.2
 <a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
@@ -2587,8 +2483,7 @@
 <a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc/passed_loci.txt<span class="w"> </span>finemap_results/<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">3</span>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="c1"># Launch web interface to explore results</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>credtools<span class="w"> </span>web<span class="w"> </span>finemap_results/
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="c1"># Results are saved in finemap_results/ directory</span>
 </code></pre></div>
 <h2 id="choosing-the-right-tool">Choosing the Right Tool<a class="headerlink" href="#choosing-the-right-tool" title="Permanent link">&para;</a></h2>
 <h3 id="use-susie-when">Use SuSiE when:<a class="headerlink" href="#use-susie-when" title="Permanent link">&para;</a></h3>

@@ -312,8 +312,6 @@
       
         
       
-        
-      
     
     
     
@@ -513,29 +511,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../web/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Interface
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -553,10 +528,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -957,52 +928,6 @@
   
   <span class="md-ellipsis">
     Multi-Input Fine-Mapping
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web-visualization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Visualization
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Example
     
   </span>
   
@@ -1674,9 +1599,7 @@
 <h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
 <h3 id="simple-cross-ancestry-analysis">Simple Cross-Ancestry Analysis<a class="headerlink" href="#simple-cross-ancestry-analysis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>my_loci.txt<span class="w"> </span>output_dir<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>--strategy<span class="w"> </span>multi_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>--threads<span class="w"> </span><span class="m">4</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--threads<span class="w"> </span><span class="m">4</span>
 </code></pre></div>
 <p>This command:</p>
 <ul>
@@ -1686,11 +1609,9 @@
 </ul>
 <h3 id="population-specific-analysis">Population-Specific Analysis<a class="headerlink" href="#population-specific-analysis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>my_loci.txt<span class="w"> </span>output_dir<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--strategy<span class="w"> </span>multi_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--threads<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span>--credible-level<span class="w"> </span><span class="m">0</span>.95
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--threads<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--credible-level<span class="w"> </span><span class="m">0</span>.95
 </code></pre></div>
 <p>This command:</p>
 <ul>
@@ -1811,9 +1732,7 @@
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Run pipeline on example locus</span>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>test_loci.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span>--strategy<span class="w"> </span>multi_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span>--threads<span class="w"> </span><span class="m">4</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--threads<span class="w"> </span><span class="m">4</span>
 </code></pre></div>
 <p>This will analyze the multi-ancestry example data and produce results in the <code>results/</code> directory. </p>
 

@@ -312,8 +312,6 @@
       
         
       
-        
-      
     
     
     
@@ -513,29 +511,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../web/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Interface
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -553,10 +528,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -957,52 +928,6 @@
   
   <span class="md-ellipsis">
     Multi-Input Fine-Mapping
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web-visualization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Visualization
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Example
     
   </span>
   
@@ -1644,22 +1569,18 @@
 </div>
 <h3 id="3-fine-mapping">3. Fine-Mapping<a class="headerlink" href="#3-fine-mapping" title="Permanent link">&para;</a></h3>
 <p>Run fine-mapping on your single study:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>single_study_loci.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span>--coverage<span class="w"> </span><span class="m">0</span>.95
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>single_study_loci.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--coverage<span class="w"> </span><span class="m">0</span>.95
 </code></pre></div>
 <h2 id="supported-tools-for-single-input">Supported Tools for Single-Input<a class="headerlink" href="#supported-tools-for-single-input" title="Permanent link">&para;</a></h2>
 <h3 id="susie-recommended">SuSiE (Recommended)<a class="headerlink" href="#susie-recommended" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: General purpose, robust across different scenarios</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span>--max-iter<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span>--estimate-residual-variance<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span>--convergence-tol<span class="w"> </span>1e-3
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>--max-iter<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span>--estimate-residual-variance<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span>--convergence-tol<span class="w"> </span>1e-3
 </code></pre></div>
 <p><strong>Key Parameters:</strong></p>
 <ul>
@@ -1670,12 +1591,10 @@
 </ul>
 <h3 id="finemap">FINEMAP<a class="headerlink" href="#finemap" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: Bayesian model averaging, comprehensive uncertainty quantification</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>--tool<span class="w"> </span>finemap<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span>--n-iter<span class="w"> </span><span class="m">100000</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span>--n-threads<span class="w"> </span><span class="m">4</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>finemap<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>--n-iter<span class="w"> </span><span class="m">100000</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>--n-threads<span class="w"> </span><span class="m">4</span>
 </code></pre></div>
 <p><strong>Key Parameters:</strong></p>
 <ul>
@@ -1684,10 +1603,8 @@
 </ul>
 <h3 id="abf-approximate-bayes-factors">ABF (Approximate Bayes Factors)<a class="headerlink" href="#abf-approximate-bayes-factors" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: Fast, simple analysis with minimal assumptions</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span>--tool<span class="w"> </span>abf<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span>--var-prior<span class="w"> </span><span class="m">0</span>.2
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>abf<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--var-prior<span class="w"> </span><span class="m">0</span>.2
 </code></pre></div>
 <p><strong>Key Parameters:</strong></p>
 <ul>
@@ -1695,12 +1612,10 @@
 </ul>
 <h3 id="carma">CARMA<a class="headerlink" href="#carma" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: Model uncertainty quantification, outlier detection  </p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span>--tool<span class="w"> </span>carma<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>--effect-size-prior<span class="w"> </span><span class="s2">&quot;Spike-slab&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>--y-var<span class="w"> </span><span class="m">1</span>.0
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>carma<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span>--effect-size-prior<span class="w"> </span><span class="s2">&quot;Spike-slab&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span>--y-var<span class="w"> </span><span class="m">1</span>.0
 </code></pre></div>
 <p><strong>Key Parameters:</strong></p>
 <ul>
@@ -1710,12 +1625,10 @@
 </ul>
 <h3 id="rsparsepro">RSparsePro<a class="headerlink" href="#rsparsepro" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: Sparse regression approach, computational efficiency</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>--tool<span class="w"> </span>rsparsepro<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span>--eps<span class="w"> </span>1e-5<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span>--cthres<span class="w"> </span><span class="m">0</span>.7
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>rsparsepro<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>--eps<span class="w"> </span>1e-5<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span>--cthres<span class="w"> </span><span class="m">0</span>.7
 </code></pre></div>
 <p><strong>Key Parameters:</strong></p>
 <ul>
@@ -1774,12 +1687,10 @@
 </table>
 <h2 id="automatic-parameter-setting">Automatic Parameter Setting<a class="headerlink" href="#automatic-parameter-setting" title="Permanent link">&para;</a></h2>
 <p>CREDTOOLS can automatically determine the maximum number of causal variants using COJO:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span>--set-L-by-cojo<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>--p-cutoff<span class="w"> </span>5e-8<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span>--collinear-cutoff<span class="w"> </span><span class="m">0</span>.9
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span>--set-L-by-cojo<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span>--p-cutoff<span class="w"> </span>5e-8<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span>--collinear-cutoff<span class="w"> </span><span class="m">0</span>.9
 </code></pre></div>
 <p><strong>COJO Parameters:</strong></p>
 <ul>
@@ -1810,9 +1721,8 @@
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">  </span><span class="p">},</span>
 <a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">  </span><span class="nt">&quot;tool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;susie&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">  </span><span class="nt">&quot;strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;single_input&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">}</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="p">}</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">    </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">}</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="common-issues-and-solutions">Common Issues and Solutions<a class="headerlink" href="#common-issues-and-solutions" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
@@ -1843,14 +1753,12 @@
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># 2. Review QC metrics (check s_estimate.txt, kriging_rss.txt)</span>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
 <a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># 3. Fine-mapping with automatic L setting</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>my_study.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span>--strategy<span class="w"> </span>single_input<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">    </span>--set-L-by-cojo<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">    </span>--coverage<span class="w"> </span><span class="m">0</span>.95<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">    </span>--max-iter<span class="w"> </span><span class="m">100</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="c1"># 4. Review results (pips.txt, creds.json)</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>my_study.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\ </span><span class="w">   </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span>--set-L-by-cojo<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span>--coverage<span class="w"> </span><span class="m">0</span>.95<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">    </span>--max-iter<span class="w"> </span><span class="m">100</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="c1"># 4. Review results (pips.txt, creds.json)</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

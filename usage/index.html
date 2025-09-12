@@ -436,41 +436,8 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#web-web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      web - Web Visualization
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#typical-workflows" class="md-nav__link">
-    <span class="md-ellipsis">
-      Typical Workflows
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Typical Workflows">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#single-ancestry-analysis" class="md-nav__link">
-    <span class="md-ellipsis">
-      Single-Ancestry Analysis
-    </span>
-  </a>
   
 </li>
         
@@ -567,15 +534,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#fine-mapping-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Fine-Mapping Configuration
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -648,8 +606,6 @@
   
     
     
-      
-        
       
         
       
@@ -864,29 +820,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Interface
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -902,10 +835,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -1062,52 +991,6 @@
   
   <span class="md-ellipsis">
     Multi-Input Fine-Mapping
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-visualization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Visualization
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Example
     
   </span>
   
@@ -1588,41 +1471,8 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#web-web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      web - Web Visualization
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#typical-workflows" class="md-nav__link">
-    <span class="md-ellipsis">
-      Typical Workflows
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Typical Workflows">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#single-ancestry-analysis" class="md-nav__link">
-    <span class="md-ellipsis">
-      Single-Ancestry Analysis
-    </span>
-  </a>
   
 </li>
         
@@ -1719,15 +1569,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#fine-mapping-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Fine-Mapping Configuration
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1806,7 +1647,7 @@
 <h1 id="usage-overview">Usage Overview<a class="headerlink" href="#usage-overview" title="Permanent link">&para;</a></h1>
 <p>credtools provides a comprehensive suite of commands for multi-ancestry fine-mapping analysis. This page provides an overview of all available commands and their typical usage patterns.</p>
 <h2 id="command-summary">Command Summary<a class="headerlink" href="#command-summary" title="Permanent link">&para;</a></h2>
-<p>credtools includes 8 main subcommands that can be used individually or as part of integrated workflows:</p>
+<p>credtools includes 7 main subcommands that can be used individually or as part of integrated workflows:</p>
 <h3 id="data-preparation-commands">Data Preparation Commands<a class="headerlink" href="#data-preparation-commands" title="Permanent link">&para;</a></h3>
 <h4 id="munge-summary-statistics-munging"><a href="../munge/">munge</a> - Summary Statistics Munging<a class="headerlink" href="#munge-summary-statistics-munging" title="Permanent link">&para;</a></h4>
 <p>Standardizes GWAS summary statistics from various formats into credtools-compatible format.</p>
@@ -1842,96 +1683,92 @@
 <h3 id="workflow-commands">Workflow Commands<a class="headerlink" href="#workflow-commands" title="Permanent link">&para;</a></h3>
 <h4 id="pipeline-complete-pipeline"><a href="../pipeline/">pipeline</a> - Complete Pipeline<a class="headerlink" href="#pipeline-complete-pipeline" title="Permanent link">&para;</a></h4>
 <p>Runs the full analysis workflow in a single command.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>prepared_loci.txt<span class="w"> </span>results/<span class="w"> </span>--tool<span class="w"> </span>multisusie<span class="w"> </span>--strategy<span class="w"> </span>multi_input
-</code></pre></div>
-<p><strong>Use for:</strong> Automated end-to-end analysis, production workflows, consistent parameter application.</p>
-<h4 id="web-web-visualization"><a href="../web/">web</a> - Web Visualization<a class="headerlink" href="#web-web-visualization" title="Permanent link">&para;</a></h4>
-<p>Launches interactive web interface for exploring results.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>credtools<span class="w"> </span>web<span class="w"> </span>finemap_results/<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
-</code></pre></div>
-<p><strong>Use for:</strong> Interactive result exploration, creating publication figures, sharing results with collaborators.</p>
-<h2 id="typical-workflows">Typical Workflows<a class="headerlink" href="#typical-workflows" title="Permanent link">&para;</a></h2>
-<h3 id="single-ancestry-analysis">Single-Ancestry Analysis<a class="headerlink" href="#single-ancestry-analysis" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># 1. Standardize summary statistics</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>gwas_eur.txt<span class="w"> </span>munged/
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># 2. Identify loci and chunk data</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/gwas_eur.munged.txt.gz<span class="w"> </span>chunked/
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># 3. Prepare LD matrices</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;EUR&quot;: &quot;/path/to/eur_reference&quot;}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>genotype_config.json
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1"># 4. Run fine-mapping</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>results/<span class="w"> </span>--tool<span class="w"> </span>susie
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="c1"># 5. Explore results</span>
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>credtools<span class="w"> </span>web<span class="w"> </span>results/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>prepared_loci.txt<span class="w"> </span>results/<span class="w"> </span>--tool<span class="w"> </span>multisusie<span class="sb">```</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>**Use<span class="w"> </span><span class="k">for</span>:**<span class="w"> </span>Automated<span class="w"> </span>end-to-end<span class="w"> </span>analysis,<span class="w"> </span>production<span class="w"> </span>workflows,<span class="w"> </span>consistent<span class="w"> </span>parameter<span class="w"> </span>application.
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1">## Typical Workflows</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1">### Single-Ancestry Analysis</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="sb">```</span>bash
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="c1"># 1. Standardize summary statistics</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>credtools<span class="w"> </span>munge<span class="w"> </span>gwas_eur.txt<span class="w"> </span>munged/
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="c1"># 2. Identify loci and chunk data</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/gwas_eur.munged.txt.gz<span class="w"> </span>chunked/
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="c1"># 3. Prepare LD matrices</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;EUR&quot;: &quot;/path/to/eur_reference&quot;}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>genotype_config.json
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="c1"># 4. Run fine-mapping</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>results/<span class="w"> </span>--tool<span class="w"> </span>susie
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="c1"># 5. Results are saved in results/ directory</span>
 </code></pre></div>
 <h3 id="multi-ancestry-analysis">Multi-Ancestry Analysis<a class="headerlink" href="#multi-ancestry-analysis" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># 1. Prepare multi-ancestry file mapping</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="s1">  &quot;EUR&quot;: &quot;gwas_eur.txt&quot;,</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="s1">  &quot;ASN&quot;: &quot;gwas_asn.txt&quot;, </span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="s1">  &quot;AFR&quot;: &quot;gwas_afr.txt&quot;</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s1">}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>ancestry_files.json
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># 2. Munge all ancestries</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>credtools<span class="w"> </span>munge<span class="w"> </span>ancestry_files.json<span class="w"> </span>munged/
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="c1"># 3. Identify shared loci</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/<span class="w"> </span>chunked/<span class="w"> </span>--merge-overlapping
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
-<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="c1"># 4. Prepare multi-ancestry LD matrices</span>
-<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="s1">  &quot;EUR&quot;: &quot;/path/to/eur_reference&quot;,</span>
-<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="s1">  &quot;ASN&quot;: &quot;/path/to/asn_reference&quot;,</span>
-<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="s1">  &quot;AFR&quot;: &quot;/path/to/afr_reference&quot;</span>
-<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="s1">}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>genotype_config.json
-<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
-<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>
-<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="c1"># 5. Run complete pipeline with meta-analysis</span>
-<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="w">  </span>--meta-method<span class="w"> </span>meta_all<span class="w"> </span>--tool<span class="w"> </span>multisusie<span class="w"> </span>--strategy<span class="w"> </span>multi_input
-<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>
-<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a><span class="c1"># 6. Launch web interface</span>
-<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>credtools<span class="w"> </span>web<span class="w"> </span>results/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 1. Prepare multi-ancestry file mapping</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s1">  &quot;EUR&quot;: &quot;gwas_eur.txt&quot;,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s1">  &quot;ASN&quot;: &quot;gwas_asn.txt&quot;, </span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s1">  &quot;AFR&quot;: &quot;gwas_afr.txt&quot;</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s1">}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>ancestry_files.json
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># 2. Munge all ancestries</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>credtools<span class="w"> </span>munge<span class="w"> </span>ancestry_files.json<span class="w"> </span>munged/
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># 3. Identify shared loci</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/<span class="w"> </span>chunked/<span class="w"> </span>--merge-overlapping
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="c1"># 4. Prepare multi-ancestry LD matrices</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="s1">  &quot;EUR&quot;: &quot;/path/to/eur_reference&quot;,</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="s1">  &quot;ASN&quot;: &quot;/path/to/asn_reference&quot;,</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="s1">  &quot;AFR&quot;: &quot;/path/to/afr_reference&quot;</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="s1">}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>genotype_config.json
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="c1"># 5. Run complete pipeline with meta-analysis</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">  </span>--meta-method<span class="w"> </span>meta_all<span class="w"> </span>--tool<span class="w"> </span>multisusie
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="c1"># 6. Results are saved in results/ directory</span>
 </code></pre></div>
 <h3 id="quality-focused-workflow">Quality-Focused Workflow<a class="headerlink" href="#quality-focused-workflow" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Standard preparation steps</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>ancestry_files.json<span class="w"> </span>munged/
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/<span class="w"> </span>chunked/
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="c1"># Meta-analysis with quality control</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>credtools<span class="w"> </span>meta<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>meta/
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>credtools<span class="w"> </span>qc<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>qc/
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="c1"># Fine-mapping only on QC-passed loci</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc/passed_loci_list.txt<span class="w"> </span>finemap/
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="c1"># Visualize results</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>credtools<span class="w"> </span>web<span class="w"> </span>finemap/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Standard preparation steps</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>ancestry_files.json<span class="w"> </span>munged/
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/<span class="w"> </span>chunked/
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Meta-analysis with quality control</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>credtools<span class="w"> </span>meta<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>meta/
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>credtools<span class="w"> </span>qc<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>qc/
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="c1"># Fine-mapping only on QC-passed loci</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc/passed_loci_list.txt<span class="w"> </span>finemap/
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="c1"># Results are saved in finemap/ directory</span>
 </code></pre></div>
 <h3 id="comparative-analysis-workflow">Comparative Analysis Workflow<a class="headerlink" href="#comparative-analysis-workflow" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Prepare data once</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>ancestry_files.json<span class="w"> </span>munged/
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/<span class="w"> </span>chunked/
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># Compare different meta-analysis strategies</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="k">for</span><span class="w"> </span>method<span class="w"> </span><span class="k">in</span><span class="w"> </span>meta_all<span class="w"> </span>meta_by_population<span class="w"> </span>no_meta<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span>credtools<span class="w"> </span>pipeline<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>results_<span class="si">${</span><span class="nv">method</span><span class="si">}</span>/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span>--meta-method<span class="w"> </span><span class="nv">$method</span><span class="w"> </span>--tool<span class="w"> </span>susie
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="k">done</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="c1"># Compare different fine-mapping tools</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="k">for</span><span class="w"> </span>tool<span class="w"> </span><span class="k">in</span><span class="w"> </span>susie<span class="w"> </span>abf<span class="w"> </span>finemap<span class="w"> </span>multisusie<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span>credtools<span class="w"> </span>finemap<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>results_<span class="si">${</span><span class="nv">tool</span><span class="si">}</span>/<span class="w"> </span>--tool<span class="w"> </span><span class="nv">$tool</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="k">done</span>
-<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="c1"># Visualize comparisons</span>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>credtools<span class="w"> </span>web<span class="w"> </span>results_comparison/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Prepare data once</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>ancestry_files.json<span class="w"> </span>munged/
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/<span class="w"> </span>chunked/
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># Compare different meta-analysis strategies</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">for</span><span class="w"> </span>method<span class="w"> </span><span class="k">in</span><span class="w"> </span>meta_all<span class="w"> </span>meta_by_population<span class="w"> </span>no_meta<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span>credtools<span class="w"> </span>pipeline<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>results_<span class="si">${</span><span class="nv">method</span><span class="si">}</span>/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span>--meta-method<span class="w"> </span><span class="nv">$method</span><span class="w"> </span>--tool<span class="w"> </span>susie
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="k">done</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="c1"># Compare different fine-mapping tools</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="k">for</span><span class="w"> </span>tool<span class="w"> </span><span class="k">in</span><span class="w"> </span>susie<span class="w"> </span>abf<span class="w"> </span>finemap<span class="w"> </span>multisusie<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">  </span>credtools<span class="w"> </span>finemap<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>results_<span class="si">${</span><span class="nv">tool</span><span class="si">}</span>/<span class="w"> </span>--tool<span class="w"> </span><span class="nv">$tool</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="k">done</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="c1"># Compare results in results_comparison/ directory</span>
 </code></pre></div>
 <h2 id="command-selection-guide">Command Selection Guide<a class="headerlink" href="#command-selection-guide" title="Permanent link">&para;</a></h2>
 <h3 id="choose-commands-based-on-your-needs">Choose Commands Based on Your Needs<a class="headerlink" href="#choose-commands-based-on-your-needs" title="Permanent link">&para;</a></h3>
@@ -1950,7 +1787,7 @@
 <p><strong>Want automated workflow?</strong>
 → Use <code>pipeline</code> for streamlined end-to-end analysis</p>
 <p><strong>Need to explore results?</strong>
-→ Use <code>web</code> for interactive visualization</p>
+→ Examine JSON and CSV output files</p>
 <h3 id="individual-commands-vs-pipeline">Individual Commands vs Pipeline<a class="headerlink" href="#individual-commands-vs-pipeline" title="Permanent link">&para;</a></h3>
 <p><strong>Use individual commands when:</strong>
 - Learning the credtools workflow
@@ -1966,47 +1803,45 @@
 - Time-sensitive analyses</p>
 <h2 id="common-parameter-patterns">Common Parameter Patterns<a class="headerlink" href="#common-parameter-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="computational-resources">Computational Resources<a class="headerlink" href="#computational-resources" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># High-performance multi-threading</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>--threads<span class="w"> </span><span class="m">16</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Memory-efficient processing  </span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>--threads<span class="w"> </span><span class="m">4</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># Single-threaded for debugging</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>--threads<span class="w"> </span><span class="m">1</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># High-performance multi-threading</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>--threads<span class="w"> </span><span class="m">16</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Memory-efficient processing  </span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>--threads<span class="w"> </span><span class="m">4</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Single-threaded for debugging</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>--threads<span class="w"> </span><span class="m">1</span>
 </code></pre></div>
 <h3 id="multi-ancestry-strategies">Multi-Ancestry Strategies<a class="headerlink" href="#multi-ancestry-strategies" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Maximum power through combination</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>--meta-method<span class="w"> </span>meta_all<span class="w"> </span>--strategy<span class="w"> </span>multi_input
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Population-specific analysis</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>--meta-method<span class="w"> </span>meta_by_population<span class="w"> </span>--strategy<span class="w"> </span>single_input
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># Individual ancestry analysis</span>
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>--meta-method<span class="w"> </span>no_meta<span class="w"> </span>--strategy<span class="w"> </span>single_input
-</code></pre></div>
-<h3 id="fine-mapping-configuration">Fine-Mapping Configuration<a class="headerlink" href="#fine-mapping-configuration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Conservative single-signal analysis</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>--tool<span class="w"> </span>abf<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">1</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># Standard multi-signal analysis</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>--tool<span class="w"> </span>susie<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">3</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="c1"># Complex multi-signal analysis</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>--tool<span class="w"> </span>susie<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span>--estimate-residual-variance
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="c1"># State-of-the-art multi-ancestry</span>
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>--tool<span class="w"> </span>multisusie<span class="w"> </span>--strategy<span class="w"> </span>multi_input<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">5</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Maximum power through combination</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>--meta-method<span class="w"> </span>meta_all#<span class="w"> </span>Population-specific<span class="w"> </span>analysis
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>--meta-method<span class="w"> </span>meta_by_population#<span class="w"> </span>Individual<span class="w"> </span>ancestry<span class="w"> </span>analysis
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>--meta-method<span class="w"> </span>no_meta<span class="sb">```</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1">### Fine-Mapping Configuration</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="sb">```</span>bash
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="c1"># Conservative single-signal analysis</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>--tool<span class="w"> </span>abf<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">1</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="c1"># Standard multi-signal analysis</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>--tool<span class="w"> </span>susie<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="c1"># Complex multi-signal analysis</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>--tool<span class="w"> </span>susie<span class="w"> </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span>--estimate-residual-variance
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="c1"># State-of-the-art multi-ancestry</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>--tool<span class="w"> </span>multisusie--max-causal<span class="w"> </span><span class="m">5</span>
 </code></pre></div>
 <h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
 <h3 id="command-specific-help">Command-Specific Help<a class="headerlink" href="#command-specific-help" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Get help for any command</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>--help
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>--help
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>--help
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="c1"># See all available commands</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>credtools<span class="w"> </span>--help
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Get help for any command</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>--help
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>--help
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>--help
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="c1"># See all available commands</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>credtools<span class="w"> </span>--help
 </code></pre></div>
 <h3 id="detailed-documentation">Detailed Documentation<a class="headerlink" href="#detailed-documentation" title="Permanent link">&para;</a></h3>
 <p>Each command has comprehensive documentation:
@@ -2016,8 +1851,7 @@
 - <a href="../meta/">meta</a> - Meta-analysis
 - <a href="../qc/">qc</a> - Quality control
 - <a href="../finemap/">finemap</a> - Fine-mapping analysis
-- <a href="../pipeline/">pipeline</a> - Complete pipeline
-- <a href="../web/">web</a> - Web visualization</p>
+- <a href="../pipeline/">pipeline</a> - Complete pipeline</p>
 <h3 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h3>
 <ul>
 <li><a href="../tutorial/">Tutorial</a> - Step-by-step guides</li>
@@ -2033,7 +1867,7 @@
 <li><strong>Validate inputs</strong>: Use QC command to catch issues early</li>
 <li><strong>Save intermediate results</strong>: Keep outputs from each step for troubleshooting</li>
 <li><strong>Document parameters</strong>: Record command-line options for reproducibility</li>
-<li><strong>Explore results thoroughly</strong>: Use web interface to understand your findings</li>
+<li><strong>Explore results thoroughly</strong>: Examine output files and summary statistics</li>
 </ol>
 
 

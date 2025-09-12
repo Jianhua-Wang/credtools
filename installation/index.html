@@ -311,15 +311,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Visualization
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#development-installation" class="md-nav__link">
     <span class="md-ellipsis">
       Development Installation
@@ -341,15 +332,6 @@
   <a href="#source" class="md-nav__link">
     <span class="md-ellipsis">
       Source
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#web-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Dependencies
     </span>
   </a>
   
@@ -411,8 +393,6 @@
   
     
     
-      
-        
       
         
       
@@ -627,29 +607,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Interface
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -665,10 +622,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -825,52 +778,6 @@
   
   <span class="md-ellipsis">
     Multi-Input Fine-Mapping
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-visualization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Visualization
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorial/web-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Web Example
     
   </span>
   
@@ -1248,15 +1155,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Visualization
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#development-installation" class="md-nav__link">
     <span class="md-ellipsis">
       Development Installation
@@ -1278,15 +1176,6 @@
   <a href="#source" class="md-nav__link">
     <span class="md-ellipsis">
       Source
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#web-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Dependencies
     </span>
   </a>
   
@@ -1336,44 +1225,30 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>credtools
 </code></pre></div>
 <p>This is the preferred method to install CREDTOOLS, as it will always install the most recent stable release.</p>
-<h2 id="web-visualization">Web Visualization<a class="headerlink" href="#web-visualization" title="Permanent link">&para;</a></h2>
-<p>To use the interactive web interface, install with web dependencies:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>credtools<span class="o">[</span>web<span class="o">]</span>
-</code></pre></div>
 <h2 id="development-installation">Development Installation<a class="headerlink" href="#development-installation" title="Permanent link">&para;</a></h2>
 <p>For development, you may want to install CREDTOOLS in "editable" mode:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Jianhua-Wang/credtools.git
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>credtools
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Jianhua-Wang/credtools.git
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>credtools
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </code></pre></div>
 <p>Check that CREDTOOLS is installed correctly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>credtools<span class="w"> </span>--help
-</code></pre></div>
-<p>For web visualization:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>credtools<span class="w"> </span>web<span class="w"> </span>--help
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>credtools<span class="w"> </span>--help
 </code></pre></div>
 <h2 id="conda-installation">Conda Installation<a class="headerlink" href="#conda-installation" title="Permanent link">&para;</a></h2>
 <p>You can also install CREDTOOLS using conda:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>credtools
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>credtools
 </code></pre></div>
 <h2 id="source">Source<a class="headerlink" href="#source" title="Permanent link">&para;</a></h2>
 <p>The source for CREDTOOLS can be downloaded from the <a href="https://github.com/Jianhua-Wang/credtools">Github repo</a>.</p>
 <p>You can either clone the public repository:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>git://github.com/Jianhua-Wang/credtools
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>git://github.com/Jianhua-Wang/credtools
 </code></pre></div>
 <p>Or download the <a href="https://github.com/Jianhua-Wang/credtools/tarball/master">tarball</a>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>curl<span class="w"> </span>-OJL<span class="w"> </span>https://github.com/Jianhua-Wang/credtools/tarball/master
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>curl<span class="w"> </span>-OJL<span class="w"> </span>https://github.com/Jianhua-Wang/credtools/tarball/master
 </code></pre></div>
 <p>Once you have a copy of the source, you can install it with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>credtools
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
-</code></pre></div>
-<h2 id="web-dependencies">Web Dependencies<a class="headerlink" href="#web-dependencies" title="Permanent link">&para;</a></h2>
-<p>The web visualization requires additional dependencies. You can install them with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>credtools<span class="o">[</span>web<span class="o">]</span>
-</code></pre></div>
-<p>If you don't have root access, you can install for your user only:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>credtools<span class="o">[</span>web<span class="o">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>credtools
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <p>If you encounter any issues during installation, please check:</p>
@@ -1382,9 +1257,6 @@
 <li>pip is up to date</li>
 <li>You have write permissions for the installation directory</li>
 </ol>
-<p>For web visualization issues, ensure all web dependencies are installed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>credtools<span class="o">[</span>web<span class="o">]</span>
-</code></pre></div>
 <h2 id="links">Links<a class="headerlink" href="#links" title="Permanent link">&para;</a></h2>
 <ul>
 <li></li>
