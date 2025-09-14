@@ -9,7 +9,6 @@ from typing import Any, Callable, Dict, Optional
 
 import numpy as np
 import pandas as pd
-import toml  # type: ignore
 
 from credtools.cojo import conditional_selection
 from credtools.credibleset import CredibleSet, combine_creds
@@ -223,17 +222,18 @@ def fine_map(
     # Deprecation warning for strategy parameter
     if strategy is not None:
         import warnings
+
         warnings.warn(
             "The 'strategy' parameter is deprecated and will be removed in a future version. "
             "The strategy is now automatically determined based on the tool and data structure.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
-    
+
     # Define tool categories
     single_input_tools = ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]
     multi_input_tools = ["multisusie", "susiex"]
-    
+
     # Tool function mapping
     tool_func_dict: Dict[str, Callable[..., Any]] = {
         "abf": run_abf,
@@ -244,7 +244,7 @@ def fine_map(
         "multisusie": run_multisusie,
         "susiex": run_susiex,
     }
-    
+
     # Get tool-specific parameters
     inspect_dict = {
         "abf": set(inspect.signature(run_abf).parameters),
@@ -258,7 +258,7 @@ def fine_map(
     params_dict = {}
     for t, args in inspect_dict.items():
         params_dict[t] = {k: v for k, v in kwargs.items() if k in args}
-    
+
     # Automatic strategy selection based on tool type
     if tool in multi_input_tools:
         # Multi-input tools: directly process the entire LocusSet
@@ -266,13 +266,13 @@ def fine_map(
         return tool_func_dict[tool](
             locus_set, max_causal=max_causal, **params_dict[tool]
         )
-    
+
     elif tool in single_input_tools:
         if locus_set.n_loci == 1:
             # Single locus: direct analysis
             logger.info(f"Using single-input tool {tool} for single locus")
             locus = locus_set.loci[0]
-            
+
             # COJO analysis for max_causal if enabled (skip for abf_cojo as it handles its own)
             if set_L_by_cojo and tool != "abf_cojo":
                 max_causal_cojo = len(
@@ -292,7 +292,7 @@ def fine_map(
                     max_causal_cojo = 1
                 max_causal = max_causal_cojo
                 logger.info(f"COJO determined max_causal={max_causal}")
-            
+
             # Use adaptive logic if enabled
             if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
                 return _adaptive_fine_map(
@@ -306,7 +306,7 @@ def fine_map(
                 return tool_func_dict[tool](
                     locus, max_causal=max_causal, **params_dict[tool]
                 )
-        
+
         else:
             # Multiple loci: analyze each and combine results
             logger.info(
@@ -316,7 +316,7 @@ def fine_map(
             all_creds = []
             for i, locus in enumerate(locus_set.loci):
                 logger.info(f"Processing locus {i+1}/{locus_set.n_loci}")
-                
+
                 # Optionally apply COJO for each locus
                 locus_max_causal = max_causal
                 if set_L_by_cojo and tool != "abf_cojo":
@@ -336,8 +336,10 @@ def fine_map(
                         )
                         locus_max_causal_cojo = 1
                     locus_max_causal = locus_max_causal_cojo
-                    logger.info(f"COJO determined max_causal={locus_max_causal} for locus {i+1}")
-                
+                    logger.info(
+                        f"COJO determined max_causal={locus_max_causal} for locus {i+1}"
+                    )
+
                 # Run fine-mapping for this locus
                 if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
                     creds = _adaptive_fine_map(
@@ -352,7 +354,7 @@ def fine_map(
                         locus, max_causal=locus_max_causal, **params_dict[tool]
                     )
                 all_creds.append(creds)
-            
+
             # Combine results
             logger.info("Combining credible sets from all loci")
             return combine_creds(
@@ -361,9 +363,11 @@ def fine_map(
                 combine_pip=combine_pip,
                 jaccard_threshold=jaccard_threshold,
             )
-    
+
     else:
-        raise ValueError(f"Tool {tool} not recognized. Available tools: {list(tool_func_dict.keys())}")
+        raise ValueError(
+            f"Tool {tool} not recognized. Available tools: {list(tool_func_dict.keys())}"
+        )
 
 
 def pipeline(

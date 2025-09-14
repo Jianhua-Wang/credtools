@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.34] (2025-09-14)
+
+### Fixed
+- **CI Test Suite**: Fixed failing CI tests and errors
+  - Fixed `TypeError` in test fixtures by adding required `locus_start` and `locus_end` parameters to `Locus` constructor calls
+  - Removed unused `toml` import that was causing `ModuleNotFoundError` in integration tests
+  - Fixed linting issues: converted f-strings without placeholders to regular strings
+  - Added missing docstrings for mock classes in QC module
+  - All 70 tests now pass successfully
+
+### Improved
+- Enhanced test coverage and reliability of CI pipeline
+- Improved code quality with resolved linting and documentation issues
+
 ## [0.0.33] (2025-09-12)
 
 ### Added

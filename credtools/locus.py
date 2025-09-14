@@ -69,6 +69,8 @@ class Locus:
         cohort: str,
         sample_size: int,
         sumstats: pd.DataFrame,
+        locus_start: int,
+        locus_end: int,
         ld: Optional[LDMatrix] = None,
         if_intersect: bool = False,
     ) -> None:
@@ -85,6 +87,10 @@ class Locus:
             Sample size.
         sumstats : pd.DataFrame
             Summary statistics DataFrame.
+        locus_start : int
+            Fixed start position for the locus.
+        locus_end : int
+            Fixed end position for the locus.
         ld : Optional[LDMatrix], optional
             LD matrix, by default None.
         if_intersect : bool, optional
@@ -99,6 +105,8 @@ class Locus:
         self._popu = popu
         self._cohort = cohort
         self._sample_size = sample_size
+        self._locus_start = locus_start
+        self._locus_end = locus_end
         self.lambda_s = None
         if ld:
             self.ld = ld
@@ -138,12 +146,12 @@ class Locus:
     @property
     def start(self) -> int:
         """Get the start position."""
-        return self.sumstats[ColName.BP].min()
+        return self._locus_start
 
     @property
     def end(self) -> int:
         """Get the end position."""
-        return self.sumstats[ColName.BP].max()
+        return self._locus_end
 
     @property
     def n_snps(self) -> int:
@@ -193,6 +201,8 @@ class Locus:
             self.cohort,
             self.sample_size,
             self.sumstats.copy(),
+            self._locus_start,
+            self._locus_end,
             self.ld.copy(),
             if_intersect=False,
         )
@@ -269,12 +279,20 @@ class LocusSet:
     @property
     def start(self) -> int:
         """Get the start position."""
-        return min([locus.start for locus in self.loci])
+        # All loci should have the same fixed start
+        starts = [locus._locus_start for locus in self.loci]
+        if not all(s == starts[0] for s in starts):
+            raise ValueError("All loci in LocusSet must have the same start position")
+        return starts[0]
 
     @property
     def end(self) -> int:
         """Get the end position."""
-        return max([locus.end for locus in self.loci])
+        # All loci should have the same fixed end
+        ends = [locus._locus_end for locus in self.loci]
+        if not all(e == ends[0] for e in ends):
+            raise ValueError("All loci in LocusSet must have the same end position")
+        return ends[0]
 
     @property
     def locus_id(self) -> str:
@@ -377,8 +395,107 @@ def intersect_sumstat_ld(locus: Locus) -> Locus:
         f"Number of common Variant IDs: {len(intersec_index)}"
     )
     return Locus(
-        locus.popu, locus.cohort, locus.sample_size, intersec_sumstats, intersec_ld
+        locus.popu,
+        locus.cohort,
+        locus.sample_size,
+        intersec_sumstats,
+        locus._locus_start,
+        locus._locus_end,
+        intersec_ld,
+        if_intersect=False,
     )
+
+
+def check_loci_info(loci_info: pd.DataFrame) -> pd.DataFrame:
+    """
+    Check and validate loci information DataFrame.
+
+    Parameters
+    ----------
+    loci_info : pd.DataFrame
+        DataFrame containing loci information.
+
+    Returns
+    -------
+    pd.DataFrame
+        Validated and type-corrected loci_info DataFrame.
+
+    Raises
+    ------
+    ValueError
+        If required columns are missing, data types are incorrect,
+        or locus_id/boundary consistency checks fail.
+
+    Notes
+    -----
+    This function performs the following checks:
+    1. Ensures all required columns are present
+    2. Validates and converts data types
+    3. Checks that loci with same locus_id have same chr, start, end
+    4. Validates chromosome, start, and end values
+    """
+    loci_info = loci_info.copy()
+
+    # Check for required columns
+    required_cols = [
+        "prefix",
+        "popu",
+        "cohort",
+        "sample_size",
+        "chr",
+        "start",
+        "end",
+        "locus_id",
+    ]
+    missing_cols = [col for col in required_cols if col not in loci_info.columns]
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {missing_cols}")
+
+    # Type checking and conversion
+    try:
+        # Convert numeric columns
+        loci_info["sample_size"] = loci_info["sample_size"].astype(int)
+        loci_info["chr"] = loci_info["chr"].astype(int)
+        loci_info["start"] = loci_info["start"].astype(int)
+        loci_info["end"] = loci_info["end"].astype(int)
+
+        # Ensure string columns are strings
+        loci_info["prefix"] = loci_info["prefix"].astype(str)
+        loci_info["popu"] = loci_info["popu"].astype(str)
+        loci_info["cohort"] = loci_info["cohort"].astype(str)
+        loci_info["locus_id"] = loci_info["locus_id"].astype(str)
+
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Failed to convert data types: {e}")
+
+    # Validate values
+    if (loci_info["sample_size"] <= 0).any():
+        raise ValueError("Sample size must be positive")
+
+    if (loci_info["chr"] <= 0).any() or (loci_info["chr"] > 25).any():
+        raise ValueError("Chromosome must be between 1 and 25")
+
+    if (loci_info["start"] <= 0).any():
+        raise ValueError("Start position must be positive")
+
+    if (loci_info["end"] <= loci_info["start"]).any():
+        raise ValueError("End position must be greater than start position")
+
+    # Check for duplicates in popu+cohort+locus_id combination
+    if loci_info.duplicated(subset=["popu", "cohort", "locus_id"]).any():
+        raise ValueError("Each popu+cohort+locus_id combination must be unique")
+
+    # Check consistency: same locus_id must have same chr, start, end
+    locus_boundaries = loci_info.groupby("locus_id")[["chr", "start", "end"]].nunique()
+    inconsistent_loci = locus_boundaries[(locus_boundaries > 1).any(axis=1)]
+
+    if not inconsistent_loci.empty:
+        raise ValueError(
+            f"Inconsistent boundaries for locus_id(s): {inconsistent_loci.index.tolist()}. "
+            "Each locus_id must have consistent chr, start, end values across all rows."
+        )
+
+    return loci_info
 
 
 def intersect_loci(list_loci: List[Locus]) -> List[Locus]:
@@ -415,6 +532,8 @@ def load_locus(
     popu: str,
     cohort: str,
     sample_size: int,
+    locus_start: int,
+    locus_end: int,
     if_intersect: bool = False,
     calculate_lambda_s: bool = False,
     **kwargs: Any,
@@ -432,6 +551,10 @@ def load_locus(
         Cohort of the input data.
     sample_size : int
         Sample size of the input data.
+    locus_start : int
+        Fixed start position for the locus.
+    locus_end : int
+        Fixed end position for the locus.
     if_intersect : bool, optional
         Whether to intersect the input data with the LD matrix, by default False.
     calculate_lambda_s : bool, optional
@@ -488,7 +611,14 @@ def load_locus(
     ld = load_ld(ld_path, ldmap_path, if_sort_alleles=True, **kwargs)
 
     locus = Locus(
-        popu, cohort, sample_size, sumstats=sumstats, ld=ld, if_intersect=if_intersect
+        popu,
+        cohort,
+        sample_size,
+        sumstats,
+        locus_start,
+        locus_end,
+        ld=ld,
+        if_intersect=if_intersect,
     )
 
     if calculate_lambda_s:
@@ -522,7 +652,7 @@ def load_locus_set(
     ----------
     locus_info : pd.DataFrame
         DataFrame containing the locus information with required columns:
-        ['prefix', 'popu', 'cohort', 'sample_size'].
+        ['prefix', 'popu', 'cohort', 'sample_size', 'chr', 'start', 'end', 'locus_id'].
     if_intersect : bool, optional
         Whether to intersect the input data with the LD matrix, by default False.
     calculate_lambda_s : bool, optional
@@ -548,8 +678,12 @@ def load_locus_set(
     - popu: Population code
     - cohort: Cohort name
     - sample_size: Sample size for the cohort
+    - chr: Chromosome number
+    - start: Start position of the locus
+    - end: End position of the locus
+    - locus_id: Locus identifier
 
-    Each row represents one locus to be loaded.
+    All rows must have the same chr, start, end, locus_id values (representing the same locus).
 
     Examples
     --------
@@ -563,12 +697,25 @@ def load_locus_set(
     >>> print(f"Loaded {locus_set.n_loci} loci")
     Loaded 2 loci
     """
-    required_cols = ["prefix", "popu", "cohort", "sample_size"]
-    missing_cols = [col for col in required_cols if col not in locus_info.columns]
-    if len(missing_cols) > 0:
-        raise ValueError(f"The following columns are required: {missing_cols}")
+    # Check and validate the locus_info DataFrame
+    locus_info = check_loci_info(locus_info)
+
+    # Check that all rows have the same chr, start, end (same locus)
+    if len(locus_info["chr"].unique()) > 1:
+        raise ValueError("All rows must have the same chromosome")
+    if len(locus_info["start"].unique()) > 1:
+        raise ValueError("All rows must have the same start position")
+    if len(locus_info["end"].unique()) > 1:
+        raise ValueError("All rows must have the same end position")
+    if len(locus_info["locus_id"].unique()) > 1:
+        raise ValueError("All rows must have the same locus_id")
+
+    # Additional check for load_locus_set: popu+cohort must be unique within this single locus
     if locus_info.duplicated(subset=["popu", "cohort"]).any():
-        raise ValueError("The combination of popu and cohort is not unique.")
+        raise ValueError(
+            "Each popu+cohort combination must be unique within a single locus"
+        )
+
     loci = []
     for i, row in locus_info.iterrows():
         loci.append(
@@ -577,6 +724,8 @@ def load_locus_set(
                 row["popu"],
                 row["cohort"],
                 row["sample_size"],
+                int(row["start"]),
+                int(row["end"]),
                 if_intersect,
                 calculate_lambda_s,
                 **kwargs,

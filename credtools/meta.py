@@ -19,7 +19,13 @@ from scipy import stats
 
 from credtools.constants import ColName
 from credtools.ldmatrix import LDMatrix
-from credtools.locus import Locus, LocusSet, intersect_sumstat_ld, load_locus_set
+from credtools.locus import (
+    Locus,
+    LocusSet,
+    check_loci_info,
+    intersect_sumstat_ld,
+    load_locus_set,
+)
 from credtools.sumstats import munge
 
 logger = logging.getLogger("META")
@@ -240,8 +246,24 @@ def meta_all(inputs: LocusSet) -> Locus:
             cohort_set.add(cohort_name)
     cohort = "+".join(sorted(cohort_set))
 
+    # All input loci must have the same boundaries
+    locus_starts = [locus._locus_start for locus in inputs.loci]
+    locus_ends = [locus._locus_end for locus in inputs.loci]
+
+    if not all(s == locus_starts[0] for s in locus_starts):
+        raise ValueError("All input loci must have the same start position")
+    if not all(e == locus_ends[0] for e in locus_ends):
+        raise ValueError("All input loci must have the same end position")
+
     return Locus(
-        popu, cohort, sample_size, sumstats=meta_sumstat, ld=meta_ld, if_intersect=True
+        popu,
+        cohort,
+        sample_size,
+        meta_sumstat,
+        locus_starts[0],
+        locus_ends[0],
+        ld=meta_ld,
+        if_intersect=True,
     )
 
 
@@ -448,6 +470,7 @@ def meta_loci(
     {outdir}/{locus_id}/{prefix}.{sumstats.gz,ld.npz,ldmap.gz}
     """
     loci_info = pd.read_csv(inputs, sep="\t")
+    loci_info = check_loci_info(loci_info)  # Validate input data
     new_loci_info = pd.DataFrame(columns=loci_info.columns)
 
     # Group loci by locus_id

@@ -47,7 +47,15 @@ def sample_locus():
     # Create LDMatrix object
     ld = LDMatrix(sumstats, ld_matrix)
 
-    return Locus(popu="EUR", cohort="test", sample_size=1000, sumstats=sumstats, ld=ld)
+    return Locus(
+        popu="EUR",
+        cohort="test",
+        sample_size=1000,
+        sumstats=sumstats,
+        locus_start=1000,
+        locus_end=3000,
+        ld=ld,
+    )
 
 
 def test_locus_creation(sample_locus):
@@ -105,7 +113,12 @@ def test_file_io(temp_dir, sample_locus):
 
     # Load locus
     loaded_locus = load_locus(
-        prefix=output_prefix, popu="EUR", cohort="test", sample_size=1000
+        prefix=output_prefix,
+        popu="EUR",
+        cohort="test",
+        sample_size=1000,
+        locus_start=1000,
+        locus_end=3000,
     )
 
     assert isinstance(loaded_locus, Locus)

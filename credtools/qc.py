@@ -8,7 +8,14 @@ from typing import Dict, Optional, Tuple
 # import matplotlib.pyplot as plt  # Not used in this module
 import numpy as np
 import pandas as pd
-from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeRemainingColumn
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 from scipy import stats
 from scipy.optimize import curve_fit, minimize_scalar
 
@@ -21,14 +28,20 @@ except ImportError:
 
     # Create a mock class that will raise an error if used
     class GaussianMixture:
+        """Mock GaussianMixture class when sklearn is not available."""
+
         def __init__(self, *args, **kwargs):
-            raise ImportError("sklearn not available - install scikit-learn for full functionality")
+            raise ImportError(
+                "sklearn not available - install scikit-learn for full functionality"
+            )
 
         def fit(self, *args):
+            """Mock fit method."""
             pass
 
         @property
         def weights_(self):
+            """Mock weights property."""
             return None
 
 
@@ -48,12 +61,20 @@ except ImportError:
 
 
 from credtools.constants import ColName
-from credtools.locus import Locus, LocusSet, intersect_sumstat_ld, load_locus_set
+from credtools.locus import (
+    Locus,
+    LocusSet,
+    check_loci_info,
+    intersect_sumstat_ld,
+    load_locus_set,
+)
 
 logger = logging.getLogger("QC")
 
 
-def get_eigen(ldmatrix: np.ndarray, dtype: Optional[np.dtype] = None) -> Dict[str, np.ndarray]:
+def get_eigen(
+    ldmatrix: np.ndarray, dtype: Optional[np.dtype] = None
+) -> Dict[str, np.ndarray]:
     """
     Compute eigenvalues and eigenvectors of LD matrix.
 
@@ -139,7 +160,9 @@ def estimate_s_rss(
     # make sure the LD matrix and sumstats file are matched
     input_locus = locus.copy()
     input_locus = intersect_sumstat_ld(input_locus)
-    z = (input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]).to_numpy()
+    z = (
+        input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]
+    ).to_numpy()
     n = input_locus.sample_size
     # Check and process input arguments z, R
     z = np.where(np.isnan(z), 0, z)
@@ -190,7 +213,9 @@ def estimate_s_rss(
 
     elif method == "null-pseudomle":
 
-        def pseudolikelihood(s: float, z: np.ndarray, eigvals: np.ndarray, eigvecs: np.ndarray) -> float:
+        def pseudolikelihood(
+            s: float, z: np.ndarray, eigvals: np.ndarray, eigvecs: np.ndarray
+        ) -> float:
             precision = eigvecs @ (eigvecs.T / ((1 - s) * eigvals + s))
             postmean = np.zeros_like(z)
             postvar = np.zeros_like(z)
@@ -274,7 +299,9 @@ def kriging_rss(
     # Check and process input arguments z, R
     input_locus = locus.copy()
     input_locus = intersect_sumstat_ld(input_locus)
-    z = (input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]).to_numpy()
+    z = (
+        input_locus.sumstats[ColName.BETA] / input_locus.sumstats[ColName.SE]
+    ).to_numpy()
     n = input_locus.sample_size
     z = np.where(np.isnan(z), 0, z)
 
@@ -541,7 +568,9 @@ def snp_missingness(locus_set: LocusSet) -> pd.DataFrame:
     missingness_df.fillna(0, inplace=True)
     # log warning if missing rate > 0.1
     for col in missingness_df.columns:
-        missing_rate = float(round(1 - missingness_df[col].sum() / missingness_df.shape[0], 3))
+        missing_rate = float(
+            round(1 - missingness_df[col].sum() / missingness_df.shape[0], 3)
+        )
         if missing_rate > 0.1:
             logger.warning(f"The missing rate of {col} is {missing_rate}")
         else:
@@ -589,9 +618,13 @@ def ld_4th_moment(locus_set: LocusSet) -> pd.DataFrame:
         overlap_snps = overlap_snps.intersection(set(locus.sumstats[ColName.SNPID]))
     for locus in locus_set.loci:
         locus = locus.copy()
-        locus.sumstats = locus.sumstats[locus.sumstats[ColName.SNPID].isin(overlap_snps)]
+        locus.sumstats = locus.sumstats[
+            locus.sumstats[ColName.SNPID].isin(overlap_snps)
+        ]
         locus = intersect_sumstat_ld(locus)
-        r_4th = pd.Series(index=locus.ld.map[ColName.SNPID], data=np.power(locus.ld.r, 4).sum(axis=0))
+        r_4th = pd.Series(
+            index=locus.ld.map[ColName.SNPID], data=np.power(locus.ld.r, 4).sum(axis=0)
+        )
         r_4th = r_4th - 1
         r_4th.name = f"{locus.popu}_{locus.cohort}"
         ld_4th_res.append(r_4th)
@@ -645,7 +678,9 @@ def ld_decay(locus_set: LocusSet) -> pd.DataFrame:
     for locus in locus_set.loci:
         ldmap = locus.ld.map.copy()
         r = locus.ld.r.copy()
-        distance_mat = np.array([ldmap["BP"] - ldmap["BP"].values[i] for i in range(len(ldmap))])
+        distance_mat = np.array(
+            [ldmap["BP"] - ldmap["BP"].values[i] for i in range(len(ldmap))]
+        )
         distance_mat = distance_mat[np.tril_indices_from(distance_mat, k=-1)].flatten()
         distance_mat = np.abs(distance_mat)
         r = r[np.tril_indices_from(r, k=-1)].flatten()
@@ -716,7 +751,9 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
     """
     merged_df = locus_set.loci[0].original_sumstats[[ColName.SNPID]].copy()
     for i, locus_obj in enumerate(locus_set.loci):
-        locus_df = locus_obj.sumstats[[ColName.SNPID, ColName.BETA, ColName.SE, ColName.EAF]].copy()
+        locus_df = locus_obj.sumstats[
+            [ColName.SNPID, ColName.BETA, ColName.SE, ColName.EAF]
+        ].copy()
         locus_df.rename(
             columns={
                 ColName.BETA: f"BETA_{i}",
@@ -725,7 +762,9 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
             },
             inplace=True,
         )
-        merged_df = pd.merge(merged_df, locus_df, on=ColName.SNPID, how="inner", suffixes=("", f"_{i}"))
+        merged_df = pd.merge(
+            merged_df, locus_df, on=ColName.SNPID, how="inner", suffixes=("", f"_{i}")
+        )
 
     k: int = len(locus_set.loci)
     weights = []
@@ -735,7 +774,9 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
         effects.append(merged_df[f"BETA_{i}"])
 
     # Calculate weighted mean effect size
-    weighted_mean = np.sum([w * e for w, e in zip(weights, effects)], axis=0) / np.sum(weights, axis=0)
+    weighted_mean = np.sum([w * e for w, e in zip(weights, effects)], axis=0) / np.sum(
+        weights, axis=0
+    )
 
     # Calculate Q statistic
     Q = np.sum([w * (e - weighted_mean) ** 2 for w, e in zip(weights, effects)], axis=0)
@@ -870,7 +911,11 @@ def locus_qc(
         os.makedirs(out_dir, exist_ok=True)
         for metric_name, metric_data in qc_metrics.items():
             metric_data.to_csv(
-                f"{out_dir}/{metric_name}.txt.gz", sep="\t", index=False, float_format="%.6f", compression="gzip"
+                f"{out_dir}/{metric_name}.txt.gz",
+                sep="\t",
+                index=False,
+                float_format="%.6f",
+                compression="gzip",
             )
 
     return qc_metrics
@@ -930,7 +975,9 @@ def locus_qc_summary(
             cohort_dentist_s = pd.DataFrame()
         cohort_compare_maf = qc_metrics.get("compare_maf", pd.DataFrame())
         if not cohort_compare_maf.empty:
-            cohort_compare_maf = cohort_compare_maf[cohort_compare_maf["cohort"] == cohort]
+            cohort_compare_maf = cohort_compare_maf[
+                cohort_compare_maf["cohort"] == cohort
+            ]
         else:
             cohort_compare_maf = pd.DataFrame()
 
@@ -945,41 +992,53 @@ def locus_qc_summary(
 
         # MAF correlation
         if not cohort_compare_maf.empty and len(cohort_compare_maf) > 1:
-            maf_corr = float(cohort_compare_maf["MAF_sumstats"].corr(cohort_compare_maf["MAF_ld"]))
+            maf_corr = float(
+                cohort_compare_maf["MAF_sumstats"].corr(cohort_compare_maf["MAF_ld"])
+            )
         else:
             maf_corr = np.nan
 
         # Lambda-s (take the first value since it's the same for all SNPs in the cohort)
-        lambda_s = float(cohort_expected_z["lambda_s"].iloc[0]) if not cohort_expected_z.empty else np.nan
+        lambda_s = (
+            float(cohort_expected_z["lambda_s"].iloc[0])
+            if not cohort_expected_z.empty
+            else np.nan
+        )
 
         # Count flips: logLR > threshold AND |z| > threshold
-        flip_condition = ((cohort_expected_z["logLR"] > flip_logLR_threshold) &
-                          (cohort_expected_z["z"].abs() > flip_z_threshold))
+        flip_condition = (cohort_expected_z["logLR"] > flip_logLR_threshold) & (
+            cohort_expected_z["z"].abs() > flip_z_threshold
+        )
         n_flip = int(flip_condition.sum())
 
         # Count lambda-s outliers: |z_std_diff| > threshold
-        n_lambda_s_outlier = int((cohort_expected_z["z_std_diff"].abs() > lambda_s_outlier_threshold).sum())
+        n_lambda_s_outlier = int(
+            (cohort_expected_z["z_std_diff"].abs() > lambda_s_outlier_threshold).sum()
+        )
 
         # Count dentist-s outliers: -log10p >= threshold AND r2 >= threshold
         if not cohort_dentist_s.empty:
-            dentist_condition = ((cohort_dentist_s["-log10p_dentist_s"] >= dentist_s_pvalue_threshold) &
-                                 (cohort_dentist_s["r2"] >= dentist_s_r2_threshold))
+            dentist_condition = (
+                cohort_dentist_s["-log10p_dentist_s"] >= dentist_s_pvalue_threshold
+            ) & (cohort_dentist_s["r2"] >= dentist_s_r2_threshold)
             n_dentist_s_outlier = int(dentist_condition.sum())
         else:
             n_dentist_s_outlier = 0
 
-        summary_rows.append({
-            "popu": popu,
-            "cohort": cohort_name,
-            "n_snps": n_snps,
-            "n_1e-5": n_1e_5,
-            "n_5e-8": n_5e_8,
-            "maf_corr": maf_corr,
-            "lambda_s": lambda_s,
-            "n_flip": n_flip,
-            "n_lambda_s_outlier": n_lambda_s_outlier,
-            "n_dentist_s_outlier": n_dentist_s_outlier,
-        })
+        summary_rows.append(
+            {
+                "popu": popu,
+                "cohort": cohort_name,
+                "n_snps": n_snps,
+                "n_1e-5": n_1e_5,
+                "n_5e-8": n_5e_8,
+                "maf_corr": maf_corr,
+                "lambda_s": lambda_s,
+                "n_flip": n_flip,
+                "n_lambda_s_outlier": n_lambda_s_outlier,
+                "n_dentist_s_outlier": n_dentist_s_outlier,
+            }
+        )
 
     return pd.DataFrame(summary_rows)
 
@@ -1096,6 +1155,7 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
     A global QC summary file is also generated at the output directory root.
     """
     loci_info = pd.read_csv(inputs, sep="\t")
+    loci_info = check_loci_info(loci_info)  # Validate input data
 
     # Create progress bar
     progress = Progress(
@@ -1107,7 +1167,10 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
     )
 
     # Prepare arguments for multiprocessing
-    locus_groups = [(locus_id, locus_info, out_dir) for locus_id, locus_info in loci_info.groupby("locus_id")]
+    locus_groups = [
+        (locus_id, locus_info, out_dir)
+        for locus_id, locus_info in loci_info.groupby("locus_id")
+    ]
 
     all_summaries = []
 
@@ -1125,7 +1188,9 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
     if all_summaries:
         global_summary = pd.concat(all_summaries, ignore_index=True)
         # Reorder columns to put locus_id first
-        cols = ["locus_id"] + [col for col in global_summary.columns if col != "locus_id"]
+        cols = ["locus_id"] + [
+            col for col in global_summary.columns if col != "locus_id"
+        ]
         global_summary = global_summary[cols]
         global_summary.to_csv(
             f"{out_dir}/qc.txt.gz",

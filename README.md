@@ -36,12 +36,6 @@ Multi-ancestry fine-mapping pipeline with interactive web visualization.
 pip install credtools
 ```
 
-### With Web Visualization
-To use the interactive web interface, install with web dependencies:
-```bash
-pip install credtools[web]
-```
-
 ## Quick Start
 
 ### Command Line Usage
@@ -60,32 +54,7 @@ credtools prepare output/chunks/chunk_info.txt genotype_config.json output/prepa
 # Step 4: Run fine-mapping pipeline
 credtools pipeline output/prepared/final_loci_list.txt output/results/
 
-# Step 5: Launch web visualization interface
-credtools web output/results --port 8080
 ```
-
-### Advanced Usage
-
-```bash
-# Launch web visualization interface
-credtools web /path/to/results --port 8080
-
-# View specific loci files
-credtools web /path/to/data \
-  --allmeta-loci data/allmeta_loci.txt \
-  --popumeta-loci data/popumeta_loci.txt \
-  --nometa-loci data/nometa_loci.txt
-```
-
-### Web Interface
-
-The web interface provides:
-- **Home page**: Overview of all loci with interactive filtering
-- **Locus pages**: Detailed views with LocusZoom-style plots
-- **Quality control**: Comprehensive QC metrics and visualizations
-- **Multi-tool comparison**: Compare results across different fine-mapping methods
-
-Access the web interface at `http://localhost:8080` after running `credtools web`.
 
 ## Preprocessing Workflow
 
@@ -93,14 +62,14 @@ credtools now supports starting from whole-genome summary statistics and genotyp
 
 ### Step 1: Munge Summary Statistics (`credtools munge`)
 - **Purpose**: Standardize and clean GWAS summary statistics from various formats
-- **Features**: 
+- **Features**:
   - Automatic header detection and mapping
   - Data validation and quality control
   - Support for multiple file formats
 - **Input**: Raw GWAS files with various column headers
 - **Output**: Standardized `.munged.txt.gz` files
 
-### Step 2: Chunk Loci (`credtools chunk`)  
+### Step 2: Chunk Loci (`credtools chunk`)
 - **Purpose**: Identify independent loci and create regional chunks for fine-mapping
 - **Features**:
   - Distance-based independent SNP identification
@@ -113,7 +82,7 @@ credtools now supports starting from whole-genome summary statistics and genotyp
 - **Purpose**: Generate LD matrices and final fine-mapping input files
 - **Features**:
   - LD matrix computation from genotype data
-  - Variant intersection and quality control  
+  - Variant intersection and quality control
   - Multi-threaded processing
 - **Input**: Chunked files + genotype data configuration
 - **Output**: credtools-ready input files (`.sumstats.gz`, `.ld.npz`, `.ldmap.gz`)
@@ -127,6 +96,3 @@ credtools now supports starting from whole-genome summary statistics and genotyp
 
 For detailed documentation, see <https://Jianhua-Wang.github.io/credtools>
 
-## Web Visualization
-
-The web module (`credtools.web`) provides interactive visualization of fine-mapping results. See [credtools/web/README.md](credtools/web/README.md) for detailed usage instructions.
