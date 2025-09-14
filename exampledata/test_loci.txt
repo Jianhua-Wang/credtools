@@ -1,0 +1,6 @@
+chr	start	end	popu	sample_size	cohort	prefix	locus_id
+8	41242482	42492482	AFR	89499	MVP	/project/voight_01/wjh/multi_ancesFM/data/real/preprocessed/AFR.MVP.chr8_41242482_42492482	chr8_41242482_42492482
+8	41242482	42492482	HIS	41483	MVP	/project/voight_01/wjh/multi_ancesFM/data/real/preprocessed/HIS.MVP.chr8_41242482_42492482	chr8_41242482_42492482
+8	41242482	42492482	EUR	337465	MVP	/project/voight_01/wjh/multi_ancesFM/data/real/preprocessed/EUR.MVP.chr8_41242482_42492482	chr8_41242482_42492482
+8	41242482	42492482	SAS	8253	UKBB	/project/voight_01/wjh/multi_ancesFM/data/real/preprocessed/SAS.UKBB.chr8_41242482_42492482	chr8_41242482_42492482
+8	41242482	42492482	EUR	442817	UKBB	/project/voight_01/wjh/multi_ancesFM/data/real/preprocessed/EUR.UKBB.chr8_41242482_42492482	chr8_41242482_42492482

@@ -1,0 +1,22 @@
+[credible_sets.susie]
+tool = "susie"
+n_cs = 2
+coverage = 0.95
+lead_snps = [ "rs1", "rs2",]
+snps = [ [ "rs1", "rs3",], [ "rs2", "rs4",],]
+cs_sizes = [ 2, 2,]
+
+[credible_sets.finemap]
+tool = "finemap"
+n_cs = 1
+coverage = 0.95
+lead_snps = [ "rs1",]
+snps = [ [ "rs1", "rs3",],]
+cs_sizes = [ 2,]
+
+[credible_sets.susie.parameters]
+L = 10
+coverage = 0.95
+
+[credible_sets.finemap.parameters]
+n_causal = 1
