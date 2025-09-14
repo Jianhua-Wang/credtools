@@ -38,7 +38,7 @@ jobs:
 
       - name: test with tox
         run:
-          tox
+          uv run tox
 
       - name: Build wheels and source tarball
         run: |
