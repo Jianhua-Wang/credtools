@@ -305,15 +305,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#with-web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      With Web Visualization
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -333,24 +324,6 @@
   <a href="#command-line-usage" class="md-nav__link">
     <span class="md-ellipsis">
       Command Line Usage
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#advanced-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Usage
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#web-interface" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Interface
     </span>
   </a>
   
@@ -416,15 +389,6 @@
   <a href="#documentation" class="md-nav__link">
     <span class="md-ellipsis">
       Documentation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Visualization
     </span>
   </a>
   
@@ -1270,15 +1234,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#with-web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      With Web Visualization
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1298,24 +1253,6 @@
   <a href="#command-line-usage" class="md-nav__link">
     <span class="md-ellipsis">
       Command Line Usage
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#advanced-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Usage
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#web-interface" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Interface
     </span>
   </a>
   
@@ -1386,15 +1323,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#web-visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      Web Visualization
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1442,51 +1370,27 @@
 <h3 id="basic-installation">Basic Installation<a class="headerlink" href="#basic-installation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>credtools
 </code></pre></div>
-<h3 id="with-web-visualization">With Web Visualization<a class="headerlink" href="#with-web-visualization" title="Permanent link">&para;</a></h3>
-<p>To use the interactive web interface, install with web dependencies:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>credtools<span class="o">[</span>web<span class="o">]</span>
-</code></pre></div></p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="command-line-usage">Command Line Usage<a class="headerlink" href="#command-line-usage" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Complete workflow: from whole-genome data to fine-mapping results</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Step 1: Standardize summary statistics</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>credtools<span class="w"> </span>munge<span class="w"> </span>raw_gwas_eur.txt,raw_gwas_asn.txt<span class="w"> </span>output/munged/
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Step 2: Identify independent loci and chunk data</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>output/munged/*.munged.txt.gz<span class="w"> </span>output/chunks/
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Step 3: Prepare LD matrices and final inputs</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>output/chunks/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>output/prepared/
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># Step 4: Run fine-mapping pipeline</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>output/prepared/final_loci_list.txt<span class="w"> </span>output/results/
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># Step 5: Launch web visualization interface</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>credtools<span class="w"> </span>web<span class="w"> </span>output/results<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Complete workflow: from whole-genome data to fine-mapping results</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Step 1: Standardize summary statistics</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>credtools<span class="w"> </span>munge<span class="w"> </span>raw_gwas_eur.txt,raw_gwas_asn.txt<span class="w"> </span>output/munged/
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Step 2: Identify independent loci and chunk data</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>output/munged/*.munged.txt.gz<span class="w"> </span>output/chunks/
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Step 3: Prepare LD matrices and final inputs</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>output/chunks/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>output/prepared/
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Step 4: Run fine-mapping pipeline</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>output/prepared/final_loci_list.txt<span class="w"> </span>output/results/
 </code></pre></div>
-<h3 id="advanced-usage">Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Launch web visualization interface</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>credtools<span class="w"> </span>web<span class="w"> </span>/path/to/results<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># View specific loci files</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>credtools<span class="w"> </span>web<span class="w"> </span>/path/to/data<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>--allmeta-loci<span class="w"> </span>data/allmeta_loci.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>--popumeta-loci<span class="w"> </span>data/popumeta_loci.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--nometa-loci<span class="w"> </span>data/nometa_loci.txt
-</code></pre></div>
-<h3 id="web-interface">Web Interface<a class="headerlink" href="#web-interface" title="Permanent link">&para;</a></h3>
-<p>The web interface provides:
-- <strong>Home page</strong>: Overview of all loci with interactive filtering
-- <strong>Locus pages</strong>: Detailed views with LocusZoom-style plots
-- <strong>Quality control</strong>: Comprehensive QC metrics and visualizations
-- <strong>Multi-tool comparison</strong>: Compare results across different fine-mapping methods</p>
-<p>Access the web interface at <code>http://localhost:8080</code> after running <code>credtools web</code>.</p>
 <h2 id="preprocessing-workflow">Preprocessing Workflow<a class="headerlink" href="#preprocessing-workflow" title="Permanent link">&para;</a></h2>
 <p>credtools now supports starting from whole-genome summary statistics and genotype data, eliminating the need for manual preprocessing:</p>
 <h3 id="step-1-munge-summary-statistics-credtools-munge">Step 1: Munge Summary Statistics (<code>credtools munge</code>)<a class="headerlink" href="#step-1-munge-summary-statistics-credtools-munge" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Purpose</strong>: Standardize and clean GWAS summary statistics from various formats</li>
-<li><strong>Features</strong>: </li>
+<li><strong>Features</strong>:</li>
 <li>Automatic header detection and mapping</li>
 <li>Data validation and quality control</li>
 <li>Support for multiple file formats</li>
@@ -1508,7 +1412,7 @@
 <li><strong>Purpose</strong>: Generate LD matrices and final fine-mapping input files</li>
 <li><strong>Features</strong>:</li>
 <li>LD matrix computation from genotype data</li>
-<li>Variant intersection and quality control  </li>
+<li>Variant intersection and quality control</li>
 <li>Multi-threaded processing</li>
 <li><strong>Input</strong>: Chunked files + genotype data configuration</li>
 <li><strong>Output</strong>: credtools-ready input files (<code>.sumstats.gz</code>, <code>.ld.npz</code>, <code>.ldmap.gz</code>)</li>
@@ -1521,8 +1425,6 @@
 </ul>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 <p>For detailed documentation, see <a href="https://Jianhua-Wang.github.io/credtools">https://Jianhua-Wang.github.io/credtools</a></p>
-<h2 id="web-visualization">Web Visualization<a class="headerlink" href="#web-visualization" title="Permanent link">&para;</a></h2>
-<p>The web module (<code>credtools.web</code>) provides interactive visualization of fine-mapping results. See <a href="../credtools/web/README.md">credtools/web/README.md</a> for detailed usage instructions.</p>
 
 
 
