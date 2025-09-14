@@ -47,8 +47,8 @@ jobs:
         run: |
           uv add --dev tox tox-gh-actions
 
-      # - name: test with tox
-        # run: tox
+      - name: test with tox
+        run: tox
 
       - name: list files
         run: ls -l .

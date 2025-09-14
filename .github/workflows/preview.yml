@@ -36,9 +36,9 @@ jobs:
         run: |
           uv sync --extra dev
 
-      # - name: test with tox
-      #   run:
-      #     tox
+      - name: test with tox
+        run:
+          tox
 
       - name: Build wheels and source tarball
         run: |
