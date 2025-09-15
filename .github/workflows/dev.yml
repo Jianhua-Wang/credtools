@@ -53,8 +53,8 @@ jobs:
       - name: list files
         run: ls -l .
 
-      - uses: codecov/codecov-action@v4.6.0
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          files: coverage.xml
+          slug: Jianhua-Wang/credtools
