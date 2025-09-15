@@ -26,7 +26,6 @@ Multi-ancestry fine-mapping pipeline with interactive web visualization.
 - **Multi-ancestry fine-mapping**: Support for multiple fine-mapping tools (SuSiE, FINEMAP, etc.)
 - **Meta-analysis capabilities**: Combine results across populations and cohorts
 - **Quality control**: Built-in QC metrics and visualizations
-- **Interactive web interface**: Explore results through a modern web dashboard
 - **Command-line interface**: Easy-to-use CLI for all operations
 
 ## Installation
@@ -34,6 +33,11 @@ Multi-ancestry fine-mapping pipeline with interactive web visualization.
 ### Basic Installation
 ```bash
 pip install credtools
+```
+
+### Install with uv
+```bash
+uv pip install credtools
 ```
 
 ## Quick Start
