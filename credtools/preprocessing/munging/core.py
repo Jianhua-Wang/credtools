@@ -74,10 +74,6 @@ def munge(df: pd.DataFrame) -> pd.DataFrame:
     # Process frequency columns if present
     if ColName.EAF in outdf.columns:
         outdf = _munge_eaf(outdf)
-        outdf[ColName.MAF] = outdf[ColName.EAF].apply(
-            lambda x: min(x, 1 - x) if pd.notna(x) else x
-        )
-        outdf = _munge_maf(outdf)
 
     # Sort by chromosome and position
     outdf = outdf.sort_values([ColName.CHR, ColName.BP])
@@ -339,15 +335,15 @@ def _munge_maf(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _finalize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Ensure correct column order and add missing columns."""
+    """Ensure correct column order and add missing columns for credtools output."""
     outdf = df.copy()
 
-    # Add missing optional columns with None values
-    for col in ColName.sumstat_cols:
+    # Add missing output columns with None values
+    for col in ColName.output_cols:
         if col not in outdf.columns:
             outdf[col] = None
 
-    # Reorder columns to standard order
-    outdf = outdf[ColName.sumstat_cols]
+    # Reorder columns to standard output order (CHR, BP, SNPID, EA, NEA, EAF, BETA, SE, P, RSID)
+    outdf = outdf[ColName.output_cols]
 
     return outdf

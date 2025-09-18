@@ -7,20 +7,14 @@ import os
 from enum import Enum
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 import typer
 from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
+                           SpinnerColumn, TextColumn, TimeRemainingColumn)
 
 from credtools import __version__
 from credtools.credtools import fine_map, pipeline
@@ -170,14 +164,146 @@ def main(
     setup_file_logging(log_file, verbose)
 
 
+def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str], pd.DataFrame]:
+    """
+    Parse population configuration file with columns: popu, cohort, sample_size, path.
+
+    Parameters
+    ----------
+    config_file_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    tuple[Dict[str, str], pd.DataFrame]
+        Tuple containing:
+        - Dictionary mapping population identifiers to file paths
+        - Original DataFrame for later updating
+    """
+    if not os.path.exists(config_file_path):
+        raise FileNotFoundError(f"Configuration file not found: {config_file_path}")
+
+    try:
+        # Read the configuration file
+        config_df = pd.read_csv(config_file_path, sep='\t')
+
+        # Check required columns
+        required_cols = ['popu', 'cohort', 'sample_size', 'path']
+        missing_cols = [col for col in required_cols if col not in config_df.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns in config file: {missing_cols}")
+
+        # Create identifier -> path mapping
+        input_dict = {}
+        for _, row in config_df.iterrows():
+            # Create identifier from population and cohort
+            identifier = f"{row['popu']}_{row['cohort']}"
+            input_dict[identifier] = row['path']
+
+            # Check if file exists
+            if not os.path.exists(row['path']):
+                raise FileNotFoundError(f"Summary statistics file not found: {row['path']}")
+
+        return input_dict, config_df
+
+    except Exception as e:
+        raise ValueError(f"Error parsing configuration file: {e}")
+
+
+def create_updated_sumstat_info(
+    original_config_df: pd.DataFrame,
+    munged_files: Dict[str, str],
+    output_path: str
+) -> str:
+    """
+    Create an updated sumstat info file with new paths pointing to munged files.
+
+    Parameters
+    ----------
+    original_config_df : pd.DataFrame
+        Original configuration DataFrame
+    munged_files : Dict[str, str]
+        Dictionary mapping identifiers to munged file paths
+    output_path : str
+        Path for the output file
+
+    Returns
+    -------
+    str
+        Path to the created file
+    """
+    # Create a copy of the original config
+    updated_config = original_config_df.copy()
+
+    # Update the path column with munged file paths
+    for idx, row in updated_config.iterrows():
+        identifier = f"{row['popu']}_{row['cohort']}"
+        if identifier in munged_files:
+            updated_config.at[idx, 'path'] = munged_files[identifier]
+
+    # Save the updated configuration
+    updated_config.to_csv(output_path, sep='\t', index=False)
+
+    return output_path
+
+
+def create_updated_chunk_info(
+    original_config_df: pd.DataFrame,
+    chunk_info_df: pd.DataFrame,
+    output_path: str
+) -> str:
+    """
+    Create an updated sumstat info file with paths pointing to chunked files.
+
+    Parameters
+    ----------
+    original_config_df : pd.DataFrame
+        Original configuration DataFrame
+    chunk_info_df : pd.DataFrame
+        DataFrame from chunk_sumstats with chunked file information
+    output_path : str
+        Path for the output file
+
+    Returns
+    -------
+    str
+        Path to the created file
+    """
+    # Group chunk_info_df by ancestry to get the base directory for each ancestry
+    chunk_files_by_ancestry = {}
+
+    for _, row in chunk_info_df.iterrows():
+        ancestry = row['ancestry']
+        if ancestry not in chunk_files_by_ancestry:
+            # Get the directory containing chunked files for this ancestry
+            chunk_dir = os.path.dirname(row['sumstats_file'])
+            chunk_files_by_ancestry[ancestry] = chunk_dir
+
+    # Create a copy of the original config
+    updated_config = original_config_df.copy()
+
+    # Update the path column with chunk directory paths
+    for idx, row in updated_config.iterrows():
+        identifier = f"{row['popu']}_{row['cohort']}"
+
+        # Try to match the identifier with ancestry in chunk_files
+        if identifier in chunk_files_by_ancestry:
+            updated_config.at[idx, 'path'] = chunk_files_by_ancestry[identifier]
+
+    # Save the updated configuration
+    updated_config.to_csv(output_path, sep='\t', index=False)
+
+    return output_path
+
+
 @app.command(
     name="munge",
     help="Reformat and standardize GWAS summary statistics.",
 )
 def run_munge(
-    input_files: str = typer.Argument(
+    input_config: str = typer.Argument(
         ...,
-        help="Input sumstats file(s). Can be a single file, comma-separated list, or config file.",
+        help="Input configuration file with columns: popu, cohort, sample_size, path.",
     ),
     output_dir: str = typer.Argument(..., help="Output directory for munged files."),
     config_file: Optional[str] = typer.Option(
@@ -193,15 +319,13 @@ def run_munge(
         None, "--log-file", "-l", help="Log output to specified file."
     ),
 ):
-    """Reformat and standardize GWAS summary statistics using smunger integration."""
+    """Reformat and standardize GWAS summary statistics from population configuration file."""
     setup_file_logging(log_file)
 
     try:
         from credtools.preprocessing import munge_sumstats
-        from credtools.preprocessing.munge import (
-            create_munge_config,
-            validate_munged_files,
-        )
+        from credtools.preprocessing.munge import (create_munge_config,
+                                                    validate_munged_files)
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing dependencies not found.[/red]")
@@ -211,23 +335,16 @@ def run_munge(
     console = Console()
     console.print("[cyan]Munging summary statistics...[/cyan]")
 
-    # Parse input files
-    if "," in input_files:
-        # Comma-separated list
-        file_list = [f.strip() for f in input_files.split(",")]
-        input_dict = {Path(f).stem: f for f in file_list}
-    elif input_files.endswith((".json", ".yaml", ".yml")):
-        # Configuration file with file mappings
-        import json
-
-        with open(input_files) as f:
-            input_dict = json.load(f)
-    else:
-        # Single file
-        input_dict = input_files
+    # Parse population configuration file
+    try:
+        input_dict, original_config_df = parse_population_config_file(input_config)
+        console.print(f"[green]Loaded {len(input_dict)} population files from config[/green]")
+    except Exception as e:
+        console.print(f"[red]Error parsing configuration file: {e}[/red]")
+        raise typer.Exit(1)
 
     # Create interactive config if requested
-    if interactive_config and isinstance(input_dict, dict):
+    if interactive_config:
         config_output = config_file or os.path.join(output_dir, "munge_config.json")
         console.print(f"[yellow]Creating configuration file: {config_output}[/yellow]")
         create_munge_config(input_dict, config_output, interactive=True)
@@ -242,8 +359,19 @@ def run_munge(
             force_overwrite=force_overwrite,
         )
 
-        # Validate results
-        validation = validate_munged_files(result)
+        # Validate results with updated required columns
+        required_columns = ["CHR", "BP", "SNPID", "EA", "NEA", "EAF", "BETA", "SE", "P", "RSID"]
+        validation = validate_munged_files(result, required_columns=required_columns)
+
+        # Create updated sumstat info file
+        updated_info_path = os.path.join(output_dir, "sumstat_info_updated.txt")
+        try:
+            created_info_file = create_updated_sumstat_info(
+                original_config_df, result, updated_info_path
+            )
+            console.print(f"[green]Created updated sumstat info file: {created_info_file}[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not create updated info file: {e}[/yellow]")
 
         # Print summary
         console.print(f"[green]Successfully munged {len(result)} files[/green]")
@@ -264,9 +392,9 @@ def run_munge(
     help="Identify independent loci and chunk summary statistics.",
 )
 def run_chunk(
-    input_files: str = typer.Argument(
+    input_config: str = typer.Argument(
         ...,
-        help="Munged sumstats file(s). Can be single file, comma-separated list, or config file.",
+        help="Input configuration file with columns: popu, cohort, sample_size, path.",
     ),
     output_dir: str = typer.Argument(..., help="Output directory for chunked files."),
     distance_threshold: int = typer.Option(
@@ -295,33 +423,29 @@ def run_chunk(
         None, "--log-file", "-l", help="Log output to specified file."
     ),
 ):
-    """Identify independent loci and chunk summary statistics for fine-mapping."""
+    """Identify independent loci and chunk summary statistics from GWAS info configuration file."""
     setup_file_logging(log_file)
 
     try:
-        from credtools.preprocessing import chunk_sumstats, identify_independent_loci
-        from credtools.preprocessing.chunk import create_loci_list_for_credtools
+        from credtools.preprocessing import (chunk_sumstats,
+                                             identify_independent_loci)
+        from credtools.preprocessing.chunk import \
+            create_loci_list_for_credtools
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing module not found.[/red]")
         raise typer.Exit(1) from e
 
-    from pathlib import Path
-
     console = Console()
     console.print("[cyan]Identifying independent loci...[/cyan]")
 
-    # Parse input files
-    if "," in input_files:
-        file_list = [f.strip() for f in input_files.split(",")]
-        input_dict = {Path(f).stem.replace(".munged", ""): f for f in file_list}
-    elif input_files.endswith((".json", ".yaml", ".yml")):
-        import json
-
-        with open(input_files) as f:
-            input_dict = json.load(f)
-    else:
-        input_dict = input_files
+    # Parse population configuration file
+    try:
+        input_dict, original_config_df = parse_population_config_file(input_config)
+        console.print(f"[green]Loaded {len(input_dict)} population files from config[/green]")
+    except Exception as e:
+        console.print(f"[red]Error parsing configuration file: {e}[/red]")
+        raise typer.Exit(1)
 
     try:
         # Identify loci
@@ -353,6 +477,16 @@ def run_chunk(
         credtools_df = create_loci_list_for_credtools(
             chunk_info_df=chunk_info_df, output_file=loci_list_file
         )
+
+        # Create updated sumstat info file
+        updated_info_path = os.path.join(output_dir, "sumstat_info_updated.txt")
+        try:
+            created_info_file = create_updated_chunk_info(
+                original_config_df, chunk_info_df, updated_info_path
+            )
+            console.print(f"[green]Created updated sumstat info file: {created_info_file}[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not create updated info file: {e}[/yellow]")
 
         # Print summary
         console.print(f"[green]Successfully processed {len(loci_df)} loci[/green]")
@@ -390,7 +524,8 @@ def run_prepare(
     setup_file_logging(log_file)
     try:
         from credtools.preprocessing import prepare_finemap_inputs
-        from credtools.preprocessing.chunk import create_loci_list_for_credtools
+        from credtools.preprocessing.chunk import \
+            create_loci_list_for_credtools
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing module not found.[/red]")
@@ -591,10 +726,11 @@ def run_fine_map(
     When using single-input tools with multiple loci, results are automatically combined.
     """
     setup_file_logging(log_file)
-    from credtools.utils import create_float_format_dict
-    from datetime import datetime
-    import sys
     import logging
+    import sys
+    from datetime import datetime
+
+    from credtools.utils import create_float_format_dict
     logger = logging.getLogger("CREDTOOLS")
 
     loci_info = pd.read_csv(inputs, sep="\t")
@@ -1023,9 +1159,9 @@ def run_pipeline(
 ):
     """Run whole fine-mapping pipeline on a list of loci."""
     setup_file_logging(log_file)
-    from datetime import datetime
-    import sys
     import logging
+    import sys
+    from datetime import datetime
     logger = logging.getLogger("CREDTOOLS")
 
     loci_info = pd.read_csv(inputs, sep="\t")
@@ -1149,22 +1285,17 @@ def plot(
 ):
     """Create QC plots from credtools results."""
     try:
-        import matplotlib.pyplot as plt
         from pathlib import Path
 
-        from credtools.plot import (
-            plot_summary_qc,
-            plot_locus_qc,
-            plot_lambda_s_boxplot,
-            plot_ld_4th_moment,
-            plot_ld_decay,
-            plot_locus_pvalues,
-            plot_maf_corr_barplot,
-            plot_outliers_barplot,
-            plot_snp_missingness_upset,
-            plot_zscore_qq,
-            read_compressed_file,
-        )
+        import matplotlib.pyplot as plt
+
+        from credtools.plot import (plot_lambda_s_boxplot, plot_ld_4th_moment,
+                                    plot_ld_decay, plot_locus_pvalues,
+                                    plot_locus_qc, plot_maf_corr_barplot,
+                                    plot_outliers_barplot,
+                                    plot_snp_missingness_upset,
+                                    plot_summary_qc, plot_zscore_qq,
+                                    read_compressed_file)
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Plotting dependencies not found.[/red]")

@@ -62,6 +62,9 @@ class ColName:
     # Mandatory columns for basic functionality
     mandatory_cols = [CHR, BP, EA, NEA, BETA, SE, P]
 
+    # Output columns for credtools munge command (user requirement)
+    output_cols = [CHR, BP, SNPID, EA, NEA, EAF, BETA, SE, P, RSID]
+
 
 class ColType:
     """Data types for each column."""
