@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.0.35] (2025-09-17)
+
+### Added
+- **Comprehensive Plotting Module**: New visualization capabilities for QC results
+  - Added `credtools.plot` module with publication-quality plotting functions
+  - **Summary QC Plots** (2x2 layout from `qc.txt.gz`):
+    - Lambda-s distribution boxplot by cohort
+    - MAF correlation barplot between summary statistics and LD reference
+    - Lambda-s outliers count barplot by cohort
+    - Dentist-s outliers count barplot by cohort
+  - **Locus-specific Plots** (2x2 layout from individual QC files):
+    - Locus p-value plot with credible set annotations (from `expected_z.txt.gz`)
+    - Observed vs expected z-scores QQ plot (from `expected_z.txt.gz`)
+    - LD decay curve plots by cohort (from `ld_decay.txt.gz`)
+    - LD 4th moment boxplots by cohort (from `ld_4th_moment.txt.gz`)
+    - SNP missingness upset plot showing overlap patterns (from `snp_missingness.txt.gz`)
+  - **CLI Command**:
+    - `credtools plot`: Unified plotting command with auto-detection of plot type
+    - Supports all plot types: summary (2x2), locus (2x2), and individual plots
+    - Smart auto-detection based on input path (directory for locus, qc.txt.gz for summary)
+  - **Features**:
+    - Population-aware color schemes for consistent visualization
+    - Support for PNG, PDF, SVG output formats
+    - Customizable figure sizes and DPI settings
+    - Graceful handling of missing files and optional dependencies
+    - Professional styling with seaborn integration
+
+### Dependencies
+- Added `seaborn>=0.11.0` for enhanced statistical plotting
+- Added `upsetplot>=0.6.0` for intersection visualization (optional for SNP missingness plots)
+
+### Enhanced
+- QC workflow now generates comprehensive visualizations alongside numerical results
+- All plotting functions integrate seamlessly with existing QC output file formats
+- Error handling with informative messages for missing dependencies or data files
+
 ## [0.0.34] (2025-09-14)
 
 ### Fixed

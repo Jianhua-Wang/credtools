@@ -963,5 +963,140 @@ def run_pipeline(
         )
 
 
+@app.command()
+def plot(
+    input_path: str = typer.Argument(..., help="Path to QC file or locus directory"),
+    plot_type: Optional[str] = typer.Option(
+        None, "--type", "-t",
+        help="Plot type: summary, locus, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness. Auto-detected if not specified."
+    ),
+    output: Optional[str] = typer.Option(
+        None, "--output", "-o", help="Output file path (PNG, PDF, SVG)"
+    ),
+    figsize_width: float = typer.Option(16, "--width", help="Figure width in inches"),
+    figsize_height: float = typer.Option(12, "--height", help="Figure height in inches"),
+    dpi: int = typer.Option(300, "--dpi", help="DPI for output file"),
+    include_upset: bool = typer.Option(
+        True, "--include-upset/--no-upset", help="Include SNP missingness upset plot for locus plots"
+    ),
+):
+    """Create QC plots from credtools results."""
+    try:
+        import matplotlib.pyplot as plt
+        from pathlib import Path
+
+        from credtools.plot import (
+            plot_summary_qc,
+            plot_locus_qc,
+            plot_lambda_s_boxplot,
+            plot_ld_4th_moment,
+            plot_ld_decay,
+            plot_locus_pvalues,
+            plot_maf_corr_barplot,
+            plot_outliers_barplot,
+            plot_snp_missingness_upset,
+            plot_zscore_qq,
+            read_compressed_file,
+        )
+    except ImportError as e:
+        console = Console()
+        console.print("[red]Error: Plotting dependencies not found.[/red]")
+        console.print("Please install plotting dependencies: uv add seaborn upsetplot")
+        raise typer.Exit(1) from e
+
+    console = Console()
+    input_path_obj = Path(input_path)
+
+    # Auto-detect plot type if not specified
+    if plot_type is None:
+        if input_path_obj.is_dir():
+            plot_type = "locus"
+        elif input_path_obj.name.endswith(('qc.txt.gz', 'qc.txt')):
+            plot_type = "summary"
+        else:
+            console.print("[red]Cannot auto-detect plot type. Please specify --type[/red]")
+            console.print("Available types: summary, locus, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
+            raise typer.Exit(1)
+
+    console.print(f"[cyan]Creating {plot_type} plot(s)...[/cyan]")
+
+    try:
+        # Multi-panel plots
+        if plot_type == "summary":
+            fig = plot_summary_qc(
+                qc_file=input_path,
+                output_file=output,
+                figsize=(figsize_width, figsize_height),
+                dpi=dpi,
+            )
+            if output:
+                console.print(f"[green]Summary QC plots saved to: {output}[/green]")
+            else:
+                console.print("[yellow]Displaying plots...[/yellow]")
+                plt.show()
+
+        elif plot_type == "locus":
+            fig = plot_locus_qc(
+                locus_dir=input_path,
+                output_file=output,
+                figsize=(figsize_width, figsize_height),
+                dpi=dpi,
+                include_upset=include_upset,
+            )
+            if output:
+                console.print(f"[green]Locus QC plots saved to: {output}[/green]")
+            else:
+                console.print("[yellow]Displaying plots...[/yellow]")
+                plt.show()
+
+        # Individual plots
+        else:
+            # Adjust figure size for individual plots
+            if figsize_width == 16 and figsize_height == 12:  # Default multi-panel size
+                figsize_width = 10
+                figsize_height = 6
+
+            fig, ax = plt.subplots(figsize=(figsize_width, figsize_height))
+
+            if plot_type == "lambda_s":
+                qc_data = read_compressed_file(input_path)
+                plot_lambda_s_boxplot(qc_data, ax=ax)
+            elif plot_type == "maf_corr":
+                qc_data = read_compressed_file(input_path)
+                plot_maf_corr_barplot(qc_data, ax=ax)
+            elif plot_type in ["lambda_s_outliers", "dentist_s_outliers"]:
+                qc_data = read_compressed_file(input_path)
+                outlier_type = plot_type.replace("_outliers", "")
+                plot_outliers_barplot(qc_data, outlier_type=outlier_type, ax=ax)
+            elif plot_type == "locus_pvalues":
+                plot_locus_pvalues(input_path, ax=ax)
+            elif plot_type == "zscore_qq":
+                plot_zscore_qq(input_path, ax=ax)
+            elif plot_type == "ld_decay":
+                plot_ld_decay(input_path, ax=ax)
+            elif plot_type == "ld_4th_moment":
+                plot_ld_4th_moment(input_path, ax=ax)
+            elif plot_type == "snp_missingness":
+                plot_snp_missingness_upset(input_path, ax=ax)
+            else:
+                console.print(f"[red]Unknown plot type: {plot_type}[/red]")
+                console.print("Available types: summary, locus, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
+                raise typer.Exit(1)
+
+            plt.title(f"{plot_type.replace('_', ' ').title()} Plot")
+            plt.tight_layout()
+
+            if output:
+                plt.savefig(output, dpi=dpi, bbox_inches="tight")
+                console.print(f"[green]Plot saved to: {output}[/green]")
+            else:
+                console.print("[yellow]Displaying plot...[/yellow]")
+                plt.show()
+
+    except Exception as e:
+        console.print(f"[red]Error creating {plot_type} plot: {e}[/red]")
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()
