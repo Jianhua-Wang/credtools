@@ -1,0 +1,5 @@
+{
+  "EUR_all_loci.txt": "exampledata/test_mock_data/EUR_all_loci",
+  "AFR_all_loci.txt": "exampledata/test_mock_data/AFR_all_loci",
+  "EAS_all_loci.txt": "exampledata/test_mock_data/EAS_all_loci"
+}

@@ -388,3 +388,124 @@ class ToolManager:
 tool_manager = ToolManager()
 for tool in ["finemap", "SuSiEx"]:
     tool_manager.register_tool(tool, f"bin/{tool}")
+
+
+def format_float(x: Any, decimals: int = 4, sci_threshold: float = 1e-4) -> str:
+    """
+    Format floating point numbers for output.
+
+    Parameters
+    ----------
+    x : Any
+        The value to format.
+    decimals : int, optional
+        Number of decimal places for regular numbers, by default 4.
+    sci_threshold : float, optional
+        Threshold below which to use scientific notation, by default 1e-4.
+
+    Returns
+    -------
+    str
+        Formatted string representation.
+    """
+    import pandas as pd
+
+    if pd.isna(x):
+        return ""
+
+    # Convert to float if possible
+    try:
+        val = float(x)
+    except (TypeError, ValueError):
+        return str(x)
+
+    # Use scientific notation for very small or very large numbers
+    if abs(val) < sci_threshold or abs(val) > 10**decimals:
+        # For P-values and very small numbers, use scientific notation
+        return f"{val:.3e}"
+    else:
+        # Regular formatting with specified decimal places
+        return f"{val:.{decimals}f}"
+
+
+def format_pvalue(p: float) -> str:
+    """
+    Format P-values using scientific notation.
+
+    Parameters
+    ----------
+    p : float
+        P-value to format.
+
+    Returns
+    -------
+    str
+        Formatted P-value string.
+    """
+    import pandas as pd
+
+    if pd.isna(p):
+        return ""
+    return f"{p:.3e}"
+
+
+def get_float_format(col_name: str) -> Optional[str]:
+    """
+    Get appropriate float format for a column based on its name.
+
+    Parameters
+    ----------
+    col_name : str
+        Column name.
+
+    Returns
+    -------
+    Optional[str]
+        Format string or None for default formatting.
+    """
+    col_lower = col_name.lower()
+
+    # P-values get scientific notation
+    if col_lower.endswith('_p') or col_lower == 'p':
+        return '%.3e'
+
+    # EAF, MAF, PIP, R2 get 4 decimal places
+    elif any(col_lower.endswith(suffix) for suffix in ['_eaf', '_maf', '_pip', '_r2']):
+        return '%.4f'
+    elif col_lower in ['eaf', 'maf', 'pip', 'r2']:
+        return '%.4f'
+
+    # BETA and SE get 4 decimal places
+    elif col_lower.endswith('_beta') or col_lower.endswith('_se'):
+        return '%.4f'
+    elif col_lower in ['beta', 'se']:
+        return '%.4f'
+
+    # Default: no special formatting
+    return None
+
+
+def create_float_format_dict(df) -> Dict[str, str]:
+    """
+    Create a dictionary of float formats for DataFrame columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to create format dictionary for.
+
+    Returns
+    -------
+    Dict[str, str]
+        Dictionary mapping column names to format strings.
+    """
+    import pandas as pd
+
+    format_dict = {}
+    for col in df.columns:
+        # Check if column contains numeric data
+        if pd.api.types.is_numeric_dtype(df[col]):
+            fmt = get_float_format(col)
+            if fmt:
+                format_dict[col] = fmt
+    return format_dict

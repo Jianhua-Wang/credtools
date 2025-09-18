@@ -591,8 +591,37 @@ def run_fine_map(
     When using single-input tools with multiple loci, results are automatically combined.
     """
     setup_file_logging(log_file)
+    from credtools.utils import create_float_format_dict
+    from datetime import datetime
+    import sys
+    import logging
+    logger = logging.getLogger("CREDTOOLS")
+
     loci_info = pd.read_csv(inputs, sep="\t")
     loci_info = check_loci_info(loci_info)  # Validate input data
+
+    # Initialize run summary
+    run_summary = {
+        "start_time": datetime.now().isoformat(),
+        "total_loci": 0,
+        "successful_loci": 0,
+        "failed_loci": 0,
+        "errors": [],
+        "tool": tool.value,
+        "parameters": {
+            "max_causal": max_causal,
+            "adaptive_max_causal": adaptive_max_causal,
+            "set_L_by_cojo": set_L_by_cojo,
+            "p_cutoff": p_cutoff,
+            "coverage": coverage,
+            "combine_cred": combine_cred.value,
+            "combine_pip": combine_pip.value,
+        }
+    }
+
+    # Collect all credible sets for summary
+    all_credible_sets = []
+
     # Create progress bar
     progress = Progress(
         SpinnerColumn(),
@@ -606,42 +635,129 @@ def run_fine_map(
     # Get total number of loci
     locus_groups = list(loci_info.groupby("locus_id"))
     total_loci = len(locus_groups)
+    run_summary["total_loci"] = total_loci
 
     with progress:
         task = progress.add_task("[cyan]Fine-mapping loci...", total=total_loci)
 
         for locus_id, locus_info in locus_groups:
-            locus_set = load_locus_set(
-                locus_info, calculate_lambda_s=calculate_lambda_s
-            )
-            creds = fine_map(
-                locus_set,
-                tool=tool,
-                max_causal=max_causal,
-                adaptive_max_causal=adaptive_max_causal,
-                set_L_by_cojo=set_L_by_cojo,
-                p_cutoff=p_cutoff,
-                collinear_cutoff=collinear_cutoff,
-                window_size=window_size,
-                maf_cutoff=maf_cutoff,
-                diff_freq_cutoff=diff_freq_cutoff,
-                coverage=coverage,
-                combine_cred=combine_cred,
-                combine_pip=combine_pip,
-                jaccard_threshold=jaccard_threshold,
-                # susie parameters
-                max_iter=max_iter,
-                estimate_residual_variance=estimate_residual_variance,
-                min_abs_corr=min_abs_corr,
-                convergence_tol=convergence_tol,
-            )
-            out_dir = f"{outdir}/{locus_id}"
-            os.makedirs(out_dir, exist_ok=True)
-            creds.pips.to_csv(f"{out_dir}/pips.txt", sep="\t", header=False, index=True)
-            with open(f"{out_dir}/creds.json", "w") as f:
-                json.dump(creds.to_dict(), f, indent=4)
+            try:
+                locus_set = load_locus_set(
+                    locus_info, calculate_lambda_s=calculate_lambda_s
+                )
+                creds = fine_map(
+                    locus_set,
+                    tool=tool,
+                    max_causal=max_causal,
+                    adaptive_max_causal=adaptive_max_causal,
+                    set_L_by_cojo=set_L_by_cojo,
+                    p_cutoff=p_cutoff,
+                    collinear_cutoff=collinear_cutoff,
+                    window_size=window_size,
+                    maf_cutoff=maf_cutoff,
+                    diff_freq_cutoff=diff_freq_cutoff,
+                    coverage=coverage,
+                    combine_cred=combine_cred,
+                    combine_pip=combine_pip,
+                    jaccard_threshold=jaccard_threshold,
+                    # susie parameters
+                    max_iter=max_iter,
+                    estimate_residual_variance=estimate_residual_variance,
+                    min_abs_corr=min_abs_corr,
+                    convergence_tol=convergence_tol,
+                )
+
+                # Create enhanced PIPs DataFrame
+                enhanced_pips = creds.create_enhanced_pips_df(locus_set)
+
+                # Get appropriate float formats for columns
+                format_dict = create_float_format_dict(enhanced_pips)
+
+                # Format numeric columns
+                for col, fmt in format_dict.items():
+                    if col in enhanced_pips.columns:
+                        if fmt == '%.3e':
+                            enhanced_pips[col] = enhanced_pips[col].apply(lambda x: f"{x:.3e}" if pd.notna(x) else "")
+                        elif fmt == '%.4f':
+                            enhanced_pips[col] = enhanced_pips[col].apply(lambda x: f"{x:.4f}" if pd.notna(x) else "")
+
+                # Save enhanced PIPs with compression
+                out_dir = f"{outdir}/{locus_id}"
+                os.makedirs(out_dir, exist_ok=True)
+                output_file = f"{out_dir}/pips.txt.gz"
+                enhanced_pips.to_csv(
+                    output_file,
+                    sep="\t",
+                    index=False,
+                    compression="gzip",
+                )
+
+                # Collect credible sets for summary
+                cs_summary = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
+                if len(cs_summary) > 0:
+                    cs_summary["locus_id"] = locus_id
+                    all_credible_sets.append(cs_summary)
+
+                run_summary["successful_loci"] += 1
+
+            except Exception as e:
+                error_msg = f"Locus {locus_id} failed: {str(e)}"
+                logger.error(error_msg)
+                print(f"ERROR: {error_msg}", file=sys.stderr)
+                run_summary["failed_loci"] += 1
+                run_summary["errors"].append(error_msg)
+                # Continue to next locus instead of failing
 
             progress.advance(task)
+
+    # Save combined credible sets summary
+    if all_credible_sets:
+        combined_cs = pd.concat(all_credible_sets, ignore_index=True)
+        combined_cs.to_csv(
+            f"{outdir}/credible_sets_summary.txt.gz",
+            sep="\t",
+            index=False,
+            compression="gzip"
+        )
+
+    # Save parameters (simplified version)
+    if run_summary["successful_loci"] > 0:
+        parameters_dict = {
+            "tool": tool.value,
+            "n_loci_processed": run_summary["successful_loci"],
+            "coverage": coverage,
+            "parameters": run_summary["parameters"]
+        }
+        with open(f"{outdir}/parameters.json", "w") as f:
+            json.dump(parameters_dict, f, indent=4)
+
+    # Generate run summary
+    run_summary["end_time"] = datetime.now().isoformat()
+    with open(f"{outdir}/run_summary.log", "w") as f:
+        f.write("=== CREDTOOLS FINE-MAPPING RUN SUMMARY ===\n")
+        f.write(f"Start Time: {run_summary['start_time']}\n")
+        f.write(f"End Time: {run_summary['end_time']}\n")
+        f.write(f"Total Loci: {run_summary['total_loci']}\n")
+        f.write(f"Successful: {run_summary['successful_loci']}\n")
+        f.write(f"Failed: {run_summary['failed_loci']}\n")
+        f.write("\n")
+
+        if run_summary['errors']:
+            f.write("Error Details:\n")
+            for error in run_summary['errors']:
+                f.write(f"  - {error}\n")
+            f.write("\n")
+
+        f.write("Parameters Used:\n")
+        for key, value in run_summary['parameters'].items():
+            f.write(f"  {key}: {value}\n")
+
+    # Print summary to console
+    console = Console()
+    if run_summary["failed_loci"] > 0:
+        console.print(f"[yellow]Completed with {run_summary['failed_loci']} failed loci[/yellow]")
+    else:
+        console.print(f"[green]Successfully processed all {run_summary['successful_loci']} loci[/green]")
 
 
 @app.command(
@@ -907,60 +1023,111 @@ def run_pipeline(
 ):
     """Run whole fine-mapping pipeline on a list of loci."""
     setup_file_logging(log_file)
+    from datetime import datetime
+    import sys
+    import logging
+    logger = logging.getLogger("CREDTOOLS")
+
     loci_info = pd.read_csv(inputs, sep="\t")
     loci_info = check_loci_info(loci_info)  # Validate input data
+
+    # Initialize overall run summary
+    overall_summary = {
+        "start_time": datetime.now().isoformat(),
+        "total_loci": len(loci_info.groupby("locus_id")),
+        "successful_loci": 0,
+        "failed_loci": 0,
+        "errors": []
+    }
+
+    console = Console()
+
     for locus_id, locus_info in loci_info.groupby("locus_id"):
         out_dir = f"{outdir}/{locus_id}"
         os.makedirs(out_dir, exist_ok=True)
-        pipeline(
-            locus_info,
-            outdir=out_dir,
-            meta_method=meta_method,
-            skip_qc=skip_qc,
-            tool=tool,
-            max_causal=max_causal,
-            adaptive_max_causal=adaptive_max_causal,
-            set_L_by_cojo=set_L_by_cojo,
-            coverage=coverage,
-            combine_cred=combine_cred,
-            combine_pip=combine_pip,
-            jaccard_threshold=jaccard_threshold,
-            # susie parameters
-            max_iter=max_iter,
-            estimate_residual_variance=estimate_residual_variance,
-            min_abs_corr=min_abs_corr,
-            convergence_tol=convergence_tol,
-            # ABF parameters
-            var_prior=var_prior,
-            # FINEMAP parameters
-            n_iter=n_iter,
-            n_threads=n_threads,
-            # RSparsePro parameters
-            eps=eps,
-            ubound=ubound,
-            cthres=cthres,
-            eincre=eincre,
-            minldthres=minldthres,
-            maxldthres=maxldthres,
-            varemax=varemax,
-            varemin=varemin,
-            # SuSiEx parameters
-            mult_step=mult_step,
-            keep_ambig=keep_ambig,
-            min_purity=min_purity,
-            tol=tol,
-            # MULTISUSIE parameters
-            rho=rho,
-            scaled_prior_variance=scaled_prior_variance,
-            standardize=standardize,
-            pop_spec_standardization=pop_spec_standardization,
-            estimate_prior_variance=estimate_prior_variance,
-            estimate_prior_method=estimate_prior_method,
-            pop_spec_effect_priors=pop_spec_effect_priors,
-            iter_before_zeroing_effects=iter_before_zeroing_effects,
-            prior_tol=prior_tol,
-            calculate_lambda_s=calculate_lambda_s,
-        )
+
+        try:
+            console.print(f"[cyan]Processing locus {locus_id}...[/cyan]")
+            pipeline(
+                locus_info,
+                outdir=out_dir,
+                meta_method=meta_method,
+                skip_qc=skip_qc,
+                tool=tool,
+                max_causal=max_causal,
+                adaptive_max_causal=adaptive_max_causal,
+                set_L_by_cojo=set_L_by_cojo,
+                coverage=coverage,
+                combine_cred=combine_cred,
+                combine_pip=combine_pip,
+                jaccard_threshold=jaccard_threshold,
+                # susie parameters
+                max_iter=max_iter,
+                estimate_residual_variance=estimate_residual_variance,
+                min_abs_corr=min_abs_corr,
+                convergence_tol=convergence_tol,
+                # ABF parameters
+                var_prior=var_prior,
+                # FINEMAP parameters
+                n_iter=n_iter,
+                n_threads=n_threads,
+                # RSparsePro parameters
+                eps=eps,
+                ubound=ubound,
+                cthres=cthres,
+                eincre=eincre,
+                minldthres=minldthres,
+                maxldthres=maxldthres,
+                varemax=varemax,
+                varemin=varemin,
+                # SuSiEx parameters
+                mult_step=mult_step,
+                keep_ambig=keep_ambig,
+                min_purity=min_purity,
+                tol=tol,
+                # MULTISUSIE parameters
+                rho=rho,
+                scaled_prior_variance=scaled_prior_variance,
+                standardize=standardize,
+                pop_spec_standardization=pop_spec_standardization,
+                estimate_prior_variance=estimate_prior_variance,
+                estimate_prior_method=estimate_prior_method,
+                pop_spec_effect_priors=pop_spec_effect_priors,
+                iter_before_zeroing_effects=iter_before_zeroing_effects,
+                prior_tol=prior_tol,
+                calculate_lambda_s=calculate_lambda_s,
+            )
+            overall_summary["successful_loci"] += 1
+            console.print(f"[green]✓ Locus {locus_id} completed successfully[/green]")
+
+        except Exception as e:
+            error_msg = f"Locus {locus_id} failed: {str(e)}"
+            logger.error(error_msg)
+            console.print(f"[red]✗ {error_msg}[/red]")
+            overall_summary["failed_loci"] += 1
+            overall_summary["errors"].append(error_msg)
+            # Continue to next locus
+
+    # Generate overall summary
+    overall_summary["end_time"] = datetime.now().isoformat()
+    summary_file = f"{outdir}/overall_run_summary.log"
+    with open(summary_file, "w") as f:
+        f.write("=== CREDTOOLS PIPELINE OVERALL SUMMARY ===\n")
+        f.write(f"Start Time: {overall_summary['start_time']}\n")
+        f.write(f"End Time: {overall_summary['end_time']}\n")
+        f.write(f"Total Loci: {overall_summary['total_loci']}\n")
+        f.write(f"Successful: {overall_summary['successful_loci']}\n")
+        f.write(f"Failed: {overall_summary['failed_loci']}\n")
+        if overall_summary['errors']:
+            f.write("\nError Details:\n")
+            for error in overall_summary['errors']:
+                f.write(f"  - {error}\n")
+
+    # Print final summary
+    if overall_summary["failed_loci"] > 0:
+        console.print(f"[yellow]Pipeline completed with {overall_summary['failed_loci']} failed loci[/yellow]")
+    else:
+        console.print(f"[green]Pipeline completed successfully for all {overall_summary['successful_loci']} loci[/green]")
 
 
 @app.command()

@@ -161,6 +161,17 @@ class Locus:
     @property
     def prefix(self) -> str:
         """Get the prefix of the locus."""
+        import hashlib
+
+        # Check if this is a meta-analysis result (contains '+' in cohort)
+        if '+' in self.cohort:
+            # Create a hash of the cohort part
+            cohort_hash = hashlib.md5(self.cohort.encode()).hexdigest()[:8]
+            # Count number of cohorts for reference
+            num_cohorts = len(self.cohort.split('+'))
+            return f"{self.popu}_meta{num_cohorts}cohorts_{cohort_hash}"
+
+        # For single cohort, use original format
         return f"{self.popu}_{self.cohort}"
 
     @property

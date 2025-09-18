@@ -193,6 +193,120 @@ class CredibleSet:
             "parameters": self.parameters,
         }
 
+    def create_enhanced_pips_df(self, locus_set) -> pd.DataFrame:
+        """
+        Create DataFrame with PIPs and full sumstats information.
+
+        Parameters
+        ----------
+        locus_set : LocusSet
+            The locus set containing locus data.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing full sumstats, PIPs, R2, and credible set assignments.
+        """
+        from credtools.constants import ColName
+        from credtools.qc import intersect_sumstat_ld
+
+        # Collect all unique SNPIDs from PIPs
+        all_snpids = self.pips.index.tolist()
+
+        # Initialize the result DataFrame with SNPIDs
+        result_df = pd.DataFrame({ColName.SNPID: all_snpids})
+
+        # Process based on number of loci
+        if locus_set.n_loci == 1:
+            # Single locus case - simpler column names
+            locus = locus_set.loci[0]
+
+            # Make sure we have matched sumstats and LD
+            locus_copy = locus.copy()
+            locus_copy = intersect_sumstat_ld(locus_copy)
+
+            # Merge with sumstats
+            sumstats_cols = [
+                ColName.SNPID, ColName.CHR, ColName.BP, ColName.RSID,
+                ColName.EA, ColName.NEA, ColName.EAF, ColName.MAF,
+                ColName.BETA, ColName.SE, ColName.P
+            ]
+
+            # Get available columns from sumstats
+            available_cols = [col for col in sumstats_cols if col in locus_copy.sumstats.columns]
+            result_df = result_df.merge(
+                locus_copy.sumstats[available_cols],
+                on=ColName.SNPID,
+                how="left"
+            )
+
+            # Calculate R2 (squared correlation with lead SNP)
+            if locus_copy.ld is not None and len(locus_copy.sumstats) > 0:
+                # Find lead SNP (lowest p-value)
+                lead_idx = locus_copy.sumstats[ColName.P].idxmin()
+                # Calculate R2 for all SNPs
+                r2_values = locus_copy.ld.r[lead_idx] ** 2
+                # Map R2 values to SNPIDs
+                snpid_to_r2 = dict(zip(locus_copy.sumstats[ColName.SNPID], r2_values))
+                result_df["R2"] = result_df[ColName.SNPID].map(snpid_to_r2)
+            else:
+                result_df["R2"] = np.nan
+
+        else:
+            # Multiple loci case - prefixed column names
+            # First, add common columns that don't need prefix
+            first_locus = locus_set.loci[0]
+            common_cols = [ColName.CHR, ColName.BP, ColName.RSID, ColName.EA, ColName.NEA]
+            available_common = [col for col in common_cols if col in first_locus.sumstats.columns]
+
+            # Use the first locus for common columns
+            if available_common:
+                result_df = result_df.merge(
+                    first_locus.sumstats[[ColName.SNPID] + available_common],
+                    on=ColName.SNPID,
+                    how="left"
+                )
+
+            # Add locus-specific columns with prefixes
+            for locus in locus_set.loci:
+                prefix = f"{locus.popu}_{locus.cohort}_"
+
+                # Make sure we have matched sumstats and LD
+                locus_copy = locus.copy()
+                locus_copy = intersect_sumstat_ld(locus_copy)
+
+                # Columns to add with prefix
+                locus_cols = [ColName.EAF, ColName.MAF, ColName.BETA, ColName.SE, ColName.P]
+
+                for col in locus_cols:
+                    if col in locus_copy.sumstats.columns:
+                        col_data = locus_copy.sumstats[[ColName.SNPID, col]].copy()
+                        col_data.rename(columns={col: f"{prefix}{col}"}, inplace=True)
+                        result_df = result_df.merge(col_data, on=ColName.SNPID, how="left")
+
+                # Calculate R2
+                if locus_copy.ld is not None and len(locus_copy.sumstats) > 0:
+                    lead_idx = locus_copy.sumstats[ColName.P].idxmin()
+                    r2_values = locus_copy.ld.r[lead_idx] ** 2
+                    snpid_to_r2 = dict(zip(locus_copy.sumstats[ColName.SNPID], r2_values))
+                    result_df[f"{prefix}R2"] = result_df[ColName.SNPID].map(snpid_to_r2)
+                else:
+                    result_df[f"{prefix}R2"] = np.nan
+
+        # Add credible set assignments (CRED column)
+        result_df["CRED"] = 0  # Default: not in any credible set
+        for cs_idx, snp_list in enumerate(self.snps, 1):
+            mask = result_df[ColName.SNPID].isin(snp_list)
+            result_df.loc[mask, "CRED"] = cs_idx
+
+        # Add PIP column
+        result_df["PIP"] = result_df[ColName.SNPID].map(self.pips.to_dict()).fillna(0)
+
+        # Sort by PIP descending
+        result_df = result_df.sort_values("PIP", ascending=False)
+
+        return result_df
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any], pips: pd.Series) -> "CredibleSet":
         """

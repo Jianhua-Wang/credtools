@@ -65,8 +65,8 @@ def prepare_finemap_inputs(
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # Group by ancestry for parallel processing
-    ancestry_groups = chunk_info_df.groupby("ancestry")
+    # Group by ancestry for parallel processing (use 'popu' column from chunk output)
+    ancestry_groups = chunk_info_df.groupby("popu")
 
     # Prepare arguments for parallel processing
     prepare_args = []
@@ -179,7 +179,10 @@ def _prepare_single_locus(
     chrom = chunk_info["chr"]
     start = chunk_info["start"]
     end = chunk_info["end"]
-    sumstats_file = chunk_info["sumstats_file"]
+    cohort = chunk_info["cohort"]
+    sample_size = chunk_info["sample_size"]
+    # chunk output has 'prefix' column, we need to construct sumstats file path
+    sumstats_file = chunk_info["prefix"] + ".sumstats.gz"
 
     # Define output prefix
     output_prefix = os.path.join(output_dir, f"{ancestry}.{locus_id}")
@@ -195,7 +198,9 @@ def _prepare_single_locus(
         logger.info(f"Output files exist for {ancestry} {locus_id}, skipping")
         return {
             "locus_id": locus_id,
-            "ancestry": ancestry,
+            "popu": ancestry,
+            "cohort": cohort,
+            "sample_size": sample_size,
             "chr": chrom,
             "start": start,
             "end": end,
@@ -257,7 +262,9 @@ def _prepare_single_locus(
 
         return {
             "locus_id": locus_id,
-            "ancestry": ancestry,
+            "popu": ancestry,
+            "cohort": cohort,
+            "sample_size": sample_size,
             "chr": chrom,
             "start": start,
             "end": end,

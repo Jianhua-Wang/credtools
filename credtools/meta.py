@@ -340,11 +340,11 @@ def meta(inputs: LocusSet, meta_method: str = "meta_all") -> LocusSet:
     The different methods serve different purposes:
 
     - "meta_all": Maximizes power by combining all studies, but may be inappropriate
-      if LD patterns differ substantially between populations
+        if LD patterns differ substantially between populations
     - "meta_by_population": Preserves population-specific LD while allowing
-      meta-analysis within populations
+        meta-analysis within populations
     - "no_meta": Keeps studies separate, useful for comparison or when
-      meta-analysis is not appropriate
+        meta-analysis is not appropriate
     """
     if meta_method == "meta_all":
         return LocusSet([meta_all(inputs)])
