@@ -3,6 +3,7 @@
 import gzip
 import logging
 import os
+import warnings
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -10,8 +11,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import transforms
 from matplotlib.patches import Circle
 from scipy import stats
+from types import MethodType
 
 try:
     from upsetplot import UpSet
@@ -33,6 +36,76 @@ POPULATION_COLORS = {
     "AMR": "#98D8C8",  # Mint
     "HIS": "#DDA0DD",  # Plum
 }
+
+
+def _prepare_upset_series(upset_data: pd.DataFrame) -> pd.Series:
+    """Transform boolean membership dataframe into an UpSet-compatible series."""
+
+    from upsetplot import from_memberships
+
+    memberships = []
+    for _, row in upset_data.iterrows():
+        membership = [col for col, present in row.items() if present]
+        if membership:
+            memberships.append(membership)
+
+    if not memberships:
+        raise ValueError("No non-empty SNP memberships found for UpSet plot")
+
+    return from_memberships(memberships)
+
+
+def _embed_upset_subfigure(
+    fig: plt.Figure,
+    target_ax: plt.Axes,
+    upset_series: pd.Series,
+    *,
+    title: str,
+) -> None:
+    """Render an UpSet plot inside the target axes' subplot slot."""
+
+    subplot_spec = target_ax.get_subplotspec()
+    panel_bbox = subplot_spec.get_position(fig)
+    fig.delaxes(target_ax)
+    subfig = fig.add_subfigure(subplot_spec)
+
+    # Track virtual figure dimensions so upsetplot layout maths stay local
+    subfig._virtual_figwidth = fig.get_figwidth() * panel_bbox.width  # type: ignore[attr-defined]
+    subfig._virtual_figheight = fig.get_figheight() * panel_bbox.height  # type: ignore[attr-defined]
+
+    def _get_figwidth(self):
+        return self._virtual_figwidth  # type: ignore[attr-defined]
+
+    def _set_figwidth(self, width):
+        self._virtual_figwidth = width  # type: ignore[attr-defined]
+
+    def _get_figheight(self):
+        return self._virtual_figheight  # type: ignore[attr-defined]
+
+    def _set_figheight(self, height):
+        self._virtual_figheight = height  # type: ignore[attr-defined]
+
+    def _get_window_extent(self, renderer=None):
+        dpi = self.figure.get_dpi()
+        width = self._virtual_figwidth * dpi  # type: ignore[attr-defined]
+        height = self._virtual_figheight * dpi  # type: ignore[attr-defined]
+        return transforms.Bbox.from_bounds(0, 0, width, height)
+
+    subfig.get_figwidth = MethodType(_get_figwidth, subfig)  # type: ignore[attr-defined]
+    subfig.set_figwidth = MethodType(_set_figwidth, subfig)  # type: ignore[attr-defined]
+    subfig.get_figheight = MethodType(_get_figheight, subfig)  # type: ignore[attr-defined]
+    subfig.set_figheight = MethodType(_set_figheight, subfig)  # type: ignore[attr-defined]
+    subfig.get_window_extent = MethodType(_get_window_extent, subfig)  # type: ignore[attr-defined]
+
+    upset_plot = UpSet(
+        upset_series,
+        subset_size="count",
+        show_counts=True,
+        sort_by="cardinality",
+        sort_categories_by="cardinality",
+    )
+    upset_plot.plot(fig=subfig)
+    subfig.suptitle(title, fontsize=10)
 
 
 def read_compressed_file(file_path: Union[str, Path]) -> pd.DataFrame:
@@ -343,10 +416,10 @@ def plot_summary_qc(
     plot_outliers_barplot(qc_data, outlier_type="dentist_s", ax=ax4)
     ax4.set_title("Dentist-s Outliers by Cohort")
 
-    plt.tight_layout()
+    fig.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=dpi, bbox_inches="tight")
+        fig.savefig(output_file, dpi=dpi, bbox_inches="tight")
 
     return fig
 
@@ -443,67 +516,104 @@ def plot_zscore_qq(
     figsize: Tuple[float, float] = (6, 6),
 ) -> plt.Axes:
     """
-    Create QQ plot of observed vs expected z-scores.
+    Create QQ plot of observed vs expected z-scores, grouped by cohort.
 
     Parameters
     ----------
     expected_z_file : Union[str, Path]
-        Path to expected_z.txt.gz file.
+        Path to expected_z.txt.gz file containing observed and expected z-scores.
     ax : Optional[plt.Axes]
-        Matplotlib axes to plot on. If None, creates new figure.
+        Matplotlib axes to plot on. If ``None``, a new figure and axes are created.
     figsize : Tuple[float, float]
-        Figure size if creating new figure.
+        Figure size to use when creating a new figure.
 
     Returns
     -------
     plt.Axes
-        Matplotlib axes object.
+        Matplotlib axes object with the QQ plot.
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
 
-    # Read expected z data
     z_data = read_compressed_file(expected_z_file)
 
-    if "z" not in z_data.columns or "z_expected" not in z_data.columns:
+    required_cols = ["z", "condmean", "cohort"]
+    if not all(col in z_data.columns for col in required_cols):
         ax.text(
             0.5,
             0.5,
-            "Required columns (z, z_expected) not found",
+            "Required columns (z, condmean, cohort) not found",
             ha="center",
             va="center",
             transform=ax.transAxes,
         )
         return ax
 
-    # Create QQ plot
-    ax.scatter(z_data["z_expected"], z_data["z"], s=20, alpha=0.6, color="#1f77b4")
-
-    # Add diagonal line
-    min_val = min(z_data["z_expected"].min(), z_data["z"].min())
-    max_val = max(z_data["z_expected"].max(), z_data["z"].max())
-    ax.plot([min_val, max_val], [min_val, max_val], "r--", alpha=0.8, linewidth=2)
-
-    # Add lambda value if available
-    if "lambda_s" in z_data.columns:
-        lambda_val = z_data["lambda_s"].iloc[0]
+    if z_data.empty:
         ax.text(
-            0.05,
-            0.95,
-            f"lambda={lambda_val:.3f}",
+            0.5,
+            0.5,
+            "No data available",
+            ha="center",
+            va="center",
             transform=ax.transAxes,
-            fontsize=12,
-            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
         )
+        return ax
 
-    ax.set_xlabel("Expected z-score")
+    cohorts = z_data["cohort"].dropna().unique()
+    if len(cohorts) == 0:
+        ax.text(
+            0.5,
+            0.5,
+            "No cohort annotations found",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
+        return ax
+
+    global_min = min(z_data["condmean"].min(), z_data["z"].min())
+    global_max = max(z_data["condmean"].max(), z_data["z"].max())
+
+    handles = []
+    labels = []
+    for cohort in cohorts:
+        cohort_data = z_data[z_data["cohort"] == cohort].dropna(subset=["condmean", "z"])
+        if cohort_data.empty:
+            continue
+        color = get_population_color(cohort)
+        lambda_label = None
+        if "lambda_s" in cohort_data.columns:
+            lambda_series = cohort_data["lambda_s"].dropna()
+            if not lambda_series.empty:
+                lambda_label = f"λ={lambda_series.iloc[0]:.3f}"
+        label = f"{cohort}"
+        if lambda_label:
+            label = f"{label} ({lambda_label})"
+        scatter = ax.scatter(
+            cohort_data["condmean"],
+            cohort_data["z"],
+            s=20,
+            alpha=0.7,
+            color=color,
+            label=label,
+        )
+        handles.append(scatter)
+        labels.append(label)
+
+    ax.plot([global_min, global_max], [global_min, global_max], "k--", linewidth=1.5, alpha=0.8)
+
+    ax.set_xlabel("Expected z-score (condmean)")
     ax.set_ylabel("Observed z-score")
     ax.grid(True, alpha=0.3)
 
-    # Make axes equal
+    if handles:
+        ax.legend(handles, labels, loc="best", fontsize=9)
+
     ax.set_aspect("equal", adjustable="box")
 
     return ax
+
 
 
 def plot_ld_decay(
@@ -674,68 +784,33 @@ def plot_snp_missingness_upset(
         Matplotlib axes object.
     """
     if not UPSETPLOT_AVAILABLE:
-        if ax is None:
-            fig, ax = plt.subplots(figsize=figsize)
-        ax.text(
-            0.5,
-            0.5,
-            "upsetplot package not available\nInstall with: pip install upsetplot",
-            ha="center",
-            va="center",
-            transform=ax.transAxes,
-        )
-        return ax
+        raise ImportError("upsetplot package not available; install upsetplot to generate this plot")
 
-    if ax is None:
-        fig, ax = plt.subplots(figsize=figsize)
-
-    # Read SNP missingness data
     miss_data = read_compressed_file(snp_missingness_file)
 
-    # Expected format: SNPID column + cohort columns with 0/1 values
-    if "SNPID" not in miss_data.columns:
-        ax.text(
-            0.5,
-            0.5,
-            "SNPID column not found in missingness data",
-            ha="center",
-            va="center",
-            transform=ax.transAxes,
-        )
-        return ax
+    if miss_data.empty:
+        raise ValueError("No data found in snp_missingness file")
 
-    # Get cohort columns (exclude SNPID)
-    cohort_cols = [col for col in miss_data.columns if col != "SNPID"]
+    # if "SNPID" not in miss_data.columns:
+    #     raise ValueError("SNPID column not found in missingness data")
+
+    cohort_cols = [col for col in miss_data.columns if col not in {"SNPID"}]
     if not cohort_cols:
-        ax.text(
-            0.5,
-            0.5,
-            "No cohort columns found in missingness data",
-            ha="center",
-            va="center",
-            transform=ax.transAxes,
-        )
-        return ax
+        raise ValueError("No cohort columns found in missingness data")
 
-    # Convert to boolean for upset plot (1 = present, 0 = missing)
     upset_data = miss_data[cohort_cols].astype(bool)
-    upset_data.index = miss_data["SNPID"]
+    # upset_data.index = miss_data["SNPID"]
+    upset_series = _prepare_upset_series(upset_data)
 
-    try:
-        # Create upset plot
-        upset = UpSet(upset_data, subset_size="count", show_counts=True)
-        upset.plot(fig=ax.figure if hasattr(ax, "figure") else plt.gcf())
-    except Exception as e:
-        ax.text(
-            0.5,
-            0.5,
-            f"Error creating upset plot: {str(e)}",
-            ha="center",
-            va="center",
-            transform=ax.transAxes,
-        )
+    if ax is None:
+        fig = plt.figure(figsize=figsize, constrained_layout=True)
+        upset_plot = UpSet(upset_series, subset_size="count", show_counts=True)
+        upset_plot.plot(fig=fig)
+        fig.suptitle("SNP Missingness Patterns", fontsize=14, y=0.98)
+        return fig
 
-    return ax
+    _embed_upset_subfigure(ax.figure, ax, upset_series, title="SNP Missingness Patterns")
+    return ax.figure
 
 
 def plot_locus_qc(
@@ -775,17 +850,21 @@ def plot_locus_qc(
     snp_miss_file = locus_dir / "snp_missingness.txt.gz"
 
     # Create subplot layout
-    if include_upset and UPSETPLOT_AVAILABLE and snp_miss_file.exists():
-        fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(figsize[0], figsize[1] * 1.5))
-        ax6.axis("off")  # Hide unused subplot
+    if include_upset:
+        if not snp_miss_file.exists():
+            raise FileNotFoundError(f"snp_missingness.txt.gz not found in {locus_dir}")
+        if not UPSETPLOT_AVAILABLE:
+            raise ImportError("upsetplot package not available; install upsetplot to include locus UpSet panel")
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(figsize[0], figsize[1]))
     else:
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=figsize)
         ax5 = None
 
-    # Plot 1: Locus p-values
+
+    # Plot 1: Z-score QQ plot
     if expected_z_file.exists():
-        plot_locus_pvalues(expected_z_file, ax=ax1)
-        ax1.set_title("Locus P-values")
+        plot_zscore_qq(expected_z_file, ax=ax1)
+        ax1.set_title("Observed vs Expected Z-scores")
     else:
         ax1.text(
             0.5,
@@ -796,56 +875,46 @@ def plot_locus_qc(
             transform=ax1.transAxes,
         )
 
-    # Plot 2: Z-score QQ plot
-    if expected_z_file.exists():
-        plot_zscore_qq(expected_z_file, ax=ax2)
-        ax2.set_title("Observed vs Expected Z-scores")
+    # Plot 2: LD decay
+    if ld_decay_file.exists():
+        plot_ld_decay(ld_decay_file, ax=ax2)
+        ax2.set_title("LD Decay")
     else:
         ax2.text(
-            0.5,
-            0.5,
-            "expected_z.txt.gz not found",
-            ha="center",
-            va="center",
-            transform=ax2.transAxes,
-        )
-
-    # Plot 3: LD decay
-    if ld_decay_file.exists():
-        plot_ld_decay(ld_decay_file, ax=ax3)
-        ax3.set_title("LD Decay")
-    else:
-        ax3.text(
             0.5,
             0.5,
             "ld_decay.txt.gz not found",
             ha="center",
             va="center",
-            transform=ax3.transAxes,
+            transform=ax2.transAxes,
         )
 
-    # Plot 4: LD 4th moment
+    # Plot 3: LD 4th moment
     if ld_4th_file.exists():
-        plot_ld_4th_moment(ld_4th_file, ax=ax4)
-        ax4.set_title("LD 4th Moment")
+        plot_ld_4th_moment(ld_4th_file, ax=ax3)
+        ax3.set_title("LD 4th Moment")
     else:
-        ax4.text(
+        ax3.text(
             0.5,
             0.5,
             "ld_4th_moment.txt.gz not found",
             ha="center",
             va="center",
-            transform=ax4.transAxes,
+            transform=ax3.transAxes,
         )
 
-    # Plot 5: SNP missingness upset plot (if space and data available)
-    if ax5 and snp_miss_file.exists():
-        plot_snp_missingness_upset(snp_miss_file, ax=ax5)
-        ax5.set_title("SNP Missingness Overlap")
+    # Plot 4: SNP missingness UpSet plot
+    if ax4 is not None:
+        plot_snp_missingness_upset(snp_miss_file, ax=ax4)
 
-    plt.tight_layout()
+    if include_upset:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            fig.tight_layout()
+    else:
+        fig.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=dpi, bbox_inches="tight")
+        fig.savefig(output_file, dpi=dpi, bbox_inches="tight")
 
     return fig

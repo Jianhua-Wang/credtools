@@ -221,6 +221,7 @@ def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str],
 def parse_population_config_file_munge_only(config_file_path: str) -> tuple[Dict[str, str], pd.DataFrame]:
     """
     Parse population configuration file for munge command (backward compatibility).
+
     Only requires: popu, cohort, sample_size, path.
 
     Parameters
@@ -380,7 +381,7 @@ def run_munge(
     try:
         from credtools.preprocessing import munge_sumstats
         from credtools.preprocessing.munge import (create_munge_config,
-                                                    validate_munged_files)
+                                                   validate_munged_files)
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing dependencies not found.[/red]")
@@ -1437,7 +1438,7 @@ def plot(
     input_path: str = typer.Argument(..., help="Path to QC file or locus directory"),
     plot_type: Optional[str] = typer.Option(
         None, "--type", "-t",
-        help="Plot type: summary, locus, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness. Auto-detected if not specified."
+        help="Plot type: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness. Auto-detected if not specified."
     ),
     output: Optional[str] = typer.Option(
         None, "--output", "-o", help="Output file path (PNG, PDF, SVG)"
@@ -1451,17 +1452,8 @@ def plot(
 ):
     """Create QC plots from credtools results."""
     try:
-        from pathlib import Path
-
         import matplotlib.pyplot as plt
-
-        from credtools.plot import (plot_lambda_s_boxplot, plot_ld_4th_moment,
-                                    plot_ld_decay, plot_locus_pvalues,
-                                    plot_locus_qc, plot_maf_corr_barplot,
-                                    plot_outliers_barplot,
-                                    plot_snp_missingness_upset,
-                                    plot_summary_qc, plot_zscore_qq,
-                                    read_compressed_file)
+        import credtools.plot as plot_mod
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Plotting dependencies not found.[/red]")
@@ -1469,17 +1461,31 @@ def plot(
         raise typer.Exit(1) from e
 
     console = Console()
+
+    def _get_plotter(name: str):
+        if not hasattr(plot_mod, name):
+            raise AttributeError(
+                f"Plot function '{name}' is not available. Update credtools or install optional plotting extras."
+            )
+        return getattr(plot_mod, name)
+
     input_path_obj = Path(input_path)
 
     # Auto-detect plot type if not specified
     if plot_type is None:
         if input_path_obj.is_dir():
-            plot_type = "locus"
+            # Check if it's a locus directory with fine-mapping results or QC files
+            if (input_path_obj / "pips.txt.gz").exists():
+                plot_type = "locusplot"
+            else:
+                plot_type = "locus_qc"
         elif input_path_obj.name.endswith(('qc.txt.gz', 'qc.txt')):
             plot_type = "summary"
+        elif input_path_obj.name.endswith('compare_maf.txt.gz'):
+            plot_type = "maf_corr"
         else:
             console.print("[red]Cannot auto-detect plot type. Please specify --type[/red]")
-            console.print("Available types: summary, locus, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
+            console.print("Available types: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
             raise typer.Exit(1)
 
     console.print(f"[cyan]Creating {plot_type} plot(s)...[/cyan]")
@@ -1487,7 +1493,7 @@ def plot(
     try:
         # Multi-panel plots
         if plot_type == "summary":
-            fig = plot_summary_qc(
+            fig = _get_plotter("plot_summary_qc")(
                 qc_file=input_path,
                 output_file=output,
                 figsize=(figsize_width, figsize_height),
@@ -1499,8 +1505,8 @@ def plot(
                 console.print("[yellow]Displaying plots...[/yellow]")
                 plt.show()
 
-        elif plot_type == "locus":
-            fig = plot_locus_qc(
+        elif plot_type == "locus_qc":
+            fig = _get_plotter("plot_locus_qc")(
                 locus_dir=input_path,
                 output_file=output,
                 figsize=(figsize_width, figsize_height),
@@ -1513,6 +1519,19 @@ def plot(
                 console.print("[yellow]Displaying plots...[/yellow]")
                 plt.show()
 
+        elif plot_type == "locusplot":
+            fig = _get_plotter("plot_locusplot")(
+                locus_dir=input_path,
+                output_file=output,
+                figsize=(figsize_width, figsize_height),
+                dpi=dpi,
+            )
+            if output:
+                console.print(f"[green]Locus plot saved to: {output}[/green]")
+            else:
+                console.print("[yellow]Displaying plot...[/yellow]")
+                plt.show()
+
         # Individual plots
         else:
             # Adjust figure size for individual plots
@@ -1523,28 +1542,25 @@ def plot(
             fig, ax = plt.subplots(figsize=(figsize_width, figsize_height))
 
             if plot_type == "lambda_s":
-                qc_data = read_compressed_file(input_path)
-                plot_lambda_s_boxplot(qc_data, ax=ax)
+                _get_plotter("plot_lambda_s_boxplot")(input_path, ax=ax)
             elif plot_type == "maf_corr":
-                qc_data = read_compressed_file(input_path)
-                plot_maf_corr_barplot(qc_data, ax=ax)
+                _get_plotter("plot_maf_corr_barplot")(input_path, ax=ax)
             elif plot_type in ["lambda_s_outliers", "dentist_s_outliers"]:
-                qc_data = read_compressed_file(input_path)
                 outlier_type = plot_type.replace("_outliers", "")
-                plot_outliers_barplot(qc_data, outlier_type=outlier_type, ax=ax)
+                _get_plotter("plot_outliers_barplot")(input_path, outlier_type=outlier_type, ax=ax)
             elif plot_type == "locus_pvalues":
-                plot_locus_pvalues(input_path, ax=ax)
+                _get_plotter("plot_locus_pvalues")(input_path, ax=ax)
             elif plot_type == "zscore_qq":
-                plot_zscore_qq(input_path, ax=ax)
+                _get_plotter("plot_zscore_qq")(input_path, ax=ax)
             elif plot_type == "ld_decay":
-                plot_ld_decay(input_path, ax=ax)
+                _get_plotter("plot_ld_decay")(input_path, ax=ax)
             elif plot_type == "ld_4th_moment":
-                plot_ld_4th_moment(input_path, ax=ax)
+                _get_plotter("plot_ld_4th_moment")(input_path, ax=ax)
             elif plot_type == "snp_missingness":
-                plot_snp_missingness_upset(input_path, ax=ax)
+                _get_plotter("plot_snp_missingness_upset")(input_path, ax=ax)
             else:
                 console.print(f"[red]Unknown plot type: {plot_type}[/red]")
-                console.print("Available types: summary, locus, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
+                console.print("Available types: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
                 raise typer.Exit(1)
 
             plt.title(f"{plot_type.replace('_', ' ').title()} Plot")
