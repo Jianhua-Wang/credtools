@@ -216,6 +216,9 @@ def _prepare_single_locus(
         # Munge sumstats to ensure proper format
         sumstats = munge(sumstats)
 
+        # Make SNPID unique for sumstats
+        sumstats = make_SNPID_unique(sumstats)
+
         # Extract and process LD matrix
         logger.debug(f"Extracting LD matrix for {ancestry} {locus_id}")
         ld_result = _extract_ld_matrix(
@@ -234,30 +237,24 @@ def _prepare_single_locus(
 
         ldmap, ld_matrix = ld_result
 
-        # Intersect sumstats and LD data
-        logger.debug(f"Intersecting data for {ancestry} {locus_id}")
-        intersected_sumstats, intersected_ld, intersected_ldmap = (
-            _intersect_sumstats_ld(sumstats, ld_matrix, ldmap)
-        )
-
-        if len(intersected_sumstats) == 0:
-            logger.warning(f"No common variants found for {ancestry} {locus_id}")
-            return None
+        # Make SNPID unique for ldmap and handle allele flipping
+        ldmap = make_SNPID_unique(ldmap, col_ea="A1", col_nea="A2")
+        ldmap, ld_matrix = _handle_allele_flipping(ldmap, ld_matrix)
 
         # Save final files
         logger.debug(f"Saving final files for {ancestry} {locus_id}")
 
         # Save sumstats
-        intersected_sumstats.to_csv(f"{output_prefix}.sumstats", sep="\t", index=False)
+        sumstats.to_csv(f"{output_prefix}.sumstats", sep="\t", index=False)
         subprocess.run(f"gzip -f {output_prefix}.sumstats", shell=True, check=True)
 
         # Save LD matrix
         np.savez_compressed(
-            f"{output_prefix}.ld.npz", intersected_ld.astype(np.float16)
+            f"{output_prefix}.ld.npz", ld_matrix.astype(np.float16)
         )
 
         # Save LD map
-        intersected_ldmap.to_csv(f"{output_prefix}.ldmap", sep="\t", index=False)
+        ldmap.to_csv(f"{output_prefix}.ldmap", sep="\t", index=False)
         subprocess.run(f"gzip -f {output_prefix}.ldmap", shell=True, check=True)
 
         return {
@@ -269,7 +266,7 @@ def _prepare_single_locus(
             "start": start,
             "end": end,
             "prefix": output_prefix,
-            "n_variants": len(intersected_sumstats),
+            "n_variants": len(sumstats),
             "status": "created",
         }
 
@@ -328,6 +325,9 @@ def _extract_ld_plink(
             str(start),
             "--to-bp",
             str(end),
+            "--mac",
+            "5",
+            "--keep-allele-order",
             "--make-bed",
             "--out",
             temp_prefix,
@@ -349,7 +349,7 @@ def _extract_ld_plink(
             f"{temp_prefix}.bim",
             sep="\t",
             header=None,
-            names=["CHR", "SNPID", "CM", "BP", "A1", "A2"],
+            names=["CHR", "RSID", "CM", "BP", "A1", "A2"],
         )
 
         if len(bim_df) < 2:
@@ -363,6 +363,7 @@ def _extract_ld_plink(
             temp_prefix,
             "--r",
             "square",
+            "--keep-allele-order",
             "--out",
             temp_prefix,
             "--silent",
@@ -381,9 +382,37 @@ def _extract_ld_plink(
 
         ld_matrix = np.loadtxt(ld_file)
 
+        # Compute allele frequencies
+        freq_cmd = [
+            "plink",
+            "--bfile",
+            temp_prefix,
+            "--freq",
+            "--out",
+            temp_prefix,
+            "--silent",
+        ]
+
+        result = subprocess.run(freq_cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.error(f"PLINK frequency computation failed: {result.stderr}")
+            return None
+
+        # Load frequency data
+        freq_file = f"{temp_prefix}.frq"
+        if not os.path.exists(freq_file):
+            logger.error(f"Frequency file not found: {freq_file}")
+            return None
+
+        freq_df = pd.read_csv(freq_file, sep=r'\s+')
+
         # Prepare LD map
-        ldmap = bim_df[["CHR", "BP", "A1", "A2"]].copy()
-        ldmap["AF2"] = 0.5  # Placeholder - should compute from genotypes
+        ldmap = bim_df[["CHR", "RSID", "BP", "A1", "A2"]].copy()
+
+        # Merge frequency data - A1 in BIM is minor allele, so AF2 = 1 - MAF
+        ldmap = ldmap.merge(freq_df[["SNP", "MAF"]], left_on="RSID", right_on="SNP", how="left")
+        ldmap["AF2"] = 1 - ldmap["MAF"]
+        ldmap = ldmap.drop(columns=["SNP", "MAF", "RSID"])
 
         # Clean up intermediate files
         if not keep_intermediate:
@@ -392,6 +421,7 @@ def _extract_ld_plink(
                 f"{temp_prefix}.bim",
                 f"{temp_prefix}.fam",
                 f"{temp_prefix}.ld",
+                f"{temp_prefix}.frq",
                 f"{temp_prefix}.log",
             ]
             for temp_file in temp_files:

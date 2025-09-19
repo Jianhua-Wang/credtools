@@ -164,9 +164,64 @@ def main(
     setup_file_logging(log_file, verbose)
 
 
-def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str], pd.DataFrame]:
+def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str], Dict[str, str], pd.DataFrame]:
     """
-    Parse population configuration file with columns: popu, cohort, sample_size, path.
+    Parse population configuration file with columns: popu, cohort, sample_size, path, ld_ref.
+
+    Parameters
+    ----------
+    config_file_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    tuple[Dict[str, str], Dict[str, str], pd.DataFrame]
+        Tuple containing:
+        - Dictionary mapping population identifiers to sumstats file paths
+        - Dictionary mapping population identifiers to LD reference file paths
+        - Original DataFrame for later updating
+    """
+    if not os.path.exists(config_file_path):
+        raise FileNotFoundError(f"Configuration file not found: {config_file_path}")
+
+    try:
+        # Read the configuration file
+        config_df = pd.read_csv(config_file_path, sep='\t')
+
+        # Check required columns
+        required_cols = ['popu', 'cohort', 'sample_size', 'path', 'ld_ref']
+        missing_cols = [col for col in required_cols if col not in config_df.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns in config file: {missing_cols}")
+
+        # Create identifier -> path mappings
+        sumstats_dict = {}
+        ld_ref_dict = {}
+        for _, row in config_df.iterrows():
+            # Create identifier from population and cohort
+            identifier = f"{row['popu']}_{row['cohort']}"
+            sumstats_dict[identifier] = row['path']
+            ld_ref_dict[identifier] = row['ld_ref']
+
+            # Check if files exist
+            if not os.path.exists(row['path']):
+                raise FileNotFoundError(f"Summary statistics file not found: {row['path']}")
+
+            # For LD reference, check for common PLINK file extensions
+            ld_base = row['ld_ref']
+            if not any(os.path.exists(f"{ld_base}.{ext}") for ext in ['bed', 'bim', 'fam']):
+                raise FileNotFoundError(f"LD reference files not found: {ld_base}.[bed/bim/fam]")
+
+        return sumstats_dict, ld_ref_dict, config_df
+
+    except Exception as e:
+        raise ValueError(f"Error parsing configuration file: {e}")
+
+
+def parse_population_config_file_munge_only(config_file_path: str) -> tuple[Dict[str, str], pd.DataFrame]:
+    """
+    Parse population configuration file for munge command (backward compatibility).
+    Only requires: popu, cohort, sample_size, path.
 
     Parameters
     ----------
@@ -337,7 +392,7 @@ def run_munge(
 
     # Parse population configuration file
     try:
-        input_dict, original_config_df = parse_population_config_file(input_config)
+        input_dict, original_config_df = parse_population_config_file_munge_only(input_config)
         console.print(f"[green]Loaded {len(input_dict)} population files from config[/green]")
     except Exception as e:
         console.print(f"[red]Error parsing configuration file: {e}[/red]")
@@ -387,14 +442,174 @@ def run_munge(
         raise typer.Exit(1)
 
 
+def _load_custom_chunks(custom_chunks_file: str) -> pd.DataFrame:
+    """
+    Load custom chunk definitions from file.
+
+    Parameters
+    ----------
+    custom_chunks_file : str
+        Path to custom chunks file with chr, start, end columns.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with loci coordinates.
+    """
+    if not os.path.exists(custom_chunks_file):
+        raise FileNotFoundError(f"Custom chunks file not found: {custom_chunks_file}")
+
+    try:
+        chunks_df = pd.read_csv(custom_chunks_file, sep='\t')
+
+        # Check required columns
+        required_cols = ['chr', 'start', 'end']
+        missing_cols = [col for col in required_cols if col not in chunks_df.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns in custom chunks file: {missing_cols}")
+
+        # Create locus_id
+        chunks_df['locus_id'] = [
+            f"chr{row['chr']}_{row['start']}_{row['end']}" for _, row in chunks_df.iterrows()
+        ]
+
+        # Add placeholder columns to match identify_independent_loci output
+        chunks_df['lead_snp'] = None
+        chunks_df['lead_bp'] = (chunks_df['start'] + chunks_df['end']) // 2
+        chunks_df['lead_p'] = None
+        chunks_df['ancestry'] = 'custom'
+        chunks_df['n_variants'] = 0
+
+        return chunks_df[['chr', 'start', 'end', 'locus_id', 'lead_snp', 'lead_bp', 'lead_p', 'ancestry', 'n_variants']]
+
+    except Exception as e:
+        raise ValueError(f"Error parsing custom chunks file: {e}")
+
+
+def _prepare_ld_matrices(
+    chunk_info_df: pd.DataFrame,
+    ld_ref_dict: Dict[str, str],
+    output_dir: str,
+    threads: int = 1,
+    ld_format: str = "plink",
+    keep_intermediate: bool = False,
+) -> pd.DataFrame:
+    """
+    Prepare LD matrices for chunked files.
+
+    Parameters
+    ----------
+    chunk_info_df : pd.DataFrame
+        DataFrame from chunk_sumstats with chunked file information.
+    ld_ref_dict : Dict[str, str]
+        Dictionary mapping ancestry names to LD reference file prefixes.
+    output_dir : str
+        Output directory for prepared files.
+    threads : int, optional
+        Number of threads, by default 1.
+    ld_format : str, optional
+        LD format, by default "plink".
+    keep_intermediate : bool, optional
+        Keep intermediate files, by default False.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with prepared file information.
+    """
+    try:
+        from credtools.preprocessing.prepare import prepare_finemap_inputs
+    except ImportError as e:
+        raise ImportError("Could not import prepare function") from e
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Convert chunk_info_df to the format expected by prepare_finemap_inputs
+    # We need to map ancestry names to genotype file prefixes
+    genotype_files = {}
+    for ancestry in chunk_info_df['ancestry'].unique():
+        # Find matching LD reference for this ancestry
+        matching_key = None
+        for key in ld_ref_dict.keys():
+            if ancestry in key:
+                matching_key = key
+                break
+
+        if matching_key:
+            genotype_files[ancestry] = ld_ref_dict[matching_key]
+        else:
+            raise ValueError(f"No LD reference found for ancestry: {ancestry}")
+
+    # Rename columns to match prepare function expectations
+    prep_chunk_df = chunk_info_df.copy()
+    prep_chunk_df = prep_chunk_df.rename(columns={
+        'ancestry': 'popu'
+    })
+
+    # Add required columns
+    prep_chunk_df['cohort'] = prep_chunk_df['popu']
+    prep_chunk_df['sample_size'] = 50000  # Placeholder
+
+    # Add prefix column based on sumstats_file
+    prep_chunk_df['prefix'] = prep_chunk_df['sumstats_file'].apply(
+        lambda x: str(Path(x).with_suffix("")).replace(".sumstats", "")
+    )
+
+    # Call the prepare function
+    prepared_df = prepare_finemap_inputs(
+        chunk_info_df=prep_chunk_df,
+        genotype_files=genotype_files,
+        output_dir=output_dir,
+        threads=threads,
+        ld_format=ld_format,
+        keep_intermediate=keep_intermediate,
+    )
+
+    return prepared_df
+
+
+def _update_chunk_info_with_prepared(chunk_info_df: pd.DataFrame, prepared_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Update chunk info DataFrame with prepared file information.
+
+    Parameters
+    ----------
+    chunk_info_df : pd.DataFrame
+        Original chunk info DataFrame with sumstats_file column.
+    prepared_df : pd.DataFrame
+        Prepared files DataFrame with prefix column.
+
+    Returns
+    -------
+    pd.DataFrame
+        Updated chunk info DataFrame with prepared file prefixes.
+    """
+    updated_df = chunk_info_df.copy()
+
+    # Create a mapping from locus_id + ancestry to prepared prefix
+    prepared_mapping = {}
+    for _, row in prepared_df.iterrows():
+        key = (row['locus_id'], row['popu'])
+        prepared_mapping[key] = row['prefix']
+
+    # Update sumstats_file with prepared prefix (add extensions for credtools compatibility)
+    for idx, row in updated_df.iterrows():
+        key = (row['locus_id'], row['ancestry'])
+        if key in prepared_mapping:
+            # Update to point to prepared files
+            updated_df.at[idx, 'sumstats_file'] = prepared_mapping[key] + '.sumstats.gz'
+
+    return updated_df
+
+
 @app.command(
     name="chunk",
-    help="Identify independent loci and chunk summary statistics.",
+    help="Identify independent loci, chunk summary statistics, and extract LD matrices.",
 )
 def run_chunk(
     input_config: str = typer.Argument(
         ...,
-        help="Input configuration file with columns: popu, cohort, sample_size, path.",
+        help="Input configuration file with columns: popu, cohort, sample_size, path, ld_ref.",
     ),
     output_dir: str = typer.Argument(..., help="Output directory for chunked files."),
     distance_threshold: int = typer.Option(
@@ -418,12 +633,21 @@ def run_chunk(
     min_variants_per_locus: int = typer.Option(
         10, "--min-variants", "-v", help="Minimum variants per locus."
     ),
+    custom_chunks: Optional[str] = typer.Option(
+        None, "--custom-chunks", "-cc", help="Custom chunk file with chr, start, end columns."
+    ),
+    ld_format: str = typer.Option(
+        "plink", "--ld-format", "-f", help="LD computation format (plink/vcf)."
+    ),
+    keep_intermediate: bool = typer.Option(
+        False, "--keep-intermediate", "-k", help="Keep intermediate files."
+    ),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
     log_file: Optional[str] = typer.Option(
         None, "--log-file", "-l", help="Log output to specified file."
     ),
 ):
-    """Identify independent loci and chunk summary statistics from GWAS info configuration file."""
+    """Identify independent loci, chunk summary statistics, and extract LD matrices from GWAS info configuration file."""
     setup_file_logging(log_file)
 
     try:
@@ -437,45 +661,70 @@ def run_chunk(
         raise typer.Exit(1) from e
 
     console = Console()
-    console.print("[cyan]Identifying independent loci...[/cyan]")
 
     # Parse population configuration file
     try:
-        input_dict, original_config_df = parse_population_config_file(input_config)
-        console.print(f"[green]Loaded {len(input_dict)} population files from config[/green]")
+        sumstats_dict, ld_ref_dict, original_config_df = parse_population_config_file(input_config)
+        console.print(f"[green]Loaded {len(sumstats_dict)} population files from config[/green]")
     except Exception as e:
         console.print(f"[red]Error parsing configuration file: {e}[/red]")
         raise typer.Exit(1)
 
     try:
-        # Identify loci
-        loci_df = identify_independent_loci(
-            sumstats_files=input_dict,
-            output_dir=output_dir,
-            distance_threshold=distance_threshold,
-            pvalue_threshold=pvalue_threshold,
-            merge_overlapping=merge_overlapping,
-            use_most_sig_if_no_sig=use_most_sig_if_no_sig,
-            min_variants_per_locus=min_variants_per_locus,
-        )
+        # Load or identify loci
+        if custom_chunks:
+            console.print(f"[cyan]Loading custom chunks from {custom_chunks}...[/cyan]")
+            loci_df = _load_custom_chunks(custom_chunks)
+        else:
+            console.print("[cyan]Identifying independent loci...[/cyan]")
+            loci_df = identify_independent_loci(
+                sumstats_files=sumstats_dict,
+                output_dir=output_dir,
+                distance_threshold=distance_threshold,
+                pvalue_threshold=pvalue_threshold,
+                merge_overlapping=merge_overlapping,
+                use_most_sig_if_no_sig=use_most_sig_if_no_sig,
+                min_variants_per_locus=min_variants_per_locus,
+            )
 
         if len(loci_df) == 0:
             console.print("[yellow]No loci identified[/yellow]")
             return
 
-        # Chunk summary statistics
-        console.print(f"[cyan]Chunking {len(loci_df)} loci...[/cyan]")
+        # Chunk summary statistics and extract LD matrices
+        console.print(f"[cyan]Chunking {len(loci_df)} loci and extracting LD matrices...[/cyan]")
         chunk_info_df = chunk_sumstats(
             loci_df=loci_df,
-            sumstats_files=input_dict,
+            sumstats_files=sumstats_dict,
             output_dir=os.path.join(output_dir, "chunks"),
             threads=threads,
         )
 
-        # Create credtools-compatible loci list
+        # Extract LD matrices for each chunk
+        console.print("[cyan]Extracting LD matrices...[/cyan]")
+        try:
+            prepared_df = _prepare_ld_matrices(
+                chunk_info_df=chunk_info_df,
+                ld_ref_dict=ld_ref_dict,
+                output_dir=os.path.join(output_dir, "prepared"),
+                threads=threads,
+                ld_format=ld_format,
+                keep_intermediate=keep_intermediate,
+            )
+        except Exception as e:
+            console.print(f"[yellow]Warning: LD extraction had issues: {e}[/yellow]")
+            console.print("[cyan]Continuing with chunk files only...[/cyan]")
+            prepared_df = chunk_info_df  # Use original chunk files
+
+        # Create credtools-compatible loci list from prepared files
         loci_list_file = os.path.join(output_dir, "loci_list.txt")
+        # Update chunk_info_df with prepared file prefixes (if LD extraction succeeded)
+        if 'prefix' in prepared_df.columns:
+            updated_chunk_df = _update_chunk_info_with_prepared(chunk_info_df, prepared_df)
+        else:
+            updated_chunk_df = chunk_info_df  # Use original chunk files
         credtools_df = create_loci_list_for_credtools(
-            chunk_info_df=chunk_info_df, output_file=loci_list_file
+            chunk_info_df=updated_chunk_df, output_file=loci_list_file
         )
 
         # Create updated sumstat info file
@@ -491,97 +740,14 @@ def run_chunk(
         # Print summary
         console.print(f"[green]Successfully processed {len(loci_df)} loci[/green]")
         console.print(f"[green]Generated {len(chunk_info_df)} chunked files[/green]")
+        if 'prefix' in prepared_df.columns:
+            console.print(f"[green]Generated {len(prepared_df)} prepared files with LD matrices[/green]")
+        else:
+            console.print("[yellow]LD matrix extraction failed, using chunked files only[/yellow]")
         console.print(f"[green]Credtools loci list: {loci_list_file}[/green]")
 
     except Exception as e:
         console.print(f"[red]Error during chunking: {e}[/red]")
-        raise typer.Exit(1)
-
-
-@app.command(
-    name="prepare",
-    help="Prepare LD matrices and final fine-mapping inputs.",
-)
-def run_prepare(
-    chunk_info: str = typer.Argument(..., help="Chunk info file from 'chunk' command."),
-    genotype_config: str = typer.Argument(
-        ...,
-        help="Genotype configuration file (JSON) mapping ancestries to file prefixes.",
-    ),
-    output_dir: str = typer.Argument(..., help="Output directory for prepared files."),
-    threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
-    ld_format: str = typer.Option(
-        "plink", "--ld-format", "-f", help="LD computation format (plink/vcf)."
-    ),
-    keep_intermediate: bool = typer.Option(
-        False, "--keep-intermediate", "-k", help="Keep intermediate files."
-    ),
-    log_file: Optional[str] = typer.Option(
-        None, "--log-file", "-l", help="Log output to specified file."
-    ),
-):
-    """Prepare LD matrices and final fine-mapping input files."""
-    setup_file_logging(log_file)
-    try:
-        from credtools.preprocessing import prepare_finemap_inputs
-        from credtools.preprocessing.chunk import \
-            create_loci_list_for_credtools
-    except ImportError as e:
-        console = Console()
-        console.print("[red]Error: Preprocessing module not found.[/red]")
-        raise typer.Exit(1) from e
-
-    import json
-
-    console = Console()
-    console.print("[cyan]Preparing fine-mapping inputs...[/cyan]")
-
-    # Load chunk info
-    if not os.path.exists(chunk_info):
-        console.print(f"[red]Chunk info file not found: {chunk_info}[/red]")
-        raise typer.Exit(1)
-
-    chunk_info_df = pd.read_csv(chunk_info, sep="\t")
-    console.print(f"Loaded {len(chunk_info_df)} chunks")
-
-    # Load genotype configuration
-    if not os.path.exists(genotype_config):
-        console.print(f"[red]Genotype config file not found: {genotype_config}[/red]")
-        raise typer.Exit(1)
-
-    with open(genotype_config) as f:
-        genotype_files = json.load(f)
-
-    console.print(f"Genotype files for {len(genotype_files)} ancestries")
-
-    try:
-        # Prepare files
-        prepared_df = prepare_finemap_inputs(
-            chunk_info_df=chunk_info_df,
-            genotype_files=genotype_files,
-            output_dir=output_dir,
-            threads=threads,
-            ld_format=ld_format,
-            keep_intermediate=keep_intermediate,
-        )
-
-        # Create final loci list for credtools
-        final_loci_file = os.path.join(output_dir, "final_loci_list.txt")
-        final_df = create_loci_list_for_credtools(
-            chunk_info_df=prepared_df, output_file=final_loci_file
-        )
-
-        # Print summary
-        console.print(f"[green]Successfully prepared {len(prepared_df)} files[/green]")
-        console.print(f"[green]Final loci list: {final_loci_file}[/green]")
-
-        # Print ancestry summary
-        ancestry_summary = prepared_df.groupby("ancestry").size()
-        for ancestry, count in ancestry_summary.items():
-            console.print(f"  {ancestry}: {count} loci")
-
-    except Exception as e:
-        console.print(f"[red]Error during preparation: {e}[/red]")
         raise typer.Exit(1)
 
 
@@ -653,7 +819,7 @@ def run_fine_map(
         help="Enable adaptive max_causal parameter tuning.",
     ),
     set_L_by_cojo: bool = typer.Option(
-        True, "--set-L-by-cojo", "-sl", help="Set L by COJO."
+        False, "--set-L-by-cojo", "-sl", help="Set L by COJO."
     ),
     p_cutoff: float = typer.Option(
         5e-8, "--p-cutoff", "-pc", help="P-value cutoff for COJO."
