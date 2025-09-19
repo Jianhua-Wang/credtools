@@ -5,6 +5,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
+from types import MethodType
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -14,14 +15,15 @@ import seaborn as sns
 from matplotlib import transforms
 from matplotlib.patches import Circle
 from scipy import stats
-from types import MethodType
 
 try:
-    from upsetplot import UpSet
-
-    UPSETPLOT_AVAILABLE = True
+    from upsetplot import UpSet, from_memberships
 except ImportError:
+    UpSet = None  # type: ignore[assignment]
+    from_memberships = None  # type: ignore[assignment]
     UPSETPLOT_AVAILABLE = False
+else:
+    UPSETPLOT_AVAILABLE = True
 
 # Set up matplotlib style
 plt.style.use("default")
@@ -40,8 +42,10 @@ POPULATION_COLORS = {
 
 def _prepare_upset_series(upset_data: pd.DataFrame) -> pd.Series:
     """Transform boolean membership dataframe into an UpSet-compatible series."""
-
-    from upsetplot import from_memberships
+    if not UPSETPLOT_AVAILABLE or from_memberships is None:
+        raise ImportError(
+            "upsetplot package not available; install upsetplot to generate this plot"
+        )
 
     memberships = []
     for _, row in upset_data.iterrows():
@@ -63,7 +67,6 @@ def _embed_upset_subfigure(
     title: str,
 ) -> None:
     """Render an UpSet plot inside the target axes' subplot slot."""
-
     subplot_spec = target_ax.get_subplotspec()
     panel_bbox = subplot_spec.get_position(fig)
     fig.delaxes(target_ax)
@@ -185,7 +188,10 @@ def plot_lambda_s_boxplot(
 
     # Create boxplot
     box_plot = ax.boxplot(
-        [qc_data[qc_data["cohort_id"] == cohort]["lambda_s"].values for cohort in qc_data["cohort_id"].unique()],
+        [
+            qc_data[qc_data["cohort_id"] == cohort]["lambda_s"].values
+            for cohort in qc_data["cohort_id"].unique()
+        ],
         labels=qc_data["cohort_id"].unique(),
         patch_artist=True,
     )
@@ -475,7 +481,9 @@ def plot_locus_pvalues(
 
     # Add significance lines
     ax.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.7, label="5e-8")
-    ax.axhline(y=-np.log10(1e-5), color="orange", linestyle="--", alpha=0.7, label="1e-5")
+    ax.axhline(
+        y=-np.log10(1e-5), color="orange", linestyle="--", alpha=0.7, label="1e-5"
+    )
 
     # Add credible set annotations if available
     if credible_sets_file and Path(credible_sets_file).exists():
@@ -483,7 +491,9 @@ def plot_locus_pvalues(
             cs_data = read_compressed_file(credible_sets_file)
             if "BP" in cs_data.columns and "PIP" in cs_data.columns:
                 # Highlight credible set variants
-                cs_variants = cs_data[cs_data["PIP"] > 0.01]  # Filter for meaningful PIP
+                cs_variants = cs_data[
+                    cs_data["PIP"] > 0.01
+                ]  # Filter for meaningful PIP
                 for _, variant in cs_variants.iterrows():
                     bp = variant["BP"]
                     # Find corresponding p-value
@@ -578,7 +588,9 @@ def plot_zscore_qq(
     handles = []
     labels = []
     for cohort in cohorts:
-        cohort_data = z_data[z_data["cohort"] == cohort].dropna(subset=["condmean", "z"])
+        cohort_data = z_data[z_data["cohort"] == cohort].dropna(
+            subset=["condmean", "z"]
+        )
         if cohort_data.empty:
             continue
         color = get_population_color(cohort)
@@ -601,7 +613,13 @@ def plot_zscore_qq(
         handles.append(scatter)
         labels.append(label)
 
-    ax.plot([global_min, global_max], [global_min, global_max], "k--", linewidth=1.5, alpha=0.8)
+    ax.plot(
+        [global_min, global_max],
+        [global_min, global_max],
+        "k--",
+        linewidth=1.5,
+        alpha=0.8,
+    )
 
     ax.set_xlabel("Expected z-score (condmean)")
     ax.set_ylabel("Observed z-score")
@@ -613,7 +631,6 @@ def plot_zscore_qq(
     ax.set_aspect("equal", adjustable="box")
 
     return ax
-
 
 
 def plot_ld_decay(
@@ -784,7 +801,9 @@ def plot_snp_missingness_upset(
         Matplotlib axes object.
     """
     if not UPSETPLOT_AVAILABLE:
-        raise ImportError("upsetplot package not available; install upsetplot to generate this plot")
+        raise ImportError(
+            "upsetplot package not available; install upsetplot to generate this plot"
+        )
 
     miss_data = read_compressed_file(snp_missingness_file)
 
@@ -809,7 +828,9 @@ def plot_snp_missingness_upset(
         fig.suptitle("SNP Missingness Patterns", fontsize=14, y=0.98)
         return fig
 
-    _embed_upset_subfigure(ax.figure, ax, upset_series, title="SNP Missingness Patterns")
+    _embed_upset_subfigure(
+        ax.figure, ax, upset_series, title="SNP Missingness Patterns"
+    )
     return ax.figure
 
 
@@ -854,12 +875,15 @@ def plot_locus_qc(
         if not snp_miss_file.exists():
             raise FileNotFoundError(f"snp_missingness.txt.gz not found in {locus_dir}")
         if not UPSETPLOT_AVAILABLE:
-            raise ImportError("upsetplot package not available; install upsetplot to include locus UpSet panel")
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(figsize[0], figsize[1]))
+            raise ImportError(
+                "upsetplot package not available; install upsetplot to include locus UpSet panel"
+            )
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+            2, 2, figsize=(figsize[0], figsize[1])
+        )
     else:
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=figsize)
         ax5 = None
-
 
     # Plot 1: Z-score QQ plot
     if expected_z_file.exists():

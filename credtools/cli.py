@@ -13,8 +13,14 @@ import numpy as np
 import pandas as pd
 import typer
 from rich.console import Console
-from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
-                           SpinnerColumn, TextColumn, TimeRemainingColumn)
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 
 from credtools import __version__
 from credtools.credtools import fine_map, pipeline
@@ -164,7 +170,9 @@ def main(
     setup_file_logging(log_file, verbose)
 
 
-def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str], Dict[str, str], pd.DataFrame]:
+def parse_population_config_file(
+    config_file_path: str,
+) -> tuple[Dict[str, str], Dict[str, str], pd.DataFrame]:
     """
     Parse population configuration file with columns: popu, cohort, sample_size, path, ld_ref.
 
@@ -186,10 +194,10 @@ def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str],
 
     try:
         # Read the configuration file
-        config_df = pd.read_csv(config_file_path, sep='\t')
+        config_df = pd.read_csv(config_file_path, sep="\t")
 
         # Check required columns
-        required_cols = ['popu', 'cohort', 'sample_size', 'path', 'ld_ref']
+        required_cols = ["popu", "cohort", "sample_size", "path", "ld_ref"]
         missing_cols = [col for col in required_cols if col not in config_df.columns]
         if missing_cols:
             raise ValueError(f"Missing required columns in config file: {missing_cols}")
@@ -200,17 +208,23 @@ def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str],
         for _, row in config_df.iterrows():
             # Create identifier from population and cohort
             identifier = f"{row['popu']}_{row['cohort']}"
-            sumstats_dict[identifier] = row['path']
-            ld_ref_dict[identifier] = row['ld_ref']
+            sumstats_dict[identifier] = row["path"]
+            ld_ref_dict[identifier] = row["ld_ref"]
 
             # Check if files exist
-            if not os.path.exists(row['path']):
-                raise FileNotFoundError(f"Summary statistics file not found: {row['path']}")
+            if not os.path.exists(row["path"]):
+                raise FileNotFoundError(
+                    f"Summary statistics file not found: {row['path']}"
+                )
 
             # For LD reference, check for common PLINK file extensions
-            ld_base = row['ld_ref']
-            if not any(os.path.exists(f"{ld_base}.{ext}") for ext in ['bed', 'bim', 'fam']):
-                raise FileNotFoundError(f"LD reference files not found: {ld_base}.[bed/bim/fam]")
+            ld_base = row["ld_ref"]
+            if not any(
+                os.path.exists(f"{ld_base}.{ext}") for ext in ["bed", "bim", "fam"]
+            ):
+                raise FileNotFoundError(
+                    f"LD reference files not found: {ld_base}.[bed/bim/fam]"
+                )
 
         return sumstats_dict, ld_ref_dict, config_df
 
@@ -218,7 +232,9 @@ def parse_population_config_file(config_file_path: str) -> tuple[Dict[str, str],
         raise ValueError(f"Error parsing configuration file: {e}")
 
 
-def parse_population_config_file_munge_only(config_file_path: str) -> tuple[Dict[str, str], pd.DataFrame]:
+def parse_population_config_file_munge_only(
+    config_file_path: str,
+) -> tuple[Dict[str, str], pd.DataFrame]:
     """
     Parse population configuration file for munge command (backward compatibility).
 
@@ -241,10 +257,10 @@ def parse_population_config_file_munge_only(config_file_path: str) -> tuple[Dict
 
     try:
         # Read the configuration file
-        config_df = pd.read_csv(config_file_path, sep='\t')
+        config_df = pd.read_csv(config_file_path, sep="\t")
 
         # Check required columns
-        required_cols = ['popu', 'cohort', 'sample_size', 'path']
+        required_cols = ["popu", "cohort", "sample_size", "path"]
         missing_cols = [col for col in required_cols if col not in config_df.columns]
         if missing_cols:
             raise ValueError(f"Missing required columns in config file: {missing_cols}")
@@ -254,11 +270,13 @@ def parse_population_config_file_munge_only(config_file_path: str) -> tuple[Dict
         for _, row in config_df.iterrows():
             # Create identifier from population and cohort
             identifier = f"{row['popu']}_{row['cohort']}"
-            input_dict[identifier] = row['path']
+            input_dict[identifier] = row["path"]
 
             # Check if file exists
-            if not os.path.exists(row['path']):
-                raise FileNotFoundError(f"Summary statistics file not found: {row['path']}")
+            if not os.path.exists(row["path"]):
+                raise FileNotFoundError(
+                    f"Summary statistics file not found: {row['path']}"
+                )
 
         return input_dict, config_df
 
@@ -267,9 +285,7 @@ def parse_population_config_file_munge_only(config_file_path: str) -> tuple[Dict
 
 
 def create_updated_sumstat_info(
-    original_config_df: pd.DataFrame,
-    munged_files: Dict[str, str],
-    output_path: str
+    original_config_df: pd.DataFrame, munged_files: Dict[str, str], output_path: str
 ) -> str:
     """
     Create an updated sumstat info file with new paths pointing to munged files.
@@ -295,18 +311,16 @@ def create_updated_sumstat_info(
     for idx, row in updated_config.iterrows():
         identifier = f"{row['popu']}_{row['cohort']}"
         if identifier in munged_files:
-            updated_config.at[idx, 'path'] = munged_files[identifier]
+            updated_config.at[idx, "path"] = munged_files[identifier]
 
     # Save the updated configuration
-    updated_config.to_csv(output_path, sep='\t', index=False)
+    updated_config.to_csv(output_path, sep="\t", index=False)
 
     return output_path
 
 
 def create_updated_chunk_info(
-    original_config_df: pd.DataFrame,
-    chunk_info_df: pd.DataFrame,
-    output_path: str
+    original_config_df: pd.DataFrame, chunk_info_df: pd.DataFrame, output_path: str
 ) -> str:
     """
     Create an updated sumstat info file with paths pointing to chunked files.
@@ -329,10 +343,10 @@ def create_updated_chunk_info(
     chunk_files_by_ancestry = {}
 
     for _, row in chunk_info_df.iterrows():
-        ancestry = row['ancestry']
+        ancestry = row["ancestry"]
         if ancestry not in chunk_files_by_ancestry:
             # Get the directory containing chunked files for this ancestry
-            chunk_dir = os.path.dirname(row['sumstats_file'])
+            chunk_dir = os.path.dirname(row["sumstats_file"])
             chunk_files_by_ancestry[ancestry] = chunk_dir
 
     # Create a copy of the original config
@@ -344,10 +358,10 @@ def create_updated_chunk_info(
 
         # Try to match the identifier with ancestry in chunk_files
         if identifier in chunk_files_by_ancestry:
-            updated_config.at[idx, 'path'] = chunk_files_by_ancestry[identifier]
+            updated_config.at[idx, "path"] = chunk_files_by_ancestry[identifier]
 
     # Save the updated configuration
-    updated_config.to_csv(output_path, sep='\t', index=False)
+    updated_config.to_csv(output_path, sep="\t", index=False)
 
     return output_path
 
@@ -380,8 +394,10 @@ def run_munge(
 
     try:
         from credtools.preprocessing import munge_sumstats
-        from credtools.preprocessing.munge import (create_munge_config,
-                                                   validate_munged_files)
+        from credtools.preprocessing.munge import (
+            create_munge_config,
+            validate_munged_files,
+        )
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing dependencies not found.[/red]")
@@ -391,13 +407,55 @@ def run_munge(
     console = Console()
     console.print("[cyan]Munging summary statistics...[/cyan]")
 
-    # Parse population configuration file
-    try:
-        input_dict, original_config_df = parse_population_config_file_munge_only(input_config)
-        console.print(f"[green]Loaded {len(input_dict)} population files from config[/green]")
-    except Exception as e:
-        console.print(f"[red]Error parsing configuration file: {e}[/red]")
-        raise typer.Exit(1)
+    original_config_df: Optional[pd.DataFrame] = None
+
+    def _parse_direct_inputs(input_spec: str) -> Dict[str, str]:
+        normalized = input_spec.replace("\n", ",")
+        paths = [part.strip() for part in normalized.split(",") if part.strip()]
+        if not paths:
+            raise ValueError("No input files provided.")
+        input_mapping: Dict[str, str] = {}
+        for idx, candidate in enumerate(paths, start=1):
+            expanded = os.path.expanduser(candidate)
+            if not os.path.exists(expanded):
+                raise FileNotFoundError(f"Input file not found: {expanded}")
+            key = Path(expanded).stem
+            if key in input_mapping:
+                key = f"{key}_{idx}"
+            input_mapping[key] = expanded
+        return input_mapping
+
+    input_dict: Dict[str, str]
+    config_candidate = os.path.expanduser(input_config)
+    config_loaded = False
+
+    if (
+        "," not in input_config
+        and "\n" not in input_config
+        and os.path.exists(config_candidate)
+    ):
+        try:
+            input_dict, original_config_df = parse_population_config_file_munge_only(
+                config_candidate
+            )
+        except Exception:
+            config_loaded = False
+        else:
+            config_loaded = True
+            console.print(
+                f"[green]Loaded {len(input_dict)} population files from config[/green]"
+            )
+
+    if not config_loaded:
+        try:
+            input_dict = _parse_direct_inputs(input_config)
+        except (FileNotFoundError, ValueError) as direct_error:
+            console.print(f"[red]Error parsing input files: {direct_error}[/red]")
+            raise typer.Exit(1) from direct_error
+        else:
+            console.print(
+                f"[green]Loaded {len(input_dict)} input file(s) from direct paths[/green]"
+            )
 
     # Create interactive config if requested
     if interactive_config:
@@ -416,18 +474,35 @@ def run_munge(
         )
 
         # Validate results with updated required columns
-        required_columns = ["CHR", "BP", "SNPID", "EA", "NEA", "EAF", "BETA", "SE", "P", "RSID"]
+        required_columns = [
+            "CHR",
+            "BP",
+            "SNPID",
+            "EA",
+            "NEA",
+            "EAF",
+            "BETA",
+            "SE",
+            "P",
+            "N",
+            "RSID",
+        ]
         validation = validate_munged_files(result, required_columns=required_columns)
 
-        # Create updated sumstat info file
-        updated_info_path = os.path.join(output_dir, "sumstat_info_updated.txt")
-        try:
-            created_info_file = create_updated_sumstat_info(
-                original_config_df, result, updated_info_path
-            )
-            console.print(f"[green]Created updated sumstat info file: {created_info_file}[/green]")
-        except Exception as e:
-            console.print(f"[yellow]Warning: Could not create updated info file: {e}[/yellow]")
+        # Create updated sumstat info file when a configuration was provided
+        if original_config_df is not None:
+            updated_info_path = os.path.join(output_dir, "sumstat_info_updated.txt")
+            try:
+                created_info_file = create_updated_sumstat_info(
+                    original_config_df, result, updated_info_path
+                )
+                console.print(
+                    f"[green]Created updated sumstat info file: {created_info_file}[/green]"
+                )
+            except Exception as exc:
+                console.print(
+                    f"[yellow]Warning: Could not create updated info file: {exc}[/yellow]"
+                )
 
         # Print summary
         console.print(f"[green]Successfully munged {len(result)} files[/green]")
@@ -461,27 +536,42 @@ def _load_custom_chunks(custom_chunks_file: str) -> pd.DataFrame:
         raise FileNotFoundError(f"Custom chunks file not found: {custom_chunks_file}")
 
     try:
-        chunks_df = pd.read_csv(custom_chunks_file, sep='\t')
+        chunks_df = pd.read_csv(custom_chunks_file, sep="\t")
 
         # Check required columns
-        required_cols = ['chr', 'start', 'end']
+        required_cols = ["chr", "start", "end"]
         missing_cols = [col for col in required_cols if col not in chunks_df.columns]
         if missing_cols:
-            raise ValueError(f"Missing required columns in custom chunks file: {missing_cols}")
+            raise ValueError(
+                f"Missing required columns in custom chunks file: {missing_cols}"
+            )
 
         # Create locus_id
-        chunks_df['locus_id'] = [
-            f"chr{row['chr']}_{row['start']}_{row['end']}" for _, row in chunks_df.iterrows()
+        chunks_df["locus_id"] = [
+            f"chr{row['chr']}_{row['start']}_{row['end']}"
+            for _, row in chunks_df.iterrows()
         ]
 
         # Add placeholder columns to match identify_independent_loci output
-        chunks_df['lead_snp'] = None
-        chunks_df['lead_bp'] = (chunks_df['start'] + chunks_df['end']) // 2
-        chunks_df['lead_p'] = None
-        chunks_df['ancestry'] = 'custom'
-        chunks_df['n_variants'] = 0
+        chunks_df["lead_snp"] = None
+        chunks_df["lead_bp"] = (chunks_df["start"] + chunks_df["end"]) // 2
+        chunks_df["lead_p"] = None
+        chunks_df["ancestry"] = "custom"
+        chunks_df["n_variants"] = 0
 
-        return chunks_df[['chr', 'start', 'end', 'locus_id', 'lead_snp', 'lead_bp', 'lead_p', 'ancestry', 'n_variants']]
+        return chunks_df[
+            [
+                "chr",
+                "start",
+                "end",
+                "locus_id",
+                "lead_snp",
+                "lead_bp",
+                "lead_p",
+                "ancestry",
+                "n_variants",
+            ]
+        ]
 
     except Exception as e:
         raise ValueError(f"Error parsing custom chunks file: {e}")
@@ -528,7 +618,7 @@ def _prepare_ld_matrices(
     # Convert chunk_info_df to the format expected by prepare_finemap_inputs
     # We need to map ancestry names to genotype file prefixes
     genotype_files = {}
-    for ancestry in chunk_info_df['ancestry'].unique():
+    for ancestry in chunk_info_df["ancestry"].unique():
         # Find matching LD reference for this ancestry
         matching_key = None
         for key in ld_ref_dict.keys():
@@ -543,16 +633,14 @@ def _prepare_ld_matrices(
 
     # Rename columns to match prepare function expectations
     prep_chunk_df = chunk_info_df.copy()
-    prep_chunk_df = prep_chunk_df.rename(columns={
-        'ancestry': 'popu'
-    })
+    prep_chunk_df = prep_chunk_df.rename(columns={"ancestry": "popu"})
 
     # Add required columns
-    prep_chunk_df['cohort'] = prep_chunk_df['popu']
-    prep_chunk_df['sample_size'] = 50000  # Placeholder
+    prep_chunk_df["cohort"] = prep_chunk_df["popu"]
+    prep_chunk_df["sample_size"] = 50000  # Placeholder
 
     # Add prefix column based on sumstats_file
-    prep_chunk_df['prefix'] = prep_chunk_df['sumstats_file'].apply(
+    prep_chunk_df["prefix"] = prep_chunk_df["sumstats_file"].apply(
         lambda x: str(Path(x).with_suffix("")).replace(".sumstats", "")
     )
 
@@ -569,7 +657,9 @@ def _prepare_ld_matrices(
     return prepared_df
 
 
-def _update_chunk_info_with_prepared(chunk_info_df: pd.DataFrame, prepared_df: pd.DataFrame) -> pd.DataFrame:
+def _update_chunk_info_with_prepared(
+    chunk_info_df: pd.DataFrame, prepared_df: pd.DataFrame
+) -> pd.DataFrame:
     """
     Update chunk info DataFrame with prepared file information.
 
@@ -590,15 +680,15 @@ def _update_chunk_info_with_prepared(chunk_info_df: pd.DataFrame, prepared_df: p
     # Create a mapping from locus_id + ancestry to prepared prefix
     prepared_mapping = {}
     for _, row in prepared_df.iterrows():
-        key = (row['locus_id'], row['popu'])
-        prepared_mapping[key] = row['prefix']
+        key = (row["locus_id"], row["popu"])
+        prepared_mapping[key] = row["prefix"]
 
     # Update sumstats_file with prepared prefix (add extensions for credtools compatibility)
     for idx, row in updated_df.iterrows():
-        key = (row['locus_id'], row['ancestry'])
+        key = (row["locus_id"], row["ancestry"])
         if key in prepared_mapping:
             # Update to point to prepared files
-            updated_df.at[idx, 'sumstats_file'] = prepared_mapping[key] + '.sumstats.gz'
+            updated_df.at[idx, "sumstats_file"] = prepared_mapping[key] + ".sumstats.gz"
 
     return updated_df
 
@@ -635,7 +725,10 @@ def run_chunk(
         10, "--min-variants", "-v", help="Minimum variants per locus."
     ),
     custom_chunks: Optional[str] = typer.Option(
-        None, "--custom-chunks", "-cc", help="Custom chunk file with chr, start, end columns."
+        None,
+        "--custom-chunks",
+        "-cc",
+        help="Custom chunk file with chr, start, end columns.",
     ),
     ld_format: str = typer.Option(
         "plink", "--ld-format", "-f", help="LD computation format (plink/vcf)."
@@ -652,10 +745,8 @@ def run_chunk(
     setup_file_logging(log_file)
 
     try:
-        from credtools.preprocessing import (chunk_sumstats,
-                                             identify_independent_loci)
-        from credtools.preprocessing.chunk import \
-            create_loci_list_for_credtools
+        from credtools.preprocessing import chunk_sumstats, identify_independent_loci
+        from credtools.preprocessing.chunk import create_loci_list_for_credtools
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing module not found.[/red]")
@@ -663,13 +754,63 @@ def run_chunk(
 
     console = Console()
 
-    # Parse population configuration file
-    try:
-        sumstats_dict, ld_ref_dict, original_config_df = parse_population_config_file(input_config)
-        console.print(f"[green]Loaded {len(sumstats_dict)} population files from config[/green]")
-    except Exception as e:
-        console.print(f"[red]Error parsing configuration file: {e}[/red]")
-        raise typer.Exit(1)
+    original_config_df: Optional[pd.DataFrame] = None
+    sumstats_dict: Dict[str, str]
+    ld_ref_dict: Dict[str, str] = {}
+
+    def _parse_direct_chunk_inputs(input_spec: str) -> Dict[str, str]:
+        normalized = input_spec.replace("\n", ",")
+        paths = [part.strip() for part in normalized.split(",") if part.strip()]
+        if not paths:
+            raise ValueError("No input files provided.")
+        input_mapping: Dict[str, str] = {}
+        for idx, candidate in enumerate(paths, start=1):
+            expanded = os.path.expanduser(candidate)
+            if not os.path.exists(expanded):
+                raise FileNotFoundError(f"Input file not found: {expanded}")
+            key_name = Path(expanded).name
+            if key_name.endswith(".txt.gz"):
+                key_name = key_name[: -len(".txt.gz")]
+            elif key_name.endswith(".gz"):
+                key_name = key_name[: -len(".gz")]
+            if key_name.endswith(".sumstats"):
+                key_name = key_name[: -len(".sumstats")]
+            if ".munged" in key_name:
+                key_name = key_name.split(".munged")[0]
+            if key_name in input_mapping:
+                key_name = f"{key_name}_{idx}"
+            input_mapping[key_name] = expanded
+        return input_mapping
+
+    config_candidate = os.path.expanduser(input_config)
+    config_loaded = False
+    if (
+        "," not in input_config
+        and "\n" not in input_config
+        and os.path.exists(config_candidate)
+    ):
+        try:
+            sumstats_dict, ld_ref_dict, original_config_df = (
+                parse_population_config_file(config_candidate)
+            )
+        except Exception:
+            config_loaded = False
+        else:
+            config_loaded = True
+            console.print(
+                f"[green]Loaded {len(sumstats_dict)} population files from config[/green]"
+            )
+
+    if not config_loaded:
+        try:
+            sumstats_dict = _parse_direct_chunk_inputs(input_config)
+        except (FileNotFoundError, ValueError) as direct_error:
+            console.print(f"[red]Error parsing input files: {direct_error}[/red]")
+            raise typer.Exit(1) from direct_error
+        else:
+            console.print(
+                f"[green]Loaded {len(sumstats_dict)} input file(s) from direct paths[/green]"
+            )
 
     try:
         # Load or identify loci
@@ -692,8 +833,8 @@ def run_chunk(
             console.print("[yellow]No loci identified[/yellow]")
             return
 
-        # Chunk summary statistics and extract LD matrices
-        console.print(f"[cyan]Chunking {len(loci_df)} loci and extracting LD matrices...[/cyan]")
+        # Chunk summary statistics and optionally extract LD matrices
+        console.print(f"[cyan]Chunking {len(loci_df)} loci...[/cyan]")
         chunk_info_df = chunk_sumstats(
             loci_df=loci_df,
             sumstats_files=sumstats_dict,
@@ -701,50 +842,72 @@ def run_chunk(
             threads=threads,
         )
 
-        # Extract LD matrices for each chunk
-        console.print("[cyan]Extracting LD matrices...[/cyan]")
-        try:
-            prepared_df = _prepare_ld_matrices(
-                chunk_info_df=chunk_info_df,
-                ld_ref_dict=ld_ref_dict,
-                output_dir=os.path.join(output_dir, "prepared"),
-                threads=threads,
-                ld_format=ld_format,
-                keep_intermediate=keep_intermediate,
+        if ld_ref_dict:
+            console.print("[cyan]Extracting LD matrices...[/cyan]")
+            try:
+                prepared_df = _prepare_ld_matrices(
+                    chunk_info_df=chunk_info_df,
+                    ld_ref_dict=ld_ref_dict,
+                    output_dir=os.path.join(output_dir, "prepared"),
+                    threads=threads,
+                    ld_format=ld_format,
+                    keep_intermediate=keep_intermediate,
+                )
+            except Exception as e:
+                console.print(
+                    f"[yellow]Warning: LD extraction had issues: {e}[/yellow]"
+                )
+                console.print("[cyan]Continuing with chunk files only...[/cyan]")
+                prepared_df = chunk_info_df
+        else:
+            console.print(
+                "[yellow]No LD reference information provided; skipping LD matrix extraction[/yellow]"
             )
-        except Exception as e:
-            console.print(f"[yellow]Warning: LD extraction had issues: {e}[/yellow]")
-            console.print("[cyan]Continuing with chunk files only...[/cyan]")
-            prepared_df = chunk_info_df  # Use original chunk files
+            prepared_df = chunk_info_df
 
         # Create credtools-compatible loci list from prepared files
         loci_list_file = os.path.join(output_dir, "loci_list.txt")
         # Update chunk_info_df with prepared file prefixes (if LD extraction succeeded)
-        if 'prefix' in prepared_df.columns:
-            updated_chunk_df = _update_chunk_info_with_prepared(chunk_info_df, prepared_df)
+        if "prefix" in prepared_df.columns:
+            updated_chunk_df = _update_chunk_info_with_prepared(
+                chunk_info_df, prepared_df
+            )
         else:
             updated_chunk_df = chunk_info_df  # Use original chunk files
         credtools_df = create_loci_list_for_credtools(
             chunk_info_df=updated_chunk_df, output_file=loci_list_file
         )
 
-        # Create updated sumstat info file
-        updated_info_path = os.path.join(output_dir, "sumstat_info_updated.txt")
-        try:
-            created_info_file = create_updated_chunk_info(
-                original_config_df, chunk_info_df, updated_info_path
+        # Create updated sumstat info file when configuration is available
+        if original_config_df is not None:
+            updated_info_path = os.path.join(output_dir, "sumstat_info_updated.txt")
+            try:
+                created_info_file = create_updated_chunk_info(
+                    original_config_df, chunk_info_df, updated_info_path
+                )
+                console.print(
+                    f"[green]Created updated sumstat info file: {created_info_file}[/green]"
+                )
+            except Exception as exc:
+                console.print(
+                    f"[yellow]Warning: Could not create updated info file: {exc}[/yellow]"
+                )
+        else:
+            console.print(
+                "[yellow]Skipping creation of updated sumstat info file (no configuration provided)[/yellow]"
             )
-            console.print(f"[green]Created updated sumstat info file: {created_info_file}[/green]")
-        except Exception as e:
-            console.print(f"[yellow]Warning: Could not create updated info file: {e}[/yellow]")
 
         # Print summary
         console.print(f"[green]Successfully processed {len(loci_df)} loci[/green]")
         console.print(f"[green]Generated {len(chunk_info_df)} chunked files[/green]")
-        if 'prefix' in prepared_df.columns:
-            console.print(f"[green]Generated {len(prepared_df)} prepared files with LD matrices[/green]")
+        if "prefix" in prepared_df.columns:
+            console.print(
+                f"[green]Generated {len(prepared_df)} prepared files with LD matrices[/green]"
+            )
         else:
-            console.print("[yellow]LD matrix extraction failed, using chunked files only[/yellow]")
+            console.print(
+                "[yellow]LD matrix extraction failed, using chunked files only[/yellow]"
+            )
         console.print(f"[green]Credtools loci list: {loci_list_file}[/green]")
 
     except Exception as e:
@@ -898,6 +1061,7 @@ def run_fine_map(
     from datetime import datetime
 
     from credtools.utils import create_float_format_dict
+
     logger = logging.getLogger("CREDTOOLS")
 
     loci_info = pd.read_csv(inputs, sep="\t")
@@ -919,7 +1083,7 @@ def run_fine_map(
             "coverage": coverage,
             "combine_cred": combine_cred.value,
             "combine_pip": combine_pip.value,
-        }
+        },
     }
 
     # Collect all credible sets for summary
@@ -979,10 +1143,14 @@ def run_fine_map(
                 # Format numeric columns
                 for col, fmt in format_dict.items():
                     if col in enhanced_pips.columns:
-                        if fmt == '%.3e':
-                            enhanced_pips[col] = enhanced_pips[col].apply(lambda x: f"{x:.3e}" if pd.notna(x) else "")
-                        elif fmt == '%.4f':
-                            enhanced_pips[col] = enhanced_pips[col].apply(lambda x: f"{x:.4f}" if pd.notna(x) else "")
+                        if fmt == "%.3e":
+                            enhanced_pips[col] = enhanced_pips[col].apply(
+                                lambda x: f"{x:.3e}" if pd.notna(x) else ""
+                            )
+                        elif fmt == "%.4f":
+                            enhanced_pips[col] = enhanced_pips[col].apply(
+                                lambda x: f"{x:.4f}" if pd.notna(x) else ""
+                            )
 
                 # Save enhanced PIPs with compression
                 out_dir = f"{outdir}/{locus_id}"
@@ -1020,7 +1188,7 @@ def run_fine_map(
             f"{outdir}/credible_sets_summary.txt.gz",
             sep="\t",
             index=False,
-            compression="gzip"
+            compression="gzip",
         )
 
     # Save parameters (simplified version)
@@ -1029,7 +1197,7 @@ def run_fine_map(
             "tool": tool.value,
             "n_loci_processed": run_summary["successful_loci"],
             "coverage": coverage,
-            "parameters": run_summary["parameters"]
+            "parameters": run_summary["parameters"],
         }
         with open(f"{outdir}/parameters.json", "w") as f:
             json.dump(parameters_dict, f, indent=4)
@@ -1045,22 +1213,26 @@ def run_fine_map(
         f.write(f"Failed: {run_summary['failed_loci']}\n")
         f.write("\n")
 
-        if run_summary['errors']:
+        if run_summary["errors"]:
             f.write("Error Details:\n")
-            for error in run_summary['errors']:
+            for error in run_summary["errors"]:
                 f.write(f"  - {error}\n")
             f.write("\n")
 
         f.write("Parameters Used:\n")
-        for key, value in run_summary['parameters'].items():
+        for key, value in run_summary["parameters"].items():
             f.write(f"  {key}: {value}\n")
 
     # Print summary to console
     console = Console()
     if run_summary["failed_loci"] > 0:
-        console.print(f"[yellow]Completed with {run_summary['failed_loci']} failed loci[/yellow]")
+        console.print(
+            f"[yellow]Completed with {run_summary['failed_loci']} failed loci[/yellow]"
+        )
     else:
-        console.print(f"[green]Successfully processed all {run_summary['successful_loci']} loci[/green]")
+        console.print(
+            f"[green]Successfully processed all {run_summary['successful_loci']} loci[/green]"
+        )
 
 
 @app.command(
@@ -1329,6 +1501,7 @@ def run_pipeline(
     import logging
     import sys
     from datetime import datetime
+
     logger = logging.getLogger("CREDTOOLS")
 
     loci_info = pd.read_csv(inputs, sep="\t")
@@ -1340,7 +1513,7 @@ def run_pipeline(
         "total_loci": len(loci_info.groupby("locus_id")),
         "successful_loci": 0,
         "failed_loci": 0,
-        "errors": []
+        "errors": [],
     }
 
     console = Console()
@@ -1421,38 +1594,49 @@ def run_pipeline(
         f.write(f"Total Loci: {overall_summary['total_loci']}\n")
         f.write(f"Successful: {overall_summary['successful_loci']}\n")
         f.write(f"Failed: {overall_summary['failed_loci']}\n")
-        if overall_summary['errors']:
+        if overall_summary["errors"]:
             f.write("\nError Details:\n")
-            for error in overall_summary['errors']:
+            for error in overall_summary["errors"]:
                 f.write(f"  - {error}\n")
 
     # Print final summary
     if overall_summary["failed_loci"] > 0:
-        console.print(f"[yellow]Pipeline completed with {overall_summary['failed_loci']} failed loci[/yellow]")
+        console.print(
+            f"[yellow]Pipeline completed with {overall_summary['failed_loci']} failed loci[/yellow]"
+        )
     else:
-        console.print(f"[green]Pipeline completed successfully for all {overall_summary['successful_loci']} loci[/green]")
+        console.print(
+            f"[green]Pipeline completed successfully for all {overall_summary['successful_loci']} loci[/green]"
+        )
 
 
 @app.command()
 def plot(
     input_path: str = typer.Argument(..., help="Path to QC file or locus directory"),
     plot_type: Optional[str] = typer.Option(
-        None, "--type", "-t",
-        help="Plot type: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness. Auto-detected if not specified."
+        None,
+        "--type",
+        "-t",
+        help="Plot type: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness. Auto-detected if not specified.",
     ),
     output: Optional[str] = typer.Option(
         None, "--output", "-o", help="Output file path (PNG, PDF, SVG)"
     ),
     figsize_width: float = typer.Option(16, "--width", help="Figure width in inches"),
-    figsize_height: float = typer.Option(12, "--height", help="Figure height in inches"),
+    figsize_height: float = typer.Option(
+        12, "--height", help="Figure height in inches"
+    ),
     dpi: int = typer.Option(300, "--dpi", help="DPI for output file"),
     include_upset: bool = typer.Option(
-        True, "--include-upset/--no-upset", help="Include SNP missingness upset plot for locus plots"
+        True,
+        "--include-upset/--no-upset",
+        help="Include SNP missingness upset plot for locus plots",
     ),
 ):
     """Create QC plots from credtools results."""
     try:
         import matplotlib.pyplot as plt
+
         import credtools.plot as plot_mod
     except ImportError as e:
         console = Console()
@@ -1479,13 +1663,17 @@ def plot(
                 plot_type = "locusplot"
             else:
                 plot_type = "locus_qc"
-        elif input_path_obj.name.endswith(('qc.txt.gz', 'qc.txt')):
+        elif input_path_obj.name.endswith(("qc.txt.gz", "qc.txt")):
             plot_type = "summary"
-        elif input_path_obj.name.endswith('compare_maf.txt.gz'):
+        elif input_path_obj.name.endswith("compare_maf.txt.gz"):
             plot_type = "maf_corr"
         else:
-            console.print("[red]Cannot auto-detect plot type. Please specify --type[/red]")
-            console.print("Available types: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
+            console.print(
+                "[red]Cannot auto-detect plot type. Please specify --type[/red]"
+            )
+            console.print(
+                "Available types: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness"
+            )
             raise typer.Exit(1)
 
     console.print(f"[cyan]Creating {plot_type} plot(s)...[/cyan]")
@@ -1547,7 +1735,9 @@ def plot(
                 _get_plotter("plot_maf_corr_barplot")(input_path, ax=ax)
             elif plot_type in ["lambda_s_outliers", "dentist_s_outliers"]:
                 outlier_type = plot_type.replace("_outliers", "")
-                _get_plotter("plot_outliers_barplot")(input_path, outlier_type=outlier_type, ax=ax)
+                _get_plotter("plot_outliers_barplot")(
+                    input_path, outlier_type=outlier_type, ax=ax
+                )
             elif plot_type == "locus_pvalues":
                 _get_plotter("plot_locus_pvalues")(input_path, ax=ax)
             elif plot_type == "zscore_qq":
@@ -1560,7 +1750,9 @@ def plot(
                 _get_plotter("plot_snp_missingness_upset")(input_path, ax=ax)
             else:
                 console.print(f"[red]Unknown plot type: {plot_type}[/red]")
-                console.print("Available types: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness")
+                console.print(
+                    "Available types: summary, locus_qc, locusplot, lambda_s, maf_corr, lambda_s_outliers, dentist_s_outliers, locus_pvalues, zscore_qq, ld_decay, ld_4th_moment, snp_missingness"
+                )
                 raise typer.Exit(1)
 
             plt.title(f"{plot_type.replace('_', ' ').title()} Plot")

@@ -466,20 +466,20 @@ def get_float_format(col_name: str) -> Optional[str]:
     col_lower = col_name.lower()
 
     # P-values get scientific notation
-    if col_lower.endswith('_p') or col_lower == 'p':
-        return '%.3e'
+    if col_lower.endswith("_p") or col_lower == "p":
+        return "%.3e"
 
     # EAF, MAF, PIP, R2 get 4 decimal places
-    elif any(col_lower.endswith(suffix) for suffix in ['_eaf', '_maf', '_pip', '_r2']):
-        return '%.4f'
-    elif col_lower in ['eaf', 'maf', 'pip', 'r2']:
-        return '%.4f'
+    elif any(col_lower.endswith(suffix) for suffix in ["_eaf", "_maf", "_pip", "_r2"]):
+        return "%.4f"
+    elif col_lower in ["eaf", "maf", "pip", "r2"]:
+        return "%.4f"
 
     # BETA and SE get 4 decimal places
-    elif col_lower.endswith('_beta') or col_lower.endswith('_se'):
-        return '%.4f'
-    elif col_lower in ['beta', 'se']:
-        return '%.4f'
+    elif col_lower.endswith("_beta") or col_lower.endswith("_se"):
+        return "%.4f"
+    elif col_lower in ["beta", "se"]:
+        return "%.4f"
 
     # Default: no special formatting
     return None

@@ -202,7 +202,18 @@ def validate_munged_files(
         Dictionary with validation results for each file.
     """
     if required_columns is None:
-        required_columns = ["CHR", "BP", "SNPID", "EA", "NEA", "EAF", "BETA", "SE", "P", "RSID"]
+        required_columns = [
+            "CHR",
+            "BP",
+            "SNPID",
+            "EA",
+            "NEA",
+            "EAF",
+            "BETA",
+            "SE",
+            "P",
+            "RSID",
+        ]
 
     validation_results = {}
 

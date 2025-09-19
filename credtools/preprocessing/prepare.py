@@ -249,9 +249,7 @@ def _prepare_single_locus(
         subprocess.run(f"gzip -f {output_prefix}.sumstats", shell=True, check=True)
 
         # Save LD matrix
-        np.savez_compressed(
-            f"{output_prefix}.ld.npz", ld_matrix.astype(np.float16)
-        )
+        np.savez_compressed(f"{output_prefix}.ld.npz", ld_matrix.astype(np.float16))
 
         # Save LD map
         ldmap.to_csv(f"{output_prefix}.ldmap", sep="\t", index=False)
@@ -404,13 +402,15 @@ def _extract_ld_plink(
             logger.error(f"Frequency file not found: {freq_file}")
             return None
 
-        freq_df = pd.read_csv(freq_file, sep=r'\s+')
+        freq_df = pd.read_csv(freq_file, sep=r"\s+")
 
         # Prepare LD map
         ldmap = bim_df[["CHR", "RSID", "BP", "A1", "A2"]].copy()
 
         # Merge frequency data - A1 in BIM is minor allele, so AF2 = 1 - MAF
-        ldmap = ldmap.merge(freq_df[["SNP", "MAF"]], left_on="RSID", right_on="SNP", how="left")
+        ldmap = ldmap.merge(
+            freq_df[["SNP", "MAF"]], left_on="RSID", right_on="SNP", how="left"
+        )
         ldmap["AF2"] = 1 - ldmap["MAF"]
         ldmap = ldmap.drop(columns=["SNP", "MAF", "RSID"])
 

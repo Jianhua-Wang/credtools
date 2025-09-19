@@ -227,17 +227,25 @@ class CredibleSet:
 
             # Merge with sumstats
             sumstats_cols = [
-                ColName.SNPID, ColName.CHR, ColName.BP, ColName.RSID,
-                ColName.EA, ColName.NEA, ColName.EAF, ColName.MAF,
-                ColName.BETA, ColName.SE, ColName.P
+                ColName.SNPID,
+                ColName.CHR,
+                ColName.BP,
+                ColName.RSID,
+                ColName.EA,
+                ColName.NEA,
+                ColName.EAF,
+                ColName.MAF,
+                ColName.BETA,
+                ColName.SE,
+                ColName.P,
             ]
 
             # Get available columns from sumstats
-            available_cols = [col for col in sumstats_cols if col in locus_copy.sumstats.columns]
+            available_cols = [
+                col for col in sumstats_cols if col in locus_copy.sumstats.columns
+            ]
             result_df = result_df.merge(
-                locus_copy.sumstats[available_cols],
-                on=ColName.SNPID,
-                how="left"
+                locus_copy.sumstats[available_cols], on=ColName.SNPID, how="left"
             )
 
             # Calculate R2 (squared correlation with lead SNP)
@@ -256,15 +264,23 @@ class CredibleSet:
             # Multiple loci case - prefixed column names
             # First, add common columns that don't need prefix
             first_locus = locus_set.loci[0]
-            common_cols = [ColName.CHR, ColName.BP, ColName.RSID, ColName.EA, ColName.NEA]
-            available_common = [col for col in common_cols if col in first_locus.sumstats.columns]
+            common_cols = [
+                ColName.CHR,
+                ColName.BP,
+                ColName.RSID,
+                ColName.EA,
+                ColName.NEA,
+            ]
+            available_common = [
+                col for col in common_cols if col in first_locus.sumstats.columns
+            ]
 
             # Use the first locus for common columns
             if available_common:
                 result_df = result_df.merge(
                     first_locus.sumstats[[ColName.SNPID] + available_common],
                     on=ColName.SNPID,
-                    how="left"
+                    how="left",
                 )
 
             # Add locus-specific columns with prefixes
@@ -276,19 +292,29 @@ class CredibleSet:
                 locus_copy = intersect_sumstat_ld(locus_copy)
 
                 # Columns to add with prefix
-                locus_cols = [ColName.EAF, ColName.MAF, ColName.BETA, ColName.SE, ColName.P]
+                locus_cols = [
+                    ColName.EAF,
+                    ColName.MAF,
+                    ColName.BETA,
+                    ColName.SE,
+                    ColName.P,
+                ]
 
                 for col in locus_cols:
                     if col in locus_copy.sumstats.columns:
                         col_data = locus_copy.sumstats[[ColName.SNPID, col]].copy()
                         col_data.rename(columns={col: f"{prefix}{col}"}, inplace=True)
-                        result_df = result_df.merge(col_data, on=ColName.SNPID, how="left")
+                        result_df = result_df.merge(
+                            col_data, on=ColName.SNPID, how="left"
+                        )
 
                 # Calculate R2
                 if locus_copy.ld is not None and len(locus_copy.sumstats) > 0:
                     lead_idx = locus_copy.sumstats[ColName.P].idxmin()
                     r2_values = locus_copy.ld.r[lead_idx] ** 2
-                    snpid_to_r2 = dict(zip(locus_copy.sumstats[ColName.SNPID], r2_values))
+                    snpid_to_r2 = dict(
+                        zip(locus_copy.sumstats[ColName.SNPID], r2_values)
+                    )
                     result_df[f"{prefix}R2"] = result_df[ColName.SNPID].map(snpid_to_r2)
                 else:
                     result_df[f"{prefix}R2"] = np.nan

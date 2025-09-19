@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.36] (2025-09-18)
+
+### Changed
+- **CLI preprocessing flows**: `credtools munge` and `credtools chunk` now accept
+  comma- or newline-separated input paths in addition to TSV config files,
+  with friendlier validation and logging when LD references are omitted.
+- **Preprocessing outputs**: Munge results retain the sample-size `N` column in
+  the standard export schema and downstream validators require it.
+- **Optional plotting dependency**: Centralized the `upsetplot` import so the
+  plotting module gatekeeps the dependency once and falls back gracefully when
+  the package is absent.
+
+
 ## [0.0.35] (2025-09-17)
 
 ### Added

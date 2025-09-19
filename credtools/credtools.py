@@ -399,9 +399,10 @@ def pipeline(
     strategy : str, optional
         DEPRECATED. This parameter is no longer used and will be removed in a future version.
     """
-    from credtools.utils import create_float_format_dict
-    from datetime import datetime
     import sys
+    from datetime import datetime
+
+    from credtools.utils import create_float_format_dict
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -415,7 +416,7 @@ def pipeline(
         "errors": [],
         "tool": tool,
         "meta_method": meta_method,
-        "parameters": kwargs
+        "parameters": kwargs,
     }
 
     # Collect all credible sets for summary
@@ -433,7 +434,9 @@ def pipeline(
         for locus in locus_set.loci:
             out_prefix = f"{outdir}/{locus.prefix}"
             locus.sumstats.to_csv(f"{out_prefix}.sumstat", sep="\t", index=False)
-            np.savez_compressed(f"{out_prefix}.ld.npz", ld=locus.ld.r.astype(np.float16))
+            np.savez_compressed(
+                f"{out_prefix}.ld.npz", ld=locus.ld.r.astype(np.float16)
+            )
             locus.ld.map.to_csv(f"{out_prefix}.ldmap", sep="\t", index=False)
 
         # QC
@@ -441,7 +444,9 @@ def pipeline(
             qc_metrics = locus_qc(locus_set)
             logger.info(f"QC complete, {qc_metrics.keys()} metrics saved.")
             for k, v in qc_metrics.items():
-                v.to_csv(f"{outdir}/{k}.txt", sep="\t", index=False, float_format="%.6f")
+                v.to_csv(
+                    f"{outdir}/{k}.txt", sep="\t", index=False, float_format="%.6f"
+                )
 
         # fine-mapping
         try:
@@ -469,10 +474,14 @@ def pipeline(
             # So we'll format the DataFrame first
             for col, fmt in format_dict.items():
                 if col in enhanced_pips.columns:
-                    if fmt == '%.3e':
-                        enhanced_pips[col] = enhanced_pips[col].apply(lambda x: f"{x:.3e}" if pd.notna(x) else "")
-                    elif fmt == '%.4f':
-                        enhanced_pips[col] = enhanced_pips[col].apply(lambda x: f"{x:.4f}" if pd.notna(x) else "")
+                    if fmt == "%.3e":
+                        enhanced_pips[col] = enhanced_pips[col].apply(
+                            lambda x: f"{x:.3e}" if pd.notna(x) else ""
+                        )
+                    elif fmt == "%.4f":
+                        enhanced_pips[col] = enhanced_pips[col].apply(
+                            lambda x: f"{x:.4f}" if pd.notna(x) else ""
+                        )
 
             # Save with formatted values
             enhanced_pips.to_csv(
@@ -485,12 +494,14 @@ def pipeline(
             # Create credible sets summary (all SNPs with CRED != 0)
             cs_summary = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
             if len(cs_summary) > 0:
-                cs_summary["locus_id"] = f"{locus_set.chrom}_{locus_set.start}_{locus_set.end}"
+                cs_summary["locus_id"] = (
+                    f"{locus_set.chrom}_{locus_set.start}_{locus_set.end}"
+                )
                 cs_summary.to_csv(
                     f"{outdir}/credible_sets_summary.txt.gz",
                     sep="\t",
                     index=False,
-                    compression="gzip"
+                    compression="gzip",
                 )
                 all_credible_sets.append(cs_summary)
 
@@ -499,7 +510,7 @@ def pipeline(
                 "tool": creds.tool,
                 "n_cs": creds.n_cs,
                 "coverage": creds.coverage,
-                "parameters": creds.parameters
+                "parameters": creds.parameters,
             }
             with open(f"{outdir}/parameters.json", "w") as f:
                 json.dump(parameters_dict, f, indent=4)
@@ -538,14 +549,14 @@ def _generate_run_summary(run_summary: dict, output_file: str):
         f.write(f"Failed: {run_summary['failed_loci']}\n")
         f.write("\n")
 
-        if run_summary['errors']:
+        if run_summary["errors"]:
             f.write("Error Details:\n")
-            for error in run_summary['errors']:
+            for error in run_summary["errors"]:
                 f.write(f"  - {error}\n")
             f.write("\n")
 
         f.write("Parameters Used:\n")
         f.write(f"  Tool: {run_summary['tool']}\n")
         f.write(f"  Meta Method: {run_summary['meta_method']}\n")
-        for key, value in run_summary['parameters'].items():
+        for key, value in run_summary["parameters"].items():
             f.write(f"  {key}: {value}\n")
