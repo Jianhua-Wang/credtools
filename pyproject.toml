@@ -126,5 +126,17 @@ mkdocs-material-extensions = ">=1.2"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+exclude = [
+    "exampledata",
+    "devdocs",
+    "docs",
+    "plots",
+    "site",
+    "tests",
+    "dist",
+    "coverage.xml",
+]
+
 [tool.poetry.scripts]
 credtools = 'credtools.cli:app'

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.37] (2025-09-20)
+
+### Fixed
+- **LD matrix ingestion**: Replace NaN entries with zeros when loading from lower-triangle text or `.npz` files, and add regression tests to guard behavior.
+
 ## [0.0.36] (2025-09-18)
 
 ### Changed

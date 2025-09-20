@@ -200,8 +200,10 @@ def load_ld_matrix(file_path: str, delimiter: str = "\t") -> np.ndarray:
             [0.3 , 0.5 , 0.6 , 1.  ]])
     """
     if file_path.endswith(".npz"):
-        ld_file_key = np.load(file_path).files[0]
-        return np.load(file_path)[ld_file_key].astype(np.float32)
+        with np.load(file_path) as data:
+            ld_file_key = data.files[0]
+            matrix = data[ld_file_key].astype(np.float32)
+        return np.nan_to_num(matrix, nan=0.0)
     lower_triangle = read_lower_triangle(file_path, delimiter)
 
     # Create the symmetric matrix
@@ -212,6 +214,9 @@ def load_ld_matrix(file_path: str, delimiter: str = "\t") -> np.ndarray:
 
     # convert to float32
     symmetric_matrix = symmetric_matrix.astype(np.float32)
+
+    # Replace any NaNs with 0 to avoid propagating missing LD values
+    symmetric_matrix = np.nan_to_num(symmetric_matrix, nan=0.0)
     return symmetric_matrix
 
 
