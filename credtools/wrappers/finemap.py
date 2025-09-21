@@ -23,6 +23,7 @@ def run_finemap(
     coverage: float = 0.95,
     n_iter: int = 100000,
     n_threads: int = 1,
+    timeout_minutes: Optional[float] = None,
     temp_dir: Optional[str] = None,
 ) -> CredibleSet:
     """
@@ -51,6 +52,9 @@ def run_finemap(
     n_threads : int, optional
         Number of threads to use for parallel computation, by default 1.
         Multiple threads can significantly speed up analysis for large datasets.
+    timeout_minutes : Optional[float], optional
+        Maximum runtime per locus in minutes, by default 30.
+        If the FINEMAP process exceeds this limit, it is terminated and a timeout error is raised.
     temp_dir : Optional[str], optional
         Temporary directory for intermediate files, by default None.
         Automatically provided by the @io_in_tempdir decorator.
@@ -136,13 +140,24 @@ def run_finemap(
     ...
     """
     logger.info(f"Running FINEMAP on {locus}")
+    if timeout_minutes is None:
+        timeout_minutes = 30.0
+    timeout_minutes = float(timeout_minutes)
+    if timeout_minutes <= 0:
+        raise ValueError("timeout_minutes must be a positive value.")
+    timeout_seconds = timeout_minutes * 60
     parameters = {
         "max_causal": max_causal,
         "coverage": coverage,
         "n_iter": n_iter,
         "n_threads": n_threads,
+        "timeout_minutes": round(timeout_minutes, 2),
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
+    logger.info(
+        "Per-locus timeout set to %.2f minutes (%.0f seconds)."
+        % (timeout_minutes, timeout_seconds)
+    )
     if not locus.is_matched:
         logger.warning(
             "The sumstat and LD are not matched, will match them in same order."
@@ -222,7 +237,13 @@ def run_finemap(
     ]
     required_output_files = [f"{temp_dir}/finemap.snp", f"{temp_dir}/finemap.config"]
     logger.info(f"Running FINEMAP with command: {' '.join(cmd)}.")
-    tool_manager.run_tool("finemap", cmd, f"{temp_dir}/run.log", required_output_files)
+    tool_manager.run_tool(
+        "finemap",
+        cmd,
+        f"{temp_dir}/run.log",
+        required_output_files,
+        timeout=timeout_seconds,
+    )
 
     # get credible set
     cred_file_list = Path(f"{temp_dir}/").glob("finemap.cred*")

@@ -160,6 +160,10 @@ credtools finemap qc/passed_loci.txt results/ \
 |--------|-------------|---------|
 | `--n-iter` / `-ni` | Number of iterations | 100000 |
 | `--n-threads` / `-nt` | Number of threads | 1 |
+| `--timeout-minutes` / `-tm` | Maximum runtime per locus (FINEMAP only) | 30 |
+
+> **Timeout behaviour:** FINEMAP runs are capped at 30 minutes per locus by default. Increase or decrease the limit with `--timeout-minutes`. Timeouts mark the locus as failed and appear in `run_summary.log` for audit.
+
 
 #### RSparsePro Parameters
 | Option | Description | Default |

@@ -203,13 +203,14 @@ class ExternalTool:
         command: List[str],
         log_file: str,
         output_file_path: Optional[Union[str, List[str]]] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """
         Execute a command line instruction, log the output, and handle errors.
 
         This function runs the given command, captures stdout and stderr,
-        logs them using logging.debug, and raises exceptions for command failures
-        or missing output files.
+        logs them using logging.debug, and raises exceptions for command failures,
+        timeouts, or missing output files.
 
         Parameters
         ----------
@@ -220,9 +221,14 @@ class ExternalTool:
         output_file_path : Optional[Union[str, List[str]]], optional
             The expected output file path(s). If provided, the function will check
             if these files exist after command execution, by default None.
+        timeout : Optional[float], optional
+            Maximum runtime in seconds. If the command exceeds this limit, it will be
+            terminated and a TimeoutError will be raised, by default None.
 
         Raises
         ------
+        TimeoutError
+            If the command execution exceeds the provided timeout.
         subprocess.CalledProcessError
             If the command execution fails.
         FileNotFoundError
@@ -235,12 +241,19 @@ class ExternalTool:
         >>> tool.run(["--in-files", "data.master"], "finemap.log", "output.snp")
         """
         full_command = [self.get_path()] + command
+        if timeout is not None and timeout <= 0:
+            raise ValueError("timeout must be a positive number of seconds.")
         try:
             # Run the command and capture output
             logger.debug(f"Run command: {' '.join(full_command)}")
             with open(log_file, "w") as log:
                 subprocess.run(
-                    full_command, shell=False, check=True, stdout=log, stderr=log
+                    full_command,
+                    shell=False,
+                    check=True,
+                    stdout=log,
+                    stderr=log,
+                    timeout=timeout,
                 )
 
             # Check for output file if path is provided
@@ -253,6 +266,18 @@ class ExternalTool:
                             f"Expected output file not found: {path}"
                         )
 
+        except subprocess.TimeoutExpired as exc:
+            timeout_value = float(timeout) if timeout is not None else 0.0
+            limit = (
+                f"{timeout_value / 60:.1f} minutes"
+                if timeout_value >= 60
+                else f"{timeout_value:.1f} seconds"
+            )
+            message = f"Command timed out after {limit}: {' '.join(full_command)}"
+            logger.error(f"{message}\nSee {log_file} for partial output.")
+            with open(log_file, "a") as log:
+                log.write(f"\n[timeout] {message}\n")
+            raise TimeoutError(message) from exc
         except Exception as e:
             logger.error(f"Command execution failed: {e}\nSee {log_file} for details.")
             raise
@@ -278,7 +303,7 @@ class ToolManager:
         Sets a custom path for a registered tool.
     get_tool(name: str) -> ExternalTool
         Retrieves a registered tool by its name.
-    run_tool(name: str, args: List[str], log_file: str, output_file_path: Optional[Union[str, List[str]]]) -> None
+    run_tool(name: str, args: List[str], log_file: str, output_file_path: Optional[Union[str, List[str]]], timeout: Optional[float] = None) -> None
         Runs a registered tool with the given arguments.
 
     Examples
@@ -355,6 +380,7 @@ class ToolManager:
         args: List[str],
         log_file: str,
         output_file_path: Optional[Union[str, List[str]]] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """
         Run a registered tool with the given arguments.
@@ -370,6 +396,8 @@ class ToolManager:
         output_file_path : Optional[Union[str, List[str]]], optional
             The expected output file path(s). If provided, the function will check
             if these files exist after command execution, by default None.
+        timeout : Optional[float], optional
+            Maximum runtime in seconds for the tool execution, by default None.
 
         Raises
         ------
@@ -379,10 +407,17 @@ class ToolManager:
             If the subprocess call fails.
         FileNotFoundError
             If expected output files are not found after execution.
+        TimeoutError
+            If the tool execution exceeds the provided timeout.
         """
         if name not in self.tools:
             raise KeyError(f"Tool {name} is not registered")
-        return self.get_tool(name).run(args, log_file, output_file_path)
+        return self.get_tool(name).run(
+            args,
+            log_file,
+            output_file_path,
+            timeout=timeout,
+        )
 
 
 tool_manager = ToolManager()

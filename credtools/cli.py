@@ -1017,6 +1017,12 @@ def run_fine_map(
     coverage: float = typer.Option(
         0.95, "--coverage", "-cv", help="Coverage of the credible set."
     ),
+    timeout_minutes: float = typer.Option(
+        30.0,
+        "--timeout-minutes",
+        "-tm",
+        help="Maximum runtime per locus in minutes when running FINEMAP.",
+    ),
     combine_cred: CombineCred = typer.Option(
         CombineCred.union,
         "--combine-cred",
@@ -1092,6 +1098,7 @@ def run_fine_map(
             "set_L_by_cojo": set_L_by_cojo,
             "p_cutoff": p_cutoff,
             "coverage": coverage,
+            "timeout_minutes": timeout_minutes,
             "combine_cred": combine_cred.value,
             "combine_pip": combine_pip.value,
         },
@@ -1135,6 +1142,7 @@ def run_fine_map(
                     maf_cutoff=maf_cutoff,
                     diff_freq_cutoff=diff_freq_cutoff,
                     coverage=coverage,
+                    timeout_minutes=timeout_minutes,
                     combine_cred=combine_cred,
                     combine_pip=combine_pip,
                     jaccard_threshold=jaccard_threshold,

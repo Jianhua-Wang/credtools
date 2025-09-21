@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.38] (2025-09-21)
+
+### Added
+- **FINEMAP timeout control**: `credtools finemap` now accepts `--timeout-minutes` (default 30) to cap per-locus runs, with timeout failures reported in `run_summary.log`.
+
+### Changed
+- **External tool execution**: FINEMAP wrapper and tool manager enforce the timeout and append `[timeout]` markers to logs when the limit is exceeded, ensuring stalled runs surface immediately.
+
 ## [0.0.37] (2025-09-20)
 
 ### Fixed

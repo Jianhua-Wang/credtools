@@ -174,6 +174,7 @@ def fine_map(
     combine_cred: str = "union",
     combine_pip: str = "max",
     jaccard_threshold: float = 0.1,
+    timeout_minutes: Optional[float] = None,
     strategy: Optional[str] = None,  # Deprecated parameter
     **kwargs,
 ) -> CredibleSet:
@@ -207,6 +208,9 @@ def fine_map(
         "mean": Mean PIP value for each SNP across all tools.
     jaccard_threshold : float, optional
         Jaccard index threshold for the "cluster" method, by default 0.1.
+    timeout_minutes : Optional[float], optional
+        Maximum runtime per locus in minutes when running the FINEMAP tool. Defaults to 30 minutes for FINEMAP.
+        Ignored for other tools.
     max_causal : int, optional
         Maximum number of causal variants, by default 5.
     adaptive_max_causal : bool, optional
@@ -229,6 +233,15 @@ def fine_map(
             DeprecationWarning,
             stacklevel=2,
         )
+
+    # Handle timeout defaults for FINEMAP
+    if timeout_minutes is None and tool == "finemap":
+        timeout_minutes = 30.0
+    if timeout_minutes is not None:
+        timeout_minutes = float(timeout_minutes)
+        if timeout_minutes <= 0:
+            raise ValueError("timeout_minutes must be a positive value.")
+        kwargs["timeout_minutes"] = timeout_minutes
 
     # Define tool categories
     single_input_tools = ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]
