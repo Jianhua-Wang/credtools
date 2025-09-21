@@ -2374,8 +2374,16 @@
 <td>Number of threads</td>
 <td>1</td>
 </tr>
+<tr>
+<td><code>--timeout-minutes</code> / <code>-tm</code></td>
+<td>Maximum runtime per locus (FINEMAP only)</td>
+<td>30</td>
+</tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Timeout behaviour:</strong> FINEMAP runs are capped at 30 minutes per locus by default. Increase or decrease the limit with <code>--timeout-minutes</code>. Timeouts mark the locus as failed and appear in <code>run_summary.log</code> for audit.</p>
+</blockquote>
 <h4 id="rsparsepro-parameters">RSparsePro Parameters<a class="headerlink" href="#rsparsepro-parameters" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
