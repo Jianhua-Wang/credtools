@@ -955,7 +955,18 @@ def run_qc(
 ):
     """Quality control of summary statistics and LD matrices."""
     setup_file_logging(log_file)
-    loci_qc(inputs, outdir, threads)
+    run_summary = loci_qc(inputs, outdir, threads)
+
+    console = Console()
+    if run_summary["failed_loci"] > 0:
+        console.print(
+            f"[yellow]QC completed with {run_summary['failed_loci']} failed loci[/yellow]"
+        )
+    else:
+        console.print(
+            f"[green]QC completed successfully for all {run_summary['successful_loci']} loci[/green]"
+        )
+    console.print(f"[dim]QC run summary saved to {run_summary['log_path']}[/dim]")
 
 
 @app.command(

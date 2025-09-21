@@ -2,8 +2,10 @@
 
 import logging
 import os
+from datetime import datetime
 from multiprocessing import Pool
-from typing import Dict, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
 # import matplotlib.pyplot as plt  # Not used in this module
 import numpy as np
@@ -879,6 +881,7 @@ def locus_qc(
     all_dentist_s = []
     all_compare_maf = []
     for locus in locus_set.loci:
+        logger.info(f"Processing locus: {locus.locus_id}")
         lo = intersect_sumstat_ld(locus)
         # Compute eigendecomposition once and reuse for both functions
         eigens = get_eigen(lo.ld.r, dtype)
@@ -1110,15 +1113,28 @@ def qc_locus_cli(args: Tuple[str, pd.DataFrame, str]) -> Tuple[str, pd.DataFrame
     return locus_id, summary
 
 
-def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
+def safe_qc_locus_cli(
+    args: Tuple[str, pd.DataFrame, str],
+) -> Tuple[str, Optional[pd.DataFrame], Optional[str]]:
+    """Wrapper for qc_locus_cli that captures exceptions."""
+    locus_id = args[0]
+    try:
+        processed_id, summary = qc_locus_cli(args)
+        return processed_id, summary, None
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.exception("QC failed for locus %s", locus_id)
+        return locus_id, pd.DataFrame(), f"{type(exc).__name__}: {exc}"
+
+
+def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> Dict[str, Any]:
     """
     Perform quality control analysis on multiple loci in parallel.
 
     Parameters
     ----------
     inputs : str
-        Path to input file containing locus information.
-        Must be tab-separated with columns including 'locus_id'.
+        Path to input file containing locus information. Must be tab-separated
+        with columns including 'locus_id'.
     out_dir : str
         Output directory path where results will be saved.
     threads : int, optional
@@ -1126,13 +1142,14 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
 
     Returns
     -------
-    None
-        Results are saved to files in the output directory.
+    Dict[str, Any]
+        Run summary containing counts of successful and failed loci and error
+        details. QC result files are written under ``out_dir``.
 
     Raises
     ------
     ValueError
-        If the number of threads is less than 1.
+        Raised when ``threads`` is less than 1.
 
     Notes
     -----
@@ -1154,10 +1171,14 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
     Each locus gets its own subdirectory with compressed QC result files.
     A global QC summary file is also generated at the output directory root.
     """
-    loci_info = pd.read_csv(inputs, sep="\t")
+    if threads < 1:
+        raise ValueError("threads must be a positive integer")
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    loci_info = pd.read_csv(inputs, sep="	")
     loci_info = check_loci_info(loci_info)  # Validate input data
 
-    # Create progress bar
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -1166,37 +1187,77 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> None:
         TimeRemainingColumn(),
     )
 
-    # Prepare arguments for multiprocessing
     locus_groups = [
         (locus_id, locus_info, out_dir)
         for locus_id, locus_info in loci_info.groupby("locus_id")
     ]
-
-    all_summaries = []
+    all_summaries: list[pd.DataFrame] = []
+    total_loci = len(locus_groups)
+    start_time = datetime.now()
+    log_path = Path(out_dir) / "qc_run_summary.log"
+    run_summary: Dict[str, Any] = {
+        "start_time": start_time.isoformat(),
+        "end_time": None,
+        "total_loci": total_loci,
+        "successful_loci": 0,
+        "failed_loci": 0,
+        "errors": [],
+        "log_path": str(log_path),
+    }
 
     with progress:
-        task = progress.add_task("[cyan]Processing loci...", total=len(locus_groups))
+        task = progress.add_task("[cyan]Processing loci...", total=total_loci)
+        if locus_groups:
+            with Pool(processes=threads) as pool:
+                for locus_id, summary, error in pool.imap_unordered(
+                    safe_qc_locus_cli, locus_groups
+                ):
+                    progress.update(task, advance=1)
+                    if error is None:
+                        run_summary["successful_loci"] += 1
+                        if summary is not None and not summary.empty:
+                            all_summaries.append(summary)
+                    else:
+                        run_summary["failed_loci"] += 1
+                        run_summary["errors"].append(
+                            f"Locus {locus_id} failed: {error}"
+                        )
 
-        # Process loci in parallel with progress updates
-        with Pool(threads) as pool:
-            for locus_id, summary in pool.imap_unordered(qc_locus_cli, locus_groups):  # type: ignore
-                progress.update(task, advance=1)
-                if not summary.empty:
-                    all_summaries.append(summary)
-
-    # Generate global summary file
     if all_summaries:
         global_summary = pd.concat(all_summaries, ignore_index=True)
-        # Reorder columns to put locus_id first
         cols = ["locus_id"] + [
             col for col in global_summary.columns if col != "locus_id"
         ]
         global_summary = global_summary[cols]
         global_summary.to_csv(
             f"{out_dir}/qc.txt.gz",
-            sep="\t",
+            sep="	",
             index=False,
             compression="gzip",
             float_format="%.6f",
         )
         logger.info(f"Global QC summary saved to {out_dir}/qc.txt.gz")
+
+    run_summary["end_time"] = datetime.now().isoformat()
+    with log_path.open("w") as log_file:
+        log_file.write("=== CREDTOOLS QC RUN SUMMARY ===\n")
+        log_file.write(f"Start Time: {run_summary['start_time']}\n")
+        log_file.write(f"End Time: {run_summary['end_time']}\n")
+        log_file.write(f"Total Loci: {run_summary['total_loci']}\n")
+        log_file.write(f"Successful: {run_summary['successful_loci']}\n")
+        log_file.write(f"Failed: {run_summary['failed_loci']}\n")
+        log_file.write("\n")
+        if run_summary["errors"]:
+            log_file.write("Error Details:\n")
+            for error in run_summary["errors"]:
+                log_file.write(f"  - {error}\n")
+            log_file.write("\n")
+
+    logger.info(
+        "QC completed: %s succeeded, %s failed. Summary written to %s",
+        run_summary["successful_loci"],
+        run_summary["failed_loci"],
+        log_path,
+    )
+
+    return run_summary

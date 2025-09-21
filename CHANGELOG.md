@@ -4,6 +4,8 @@
 
 ### Fixed
 - **LD matrix ingestion**: Replace NaN entries with zeros when loading from lower-triangle text or `.npz` files, and add regression tests to guard behavior.
+- **QC pipeline robustness**: Locus-level exceptions no longer abort `credtools qc`; failures are logged per locus, success/failure counts are summarized to `qc_run_summary.log`, and CLI feedback reflects mixed outcomes.
+- **Error messaging**: Intersecting sumstats/LD now reports the offending locus when common variants are missing to simplify debugging.
 
 ## [0.0.36] (2025-09-18)
 

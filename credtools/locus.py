@@ -386,7 +386,7 @@ def intersect_sumstat_ld(locus: Locus) -> Locus:
     intersec_variants = intersec_sumstats[ColName.SNPID].to_numpy()
     if len(intersec_variants) == 0:
         raise ValueError(
-            "No common Variant IDs found between the LD matrix and the sumstats file."
+            f"No common Variant IDs found between the LD matrix and the sumstats file for locus {locus.locus_id}."
         )
     elif len(intersec_variants) <= 10:
         logger.warning(
