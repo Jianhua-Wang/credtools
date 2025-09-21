@@ -2631,6 +2631,8 @@
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>LD matrix ingestion</strong>: Replace NaN entries with zeros when loading from lower-triangle text or <code>.npz</code> files, and add regression tests to guard behavior.</li>
+<li><strong>QC pipeline robustness</strong>: Locus-level exceptions no longer abort <code>credtools qc</code>; failures are logged per locus, success/failure counts are summarized to <code>qc_run_summary.log</code>, and CLI feedback reflects mixed outcomes.</li>
+<li><strong>Error messaging</strong>: Intersecting sumstats/LD now reports the offending locus when common variants are missing to simplify debugging.</li>
 </ul>
 <h2 id="0036-2025-09-18">[0.0.36] (2025-09-18)<a class="headerlink" href="#0036-2025-09-18" title="Permanent link">&para;</a></h2>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
