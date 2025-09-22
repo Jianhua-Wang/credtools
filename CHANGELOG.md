@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.39] (2025-09-22)
+
+### Added
+- **Parallel FINEMAP execution**: `credtools finemap` accepts `--processes/-np` to fan out loci across worker processes, keeping sequential behaviour available with the default of 1.
+
+### Changed
+- **Per-locus task coordination**: Fine-mapping runs now stream through a worker-safe task wrapper, preserving rich progress reporting, capturing tracebacks, and writing locus outputs from whichever worker completes first.
+- **CLI artefacts**: Run summaries and combined credible set exports remain deterministic under parallel execution, with parameters.json recording the requested worker count.
+
+### Tests
+- Added regression coverage for the CLI multiprocessing path by mocking the worker pool to assert identical outputs for 1 vs N processes.
+
 ## [0.0.38] (2025-09-21)
 
 ### Added

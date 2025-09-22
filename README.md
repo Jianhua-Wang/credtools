@@ -9,7 +9,7 @@
 
 
 
-Multi-ancestry fine-mapping pipeline with interactive web visualization.
+Multi-ancestry fine-mapping pipeline.
 
 
 * Documentation: <https://Jianhua-Wang.github.io/credtools>

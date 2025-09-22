@@ -4,10 +4,12 @@ import json
 import logging
 import logging.handlers
 import os
+import sys
+import traceback
 from enum import Enum
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -969,6 +971,74 @@ def run_qc(
     console.print(f"[dim]QC run summary saved to {run_summary['log_path']}[/dim]")
 
 
+def _format_enhanced_pips(enhanced_pips: pd.DataFrame) -> pd.DataFrame:
+    """Format numeric columns in the enhanced PIPs table."""
+    from credtools.utils import create_float_format_dict
+
+    format_dict = create_float_format_dict(enhanced_pips)
+    for col, fmt in format_dict.items():
+        if fmt == "%.3e":
+            enhanced_pips[col] = enhanced_pips[col].apply(
+                lambda x: f"{x:.3e}" if pd.notna(x) else ""
+            )
+        elif fmt == "%.4f":
+            enhanced_pips[col] = enhanced_pips[col].apply(
+                lambda x: f"{x:.4f}" if pd.notna(x) else ""
+            )
+    return enhanced_pips
+
+
+def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
+    """Run fine-mapping for a single locus in a worker process."""
+    locus_id = task["locus_id"]
+    outdir = task["outdir"]
+
+    try:
+        locus_info_df = pd.DataFrame(task["locus_records"])
+        locus_set = load_locus_set(
+            locus_info_df, calculate_lambda_s=task["calculate_lambda_s"]
+        )
+
+        creds = fine_map(
+            locus_set,
+            **task["fine_map_kwargs"],
+        )
+
+        enhanced_pips = creds.create_enhanced_pips_df(locus_set)
+        enhanced_pips = _format_enhanced_pips(enhanced_pips)
+
+        locus_dir = os.path.join(outdir, str(locus_id))
+        os.makedirs(locus_dir, exist_ok=True)
+        output_file = os.path.join(locus_dir, "pips.txt.gz")
+        enhanced_pips.to_csv(
+            output_file,
+            sep="	",
+            index=False,
+            compression="gzip",
+        )
+
+        cs_summary = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
+        if not cs_summary.empty:
+            cs_summary["locus_id"] = locus_id
+        cs_records = (
+            cs_summary.to_dict(orient="records") if not cs_summary.empty else []
+        )
+
+        return {
+            "status": "success",
+            "locus_id": locus_id,
+            "cs_records": cs_records,
+        }
+
+    except Exception as exc:
+        return {
+            "status": "error",
+            "locus_id": locus_id,
+            "error": str(exc),
+            "traceback": traceback.format_exc(),
+        }
+
+
 @app.command(
     name="finemap",
     help="Perform fine-mapping analysis on genetic loci.",
@@ -1023,6 +1093,13 @@ def run_fine_map(
         "-tm",
         help="Maximum runtime per locus in minutes when running FINEMAP.",
     ),
+    processes: int = typer.Option(
+        1,
+        "--processes",
+        "-np",
+        min=1,
+        help="Number of worker processes for per-locus fine-mapping.",
+    ),
     combine_cred: CombineCred = typer.Option(
         CombineCred.union,
         "--combine-cred",
@@ -1071,20 +1148,17 @@ def run_fine_map(
     - Data structure: Single locus vs multiple loci
 
     When using single-input tools with multiple loci, results are automatically combined.
+    Set ``--processes`` greater than 1 to process loci in parallel.
     """
     setup_file_logging(log_file)
-    import logging
-    import sys
     from datetime import datetime
 
-    from credtools.utils import create_float_format_dict
-
     logger = logging.getLogger("CREDTOOLS")
+    console = Console()
 
-    loci_info = pd.read_csv(inputs, sep="\t")
+    loci_info = pd.read_csv(inputs, sep="	")
     loci_info = check_loci_info(loci_info)  # Validate input data
 
-    # Initialize run summary
     run_summary = {
         "start_time": datetime.now().isoformat(),
         "total_loci": 0,
@@ -1103,11 +1177,10 @@ def run_fine_map(
             "combine_pip": combine_pip.value,
         },
     }
+    run_summary["parameters"]["processes"] = processes
 
-    # Collect all credible sets for summary
-    all_credible_sets = []
+    all_credible_sets: List[pd.DataFrame] = []
 
-    # Create progress bar
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -1117,95 +1190,89 @@ def run_fine_map(
         TimeRemainingColumn(),
     )
 
-    # Get total number of loci
     locus_groups = list(loci_info.groupby("locus_id"))
     total_loci = len(locus_groups)
     run_summary["total_loci"] = total_loci
 
+    tool_value = tool.value
+    combine_cred_value = combine_cred.value
+    combine_pip_value = combine_pip.value
+
+    fine_map_kwargs = {
+        "tool": tool_value,
+        "max_causal": max_causal,
+        "adaptive_max_causal": adaptive_max_causal,
+        "set_L_by_cojo": set_L_by_cojo,
+        "p_cutoff": p_cutoff,
+        "collinear_cutoff": collinear_cutoff,
+        "window_size": window_size,
+        "maf_cutoff": maf_cutoff,
+        "diff_freq_cutoff": diff_freq_cutoff,
+        "coverage": coverage,
+        "timeout_minutes": timeout_minutes,
+        "combine_cred": combine_cred_value,
+        "combine_pip": combine_pip_value,
+        "jaccard_threshold": jaccard_threshold,
+        "max_iter": max_iter,
+        "estimate_residual_variance": estimate_residual_variance,
+        "min_abs_corr": min_abs_corr,
+        "convergence_tol": convergence_tol,
+    }
+
+    tasks: List[Dict[str, Any]] = []
+    for locus_id, locus_df in locus_groups:
+        tasks.append(
+            {
+                "locus_id": str(locus_id),
+                "locus_records": locus_df.to_dict(orient="records"),
+                "outdir": outdir,
+                "calculate_lambda_s": calculate_lambda_s,
+                "fine_map_kwargs": fine_map_kwargs.copy(),
+            }
+        )
+
+    def _handle_result(result: Dict[str, Any]) -> None:
+        locus_label = result["locus_id"]
+        if result["status"] == "success":
+            run_summary["successful_loci"] += 1
+            cs_records = result.get("cs_records") or []
+            if cs_records:
+                all_credible_sets.append(pd.DataFrame(cs_records))
+        else:
+            error_msg = result.get("error", "Unknown error")
+            full_msg = f"Locus {locus_label} failed: {error_msg}"
+            logger.error(full_msg)
+            traceback_text = result.get("traceback")
+            if traceback_text:
+                logger.debug(traceback_text)
+            print(f"ERROR: {full_msg}", file=sys.stderr)
+            run_summary["failed_loci"] += 1
+            run_summary["errors"].append(full_msg)
+
+    worker_count = min(processes, total_loci) if total_loci > 0 else 1
+
     with progress:
-        task = progress.add_task("[cyan]Fine-mapping loci...", total=total_loci)
+        task_id = progress.add_task("[cyan]Fine-mapping loci...", total=total_loci)
 
-        for locus_id, locus_info in locus_groups:
-            try:
-                locus_set = load_locus_set(
-                    locus_info, calculate_lambda_s=calculate_lambda_s
-                )
-                creds = fine_map(
-                    locus_set,
-                    tool=tool,
-                    max_causal=max_causal,
-                    adaptive_max_causal=adaptive_max_causal,
-                    set_L_by_cojo=set_L_by_cojo,
-                    p_cutoff=p_cutoff,
-                    collinear_cutoff=collinear_cutoff,
-                    window_size=window_size,
-                    maf_cutoff=maf_cutoff,
-                    diff_freq_cutoff=diff_freq_cutoff,
-                    coverage=coverage,
-                    timeout_minutes=timeout_minutes,
-                    combine_cred=combine_cred,
-                    combine_pip=combine_pip,
-                    jaccard_threshold=jaccard_threshold,
-                    # susie parameters
-                    max_iter=max_iter,
-                    estimate_residual_variance=estimate_residual_variance,
-                    min_abs_corr=min_abs_corr,
-                    convergence_tol=convergence_tol,
-                )
-
-                # Create enhanced PIPs DataFrame
-                enhanced_pips = creds.create_enhanced_pips_df(locus_set)
-
-                # Get appropriate float formats for columns
-                format_dict = create_float_format_dict(enhanced_pips)
-
-                # Format numeric columns
-                for col, fmt in format_dict.items():
-                    if col in enhanced_pips.columns:
-                        if fmt == "%.3e":
-                            enhanced_pips[col] = enhanced_pips[col].apply(
-                                lambda x: f"{x:.3e}" if pd.notna(x) else ""
-                            )
-                        elif fmt == "%.4f":
-                            enhanced_pips[col] = enhanced_pips[col].apply(
-                                lambda x: f"{x:.4f}" if pd.notna(x) else ""
-                            )
-
-                # Save enhanced PIPs with compression
-                out_dir = f"{outdir}/{locus_id}"
-                os.makedirs(out_dir, exist_ok=True)
-                output_file = f"{out_dir}/pips.txt.gz"
-                enhanced_pips.to_csv(
-                    output_file,
-                    sep="\t",
-                    index=False,
-                    compression="gzip",
-                )
-
-                # Collect credible sets for summary
-                cs_summary = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
-                if len(cs_summary) > 0:
-                    cs_summary["locus_id"] = locus_id
-                    all_credible_sets.append(cs_summary)
-
-                run_summary["successful_loci"] += 1
-
-            except Exception as e:
-                error_msg = f"Locus {locus_id} failed: {str(e)}"
-                logger.error(error_msg)
-                print(f"ERROR: {error_msg}", file=sys.stderr)
-                run_summary["failed_loci"] += 1
-                run_summary["errors"].append(error_msg)
-                # Continue to next locus instead of failing
-
-            progress.advance(task)
+        if not tasks:
+            pass
+        elif worker_count == 1:
+            for payload in tasks:
+                result = _process_fine_map_task(payload)
+                _handle_result(result)
+                progress.advance(task_id)
+        else:
+            with Pool(processes=worker_count) as pool:
+                for result in pool.imap_unordered(_process_fine_map_task, tasks):
+                    _handle_result(result)
+                    progress.advance(task_id)
 
     # Save combined credible sets summary
     if all_credible_sets:
         combined_cs = pd.concat(all_credible_sets, ignore_index=True)
         combined_cs.to_csv(
             f"{outdir}/credible_sets_summary.txt.gz",
-            sep="\t",
+            sep="	",
             index=False,
             compression="gzip",
         )
@@ -1213,7 +1280,7 @@ def run_fine_map(
     # Save parameters (simplified version)
     if run_summary["successful_loci"] > 0:
         parameters_dict = {
-            "tool": tool.value,
+            "tool": tool_value,
             "n_loci_processed": run_summary["successful_loci"],
             "coverage": coverage,
             "parameters": run_summary["parameters"],
@@ -1242,8 +1309,6 @@ def run_fine_map(
         for key, value in run_summary["parameters"].items():
             f.write(f"  {key}: {value}\n")
 
-    # Print summary to console
-    console = Console()
     if run_summary["failed_loci"] > 0:
         console.print(
             f"[yellow]Completed with {run_summary['failed_loci']} failed loci[/yellow]"
