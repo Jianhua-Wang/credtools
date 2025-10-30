@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # import matplotlib.pyplot as plt  # Not used in this module
 import numpy as np
@@ -63,6 +63,7 @@ except ImportError:
 
 
 from credtools.constants import ColName
+from credtools.ldmatrix import LDMatrix
 from credtools.locus import (
     Locus,
     LocusSet,
@@ -811,9 +812,10 @@ def locus_qc(
     method: str = "null-mle",
     out_dir: Optional[str] = None,
     dtype: Optional[np.dtype] = None,
-    flip_logLR_threshold: float = 2,
-    flip_z_threshold: float = 2,
-    lambda_s_outlier_threshold: float = 3,
+    logLR_threshold: float = 2,
+    z_threshold: float = 2,
+    z_std_diff_threshold: float = 3,
+    r_threshold: float = 0.8,
     dentist_s_pvalue_threshold: float = 4,
     dentist_s_r2_threshold: float = 0.6,
 ) -> Dict[str, pd.DataFrame]:
@@ -834,12 +836,14 @@ def locus_qc(
     dtype : Optional[np.dtype], optional
         Data type for computation. If None, uses float64.
         Use np.float32 for reduced memory usage with minimal precision loss.
-    flip_logLR_threshold : float, optional
-        LogLR threshold for flip detection, by default 2.
-    flip_z_threshold : float, optional
-        Z-score threshold for flip detection, by default 2.
-    lambda_s_outlier_threshold : float, optional
-        Z_std_diff threshold for lambda-s outlier detection, by default 3.
+    logLR_threshold : float, optional
+        LogLR threshold for LD mismatch detection, by default 2.
+    z_threshold : float, optional
+        Z-score threshold for both LD mismatch and marginal SNP detection, by default 2.
+    z_std_diff_threshold : float, optional
+        Z_std_diff threshold for marginal SNP outlier detection, by default 3.
+    r_threshold : float, optional
+        Correlation threshold with lead SNP for marginal SNP detection, by default 0.8.
     dentist_s_pvalue_threshold : float, optional
         -log10 p-value threshold for Dentist-S outlier detection, by default 4.
     dentist_s_r2_threshold : float, optional
@@ -862,7 +866,10 @@ def locus_qc(
     This function performs comprehensive QC including:
 
     Single-locus analyses:
-    - Kriging RSS for outlier detection
+    - Kriging RSS for outlier detection with combined lambda-s outlier criteria:
+      * LD Mismatch Indicators (SuSiE guidelines): logLR > threshold AND |z| > threshold
+      * Marginally Non-significant SNPs: |z| < threshold AND |z_std_diff| > threshold
+        AND |r| > threshold with lead SNP
     - Dentist-S for outlier detection
     - MAF comparison between sumstats and LD reference
     - LD matrix 4th moment analysis
@@ -924,11 +931,322 @@ def locus_qc(
     return qc_metrics
 
 
+def identify_outliers(
+    qc_metrics: Dict[str, pd.DataFrame],
+    cohort: str,
+    logLR_threshold: float = 2,
+    z_threshold: float = 2,
+    z_std_diff_threshold: float = 3,
+    r_threshold: float = 0.8,
+    dentist_s_pvalue_threshold: float = 4,
+    dentist_s_r2_threshold: float = 0.6,
+) -> List[str]:
+    """
+    Identify outlier SNPs based on QC metrics.
+
+    Parameters
+    ----------
+    qc_metrics : Dict[str, pd.DataFrame]
+        Dictionary of QC results from locus_qc function.
+    cohort : str
+        Cohort identifier (format: "popu_cohort").
+    logLR_threshold : float, optional
+        LogLR threshold for LD mismatch detection, by default 2.
+    z_threshold : float, optional
+        Z-score threshold for both LD mismatch and marginal SNP detection, by default 2.
+    z_std_diff_threshold : float, optional
+        Z_std_diff threshold for marginal SNP outlier detection, by default 3.
+    r_threshold : float, optional
+        Correlation threshold with lead SNP for marginal SNP detection, by default 0.8.
+    dentist_s_pvalue_threshold : float, optional
+        -log10 p-value threshold for Dentist-S outlier detection, by default 4.
+    dentist_s_r2_threshold : float, optional
+        R² threshold for Dentist-S outlier detection, by default 0.6.
+
+    Returns
+    -------
+    List[str]
+        List of outlier SNP IDs.
+    """
+    outlier_snps = set()
+
+    # Get expected_z metrics for this cohort
+    expected_z = qc_metrics.get("expected_z", pd.DataFrame())
+    if not expected_z.empty:
+        cohort_expected_z = expected_z[expected_z["cohort"] == cohort]
+
+        if not cohort_expected_z.empty:
+            # Lambda-s outliers using new combined criteria
+            # 1. LD Mismatch Indicators
+            ld_mismatch_condition = (
+                (cohort_expected_z["logLR"] > logLR_threshold) &
+                (cohort_expected_z["z"].abs() > z_threshold)
+            )
+
+            # 2. Marginally Non-significant SNPs
+            # Get lead SNP correlation from dentist_s results
+            cohort_dentist_s = qc_metrics.get("dentist_s", pd.DataFrame())
+            if not cohort_dentist_s.empty:
+                cohort_dentist_s = cohort_dentist_s[cohort_dentist_s["cohort"] == cohort]
+
+                # Merge to get r values
+                merged_data = pd.merge(
+                    cohort_expected_z[["SNPID", "z", "z_std_diff"]],
+                    cohort_dentist_s[["SNPID", "r2"]],
+                    on="SNPID",
+                    how="left"
+                )
+                merged_data["r_abs"] = np.sqrt(merged_data["r2"].fillna(0))
+
+                marginal_condition = (
+                    # (merged_data["z"].abs() < z_threshold) &
+                    (merged_data["z_std_diff"].abs() > z_std_diff_threshold) &
+                    (merged_data["r_abs"] > r_threshold)
+                )
+
+                # Combine conditions
+                lambda_s_outliers = merged_data[
+                    ld_mismatch_condition.values | marginal_condition
+                ]["SNPID"].tolist()
+                outlier_snps.update(lambda_s_outliers)
+
+    # Get dentist_s outliers
+    dentist_s = qc_metrics.get("dentist_s", pd.DataFrame())
+    if not dentist_s.empty:
+        cohort_dentist_s = dentist_s[dentist_s["cohort"] == cohort]
+
+        if not cohort_dentist_s.empty:
+            dentist_outlier_condition = (
+                (cohort_dentist_s["-log10p_dentist_s"] >= dentist_s_pvalue_threshold) &
+                (cohort_dentist_s["r2"] >= dentist_s_r2_threshold)
+            )
+
+            dentist_outliers = cohort_dentist_s[dentist_outlier_condition]["SNPID"].tolist()
+            outlier_snps.update(dentist_outliers)
+
+    return list(outlier_snps)
+
+
+def remove_snps_from_locus(locus: Locus, outlier_snps: List[str]) -> Locus:
+    """
+    Remove outlier SNPs from a Locus object.
+
+    Parameters
+    ----------
+    locus : Locus
+        Input Locus object.
+    outlier_snps : List[str]
+        List of SNP IDs to remove.
+
+    Returns
+    -------
+    Locus
+        New Locus object with outliers removed.
+    """
+    if not outlier_snps:
+        return locus.copy()
+
+    # Filter sumstats
+    cleaned_sumstats = locus.sumstats[
+        ~locus.sumstats[ColName.SNPID].isin(outlier_snps)
+    ].copy()
+    cleaned_sumstats.reset_index(drop=True, inplace=True)
+
+    # Filter LD matrix and map if available
+    cleaned_ld = None
+    if locus.ld is not None:
+        # Get indices of SNPs to keep
+        keep_mask = ~locus.ld.map[ColName.SNPID].isin(outlier_snps)
+        keep_indices = np.where(keep_mask)[0]
+
+        # Filter LD map
+        cleaned_ld_map = locus.ld.map[keep_mask].copy()
+        cleaned_ld_map.reset_index(drop=True, inplace=True)
+
+        # Filter LD matrix (remove rows and columns)
+        cleaned_r = locus.ld.r[keep_indices, :][:, keep_indices]
+
+        # Create new LDMatrix
+        cleaned_ld = LDMatrix(cleaned_ld_map, cleaned_r)
+
+    # Create new Locus object
+    cleaned_locus = Locus(
+        popu=locus.popu,
+        cohort=locus.cohort,
+        sample_size=locus.sample_size,
+        sumstats=cleaned_sumstats,
+        locus_start=locus._locus_start,
+        locus_end=locus._locus_end,
+        ld=cleaned_ld,
+        if_intersect=False,
+    )
+
+    logger.info(
+        f"Removed {len(outlier_snps)} outliers from locus {locus.locus_id}. "
+        f"SNPs reduced from {locus.n_snps} to {cleaned_locus.n_snps}"
+    )
+
+    return cleaned_locus
+
+
+def save_cleaned_locus(locus: Locus, output_dir: str, prefix: str) -> None:
+    """
+    Save cleaned locus data to files.
+
+    Parameters
+    ----------
+    locus : Locus
+        Cleaned Locus object to save.
+    output_dir : str
+        Output directory path.
+    prefix : str
+        Prefix for output files.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Save summary statistics
+    sumstats_path = os.path.join(output_dir, f"{prefix}.sumstats.gz")
+    locus.sumstats.to_csv(
+        sumstats_path,
+        sep="\t",
+        index=False,
+        compression="gzip",
+        float_format="%.6g",
+    )
+    logger.info(f"Saved cleaned sumstats to {sumstats_path}")
+
+    # Save LD matrix and map if available
+    if locus.ld is not None:
+        # Save LD matrix as compressed numpy array
+        ld_path = os.path.join(output_dir, f"{prefix}.ld.npz")
+        np.savez_compressed(ld_path, ld=locus.ld.r.astype(np.float16))
+        logger.info(f"Saved cleaned LD matrix to {ld_path}")
+
+        # Save LD map
+        ldmap_path = os.path.join(output_dir, f"{prefix}.ldmap.gz")
+        locus.ld.map.to_csv(
+            ldmap_path,
+            sep="\t",
+            index=False,
+            compression="gzip",
+        )
+        logger.info(f"Saved cleaned LD map to {ldmap_path}")
+
+
+def remove_outliers_and_rerun_qc(
+    locus_set: LocusSet,
+    qc_metrics: Dict[str, pd.DataFrame],
+    base_out_dir: str,
+    locus_id: str,
+    r_tol: float = 1e-3,
+    method: str = "null-mle",
+    dtype: Optional[np.dtype] = None,
+    logLR_threshold: float = 2,
+    z_threshold: float = 2,
+    z_std_diff_threshold: float = 3,
+    r_threshold: float = 0.8,
+    dentist_s_pvalue_threshold: float = 4,
+    dentist_s_r2_threshold: float = 0.6,
+) -> Tuple[LocusSet, Dict[str, pd.DataFrame], pd.DataFrame]:
+    """
+    Remove outliers from locus set and re-run QC.
+
+    Parameters
+    ----------
+    locus_set : LocusSet
+        Original LocusSet object.
+    qc_metrics : Dict[str, pd.DataFrame]
+        QC metrics from initial QC run.
+    base_out_dir : str
+        Base output directory.
+    locus_id : str
+        Locus identifier.
+    r_tol : float, optional
+        Tolerance level for eigenvalue check, by default 1e-3.
+    method : str, optional
+        Method to estimate s parameter, by default "null-mle".
+    dtype : Optional[np.dtype], optional
+        Data type for computation, by default None.
+
+    Returns
+    -------
+    Tuple[LocusSet, Dict[str, pd.DataFrame], pd.DataFrame]
+        Cleaned LocusSet, new QC metrics, and summary of outlier removal.
+    """
+    cleaned_loci = []
+    outlier_summary = []
+
+    for locus in locus_set.loci:
+        cohort = f"{locus.popu}_{locus.cohort}"
+
+        # Identify outliers for this cohort
+        outlier_snps = identify_outliers(
+            qc_metrics,
+            cohort,
+            logLR_threshold=logLR_threshold,
+            z_threshold=z_threshold,
+            z_std_diff_threshold=z_std_diff_threshold,
+            r_threshold=r_threshold,
+            dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+            dentist_s_r2_threshold=dentist_s_r2_threshold,
+        )
+
+        if outlier_snps:
+            # Remove outliers
+            cleaned_locus = remove_snps_from_locus(locus, outlier_snps)
+
+            # Save cleaned data
+            cleaned_dir = os.path.join(base_out_dir, locus_id, "cleaned")
+            prefix = locus.prefix  # Use the Locus prefix property which handles long meta-analysis names
+            save_cleaned_locus(cleaned_locus, cleaned_dir, prefix)
+
+            outlier_summary.append({
+                "locus_id": locus_id,
+                "popu": locus.popu,
+                "cohort": locus.cohort,
+                "original_snps": locus.n_snps,
+                "outliers_removed": len(outlier_snps),
+                "cleaned_snps": cleaned_locus.n_snps,
+                "retention_rate": cleaned_locus.n_snps / locus.n_snps if locus.n_snps > 0 else 0,
+            })
+        else:
+            cleaned_locus = locus
+            outlier_summary.append({
+                "locus_id": locus_id,
+                "popu": locus.popu,
+                "cohort": locus.cohort,
+                "original_snps": locus.n_snps,
+                "outliers_removed": 0,
+                "cleaned_snps": locus.n_snps,
+                "retention_rate": 1.0,
+            })
+
+        cleaned_loci.append(cleaned_locus)
+
+    # Create cleaned LocusSet
+    cleaned_locus_set = LocusSet(cleaned_loci)
+
+    # Re-run QC on cleaned data
+    logger.info(f"Re-running QC on cleaned data for locus {locus_id}")
+    cleaned_qc_metrics = locus_qc(
+        cleaned_locus_set,
+        r_tol=r_tol,
+        method=method,
+        out_dir=os.path.join(base_out_dir, locus_id, "cleaned"),
+        dtype=dtype,
+    )
+
+    outlier_summary_df = pd.DataFrame(outlier_summary)
+
+    return cleaned_locus_set, cleaned_qc_metrics, outlier_summary_df
+
+
 def locus_qc_summary(
     qc_metrics: Dict[str, pd.DataFrame],
-    flip_logLR_threshold: float = 2,
-    flip_z_threshold: float = 2,
-    lambda_s_outlier_threshold: float = 3,
+    logLR_threshold: float = 2,
+    z_threshold: float = 2,
+    z_std_diff_threshold: float = 3,
+    r_threshold: float = 0.8,
     dentist_s_pvalue_threshold: float = 4,
     dentist_s_r2_threshold: float = 0.6,
 ) -> pd.DataFrame:
@@ -939,12 +1257,14 @@ def locus_qc_summary(
     ----------
     qc_metrics : Dict[str, pd.DataFrame]
         Dictionary of QC results from locus_qc function.
-    flip_logLR_threshold : float, optional
-        LogLR threshold for flip detection, by default 2.
-    flip_z_threshold : float, optional
-        Z-score threshold for flip detection, by default 2.
-    lambda_s_outlier_threshold : float, optional
-        Z_std_diff threshold for lambda-s outlier detection, by default 3.
+    logLR_threshold : float, optional
+        LogLR threshold for LD mismatch detection, by default 2.
+    z_threshold : float, optional
+        Z-score threshold for both LD mismatch and marginal SNP detection, by default 2.
+    z_std_diff_threshold : float, optional
+        Z_std_diff threshold for marginal SNP outlier detection, by default 3.
+    r_threshold : float, optional
+        Correlation threshold with lead SNP for marginal SNP detection, by default 0.8.
     dentist_s_pvalue_threshold : float, optional
         -log10 p-value threshold for Dentist-S outlier detection, by default 4.
     dentist_s_r2_threshold : float, optional
@@ -954,7 +1274,7 @@ def locus_qc_summary(
     -------
     pd.DataFrame
         Summary QC statistics with columns: popu, cohort, n_snps, n_1e-5, n_5e-8,
-        maf_corr, lambda_s, n_flip, n_lambda_s_outlier, n_dentist_s_outlier.
+        maf_corr, lambda_s, n_lambda_s_outlier, n_dentist_s_outlier.
     """
     summary_rows = []
 
@@ -1008,16 +1328,56 @@ def locus_qc_summary(
             else np.nan
         )
 
-        # Count flips: logLR > threshold AND |z| > threshold
-        flip_condition = (cohort_expected_z["logLR"] > flip_logLR_threshold) & (
-            cohort_expected_z["z"].abs() > flip_z_threshold
+        # Calculate combined n_lambda_s_outlier using new criteria
+        # 1. LD Mismatch Indicators (SuSiE guidelines): logLR > threshold AND |z| > threshold
+        ld_mismatch_condition = (cohort_expected_z["logLR"] > logLR_threshold) & (
+            cohort_expected_z["z"].abs() > z_threshold
         )
-        n_flip = int(flip_condition.sum())
 
-        # Count lambda-s outliers: |z_std_diff| > threshold
-        n_lambda_s_outlier = int(
-            (cohort_expected_z["z_std_diff"].abs() > lambda_s_outlier_threshold).sum()
-        )
+        # 2. Marginally Non-significant SNPs: |z| < threshold AND |z_std_diff| > threshold AND |r| > threshold with lead SNP
+        # Find lead SNP (lowest p-value) and get its correlation with all SNPs
+        if not cohort_expected_z.empty:
+            # Calculate p-values from z-scores to find lead SNP
+            z_scores_abs = cohort_expected_z["z"].abs()
+            p_values_lead = 2 * (1 - stats.norm.cdf(z_scores_abs))
+            lead_idx = p_values_lead.argmin()
+
+            # Get correlation matrix for this cohort - need to find the corresponding locus
+            # Extract cohort info to match with locus
+            current_cohort = cohort
+            lead_snp_corr = None
+
+            # Find the locus that matches this cohort to get LD matrix
+            for locus in [l for l in expected_z["cohort"].unique() if l == current_cohort]:
+                # Find the locus object - this is a limitation, we need the actual locus object
+                # For now, we'll approximate using the dentist_s results which has r2 with lead SNP
+                if not cohort_dentist_s.empty:
+                    # Use the dentist_s r values as proxy for correlation with lead SNP
+                    # Merge expected_z with dentist_s on SNPID to get r values
+                    merged_data = pd.merge(
+                        cohort_expected_z,
+                        cohort_dentist_s[["SNPID", "r2"]],
+                        on="SNPID",
+                        how="left"
+                    )
+                    lead_snp_corr = np.sqrt(merged_data["r2"].fillna(0))  # Convert r2 to |r|
+                else:
+                    # If no dentist_s data, set correlation to 0 (will not trigger marginal condition)
+                    lead_snp_corr = np.zeros(len(cohort_expected_z))
+
+            if lead_snp_corr is None:
+                lead_snp_corr = np.zeros(len(cohort_expected_z))
+
+            marginal_condition = (
+                (cohort_expected_z["z"].abs() < z_threshold) &
+                (cohort_expected_z["z_std_diff"].abs() > z_std_diff_threshold) &
+                (lead_snp_corr > r_threshold)
+            )
+        else:
+            marginal_condition = pd.Series([False] * len(cohort_expected_z))
+
+        # Combined outlier count: either LD mismatch OR marginally non-significant
+        n_lambda_s_outlier = int((ld_mismatch_condition | marginal_condition).sum())
 
         # Count dentist-s outliers: -log10p >= threshold AND r2 >= threshold
         if not cohort_dentist_s.empty:
@@ -1037,7 +1397,6 @@ def locus_qc_summary(
                 "n_5e-8": n_5e_8,
                 "maf_corr": maf_corr,
                 "lambda_s": lambda_s,
-                "n_flip": n_flip,
                 "n_lambda_s_outlier": n_lambda_s_outlier,
                 "n_dentist_s_outlier": n_dentist_s_outlier,
             }
@@ -1046,13 +1405,15 @@ def locus_qc_summary(
     return pd.DataFrame(summary_rows)
 
 
-def qc_locus_cli(args: Tuple[str, pd.DataFrame, str]) -> Tuple[str, pd.DataFrame]:
+def qc_locus_cli(
+    args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float]
+) -> Tuple[str, pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Quality control for a single locus (command-line interface wrapper).
 
     Parameters
     ----------
-    args : Tuple[str, pd.DataFrame, str]
+    args : Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float]
         Tuple containing:
         - locus_id : str
             Locus identifier
@@ -1060,11 +1421,26 @@ def qc_locus_cli(args: Tuple[str, pd.DataFrame, str]) -> Tuple[str, pd.DataFrame
             DataFrame with locus information
         - base_out_dir : str
             Base output directory
+        - remove_outlier : bool
+            Whether to remove outliers and re-run QC
+        - logLR_threshold : float
+            LogLR threshold for LD mismatch detection
+        - z_threshold : float
+            Z-score threshold for both LD mismatch and marginal SNP detection
+        - z_std_diff_threshold : float
+            Z_std_diff threshold for marginal SNP outlier detection
+        - r_threshold : float
+            Correlation threshold with lead SNP for marginal SNP detection
+        - dentist_s_pvalue_threshold : float
+            -log10 p-value threshold for Dentist-S outlier detection
+        - dentist_s_r2_threshold : float
+            R² threshold for Dentist-S outlier detection
 
     Returns
     -------
-    Tuple[str, pd.DataFrame]
-        Tuple containing the locus_id that was processed and its summary QC stats.
+    Tuple[str, pd.DataFrame, Optional[pd.DataFrame]]
+        Tuple containing the locus_id that was processed, its summary QC stats,
+        and outlier removal summary if applicable.
 
     Notes
     -----
@@ -1081,9 +1457,28 @@ def qc_locus_cli(args: Tuple[str, pd.DataFrame, str]) -> Tuple[str, pd.DataFrame
     {base_out_dir}/{locus_id}/{qc_metric}.txt.gz
     {base_out_dir}/{locus_id}/qc.txt.gz
     """
-    locus_id, locus_info, base_out_dir = args
+    (
+        locus_id,
+        locus_info,
+        base_out_dir,
+        remove_outlier,
+        logLR_threshold,
+        z_threshold,
+        z_std_diff_threshold,
+        r_threshold,
+        dentist_s_pvalue_threshold,
+        dentist_s_r2_threshold,
+    ) = args
     locus_set = load_locus_set(locus_info)
-    qc_metrics = locus_qc(locus_set)
+    qc_metrics = locus_qc(
+        locus_set,
+        logLR_threshold=logLR_threshold,
+        z_threshold=z_threshold,
+        z_std_diff_threshold=z_std_diff_threshold,
+        r_threshold=r_threshold,
+        dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+        dentist_s_r2_threshold=dentist_s_r2_threshold,
+    )
     locus_out_dir = f"{base_out_dir}/{locus_id}"
     os.makedirs(locus_out_dir, exist_ok=True)
 
@@ -1098,7 +1493,15 @@ def qc_locus_cli(args: Tuple[str, pd.DataFrame, str]) -> Tuple[str, pd.DataFrame
         )
 
     # Generate and save locus-level summary
-    summary = locus_qc_summary(qc_metrics)
+    summary = locus_qc_summary(
+        qc_metrics,
+        logLR_threshold=logLR_threshold,
+        z_threshold=z_threshold,
+        z_std_diff_threshold=z_std_diff_threshold,
+        r_threshold=r_threshold,
+        dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+        dentist_s_r2_threshold=dentist_s_r2_threshold,
+    )
     if not summary.empty:
         summary.to_csv(
             f"{locus_out_dir}/qc.txt.gz",
@@ -1110,23 +1513,61 @@ def qc_locus_cli(args: Tuple[str, pd.DataFrame, str]) -> Tuple[str, pd.DataFrame
         # Add locus_id for global aggregation
         summary["locus_id"] = locus_id
 
-    return locus_id, summary
+    # Handle outlier removal if requested
+    outlier_summary = None
+    if remove_outlier:
+        logger.info(f"Removing outliers and re-running QC for locus {locus_id}")
+        _, cleaned_qc_metrics, outlier_summary = remove_outliers_and_rerun_qc(
+            locus_set,
+            qc_metrics,
+            base_out_dir,
+            locus_id,
+            logLR_threshold=logLR_threshold,
+            z_threshold=z_threshold,
+            z_std_diff_threshold=z_std_diff_threshold,
+            r_threshold=r_threshold,
+            dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+            dentist_s_r2_threshold=dentist_s_r2_threshold,
+        )
+
+        # Save outlier removal summary
+        if not outlier_summary.empty:
+            outlier_summary.to_csv(
+                f"{locus_out_dir}/cleaned/outlier_removal_summary.txt.gz",
+                sep="\t",
+                index=False,
+                compression="gzip",
+                float_format="%.6f",
+            )
+
+    return locus_id, summary, outlier_summary
 
 
 def safe_qc_locus_cli(
-    args: Tuple[str, pd.DataFrame, str],
-) -> Tuple[str, Optional[pd.DataFrame], Optional[str]]:
+    args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float],
+) -> Tuple[str, Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[str]]:
     """Wrapper for qc_locus_cli that captures exceptions."""
     locus_id = args[0]
     try:
-        processed_id, summary = qc_locus_cli(args)
-        return processed_id, summary, None
+        processed_id, summary, outlier_summary = qc_locus_cli(args)
+        return processed_id, summary, outlier_summary, None
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.exception("QC failed for locus %s", locus_id)
-        return locus_id, pd.DataFrame(), f"{type(exc).__name__}: {exc}"
+        return locus_id, pd.DataFrame(), None, f"{type(exc).__name__}: {exc}"
 
 
-def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> Dict[str, Any]:
+def loci_qc(
+    inputs: str,
+    out_dir: str,
+    threads: int = 1,
+    remove_outlier: bool = False,
+    logLR_threshold: float = 2,
+    z_threshold: float = 2,
+    z_std_diff_threshold: float = 3,
+    r_threshold: float = 0.8,
+    dentist_s_pvalue_threshold: float = 4,
+    dentist_s_r2_threshold: float = 0.6,
+) -> Dict[str, Any]:
     """
     Perform quality control analysis on multiple loci in parallel.
 
@@ -1139,6 +1580,20 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> Dict[str, Any]:
         Output directory path where results will be saved.
     threads : int, optional
         Number of parallel threads to use, by default 1.
+    remove_outlier : bool, optional
+        Whether to remove outliers and re-run QC on cleaned data, by default False.
+    logLR_threshold : float, optional
+        LogLR threshold for LD mismatch detection, by default 2.
+    z_threshold : float, optional
+        Z-score threshold for both LD mismatch and marginal SNP detection, by default 2.
+    z_std_diff_threshold : float, optional
+        Z_std_diff threshold for marginal SNP outlier detection, by default 3.
+    r_threshold : float, optional
+        Correlation threshold with lead SNP for marginal SNP detection, by default 0.8.
+    dentist_s_pvalue_threshold : float, optional
+        -log10 p-value threshold for Dentist-S outlier detection, by default 4.
+    dentist_s_r2_threshold : float, optional
+        R² threshold for Dentist-S outlier detection, by default 0.6.
 
     Returns
     -------
@@ -1188,10 +1643,22 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> Dict[str, Any]:
     )
 
     locus_groups = [
-        (locus_id, locus_info, out_dir)
+        (
+            locus_id,
+            locus_info,
+            out_dir,
+            remove_outlier,
+            logLR_threshold,
+            z_threshold,
+            z_std_diff_threshold,
+            r_threshold,
+            dentist_s_pvalue_threshold,
+            dentist_s_r2_threshold,
+        )
         for locus_id, locus_info in loci_info.groupby("locus_id")
     ]
     all_summaries: list[pd.DataFrame] = []
+    all_outlier_summaries: list[pd.DataFrame] = []
     total_loci = len(locus_groups)
     start_time = datetime.now()
     log_path = Path(out_dir) / "qc_run_summary.log"
@@ -1209,7 +1676,7 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> Dict[str, Any]:
         task = progress.add_task("[cyan]Processing loci...", total=total_loci)
         if locus_groups:
             with Pool(processes=threads) as pool:
-                for locus_id, summary, error in pool.imap_unordered(
+                for locus_id, summary, outlier_summary, error in pool.imap_unordered(
                     safe_qc_locus_cli, locus_groups
                 ):
                     progress.update(task, advance=1)
@@ -1217,6 +1684,8 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> Dict[str, Any]:
                         run_summary["successful_loci"] += 1
                         if summary is not None and not summary.empty:
                             all_summaries.append(summary)
+                        if outlier_summary is not None and not outlier_summary.empty:
+                            all_outlier_summaries.append(outlier_summary)
                     else:
                         run_summary["failed_loci"] += 1
                         run_summary["errors"].append(
@@ -1237,6 +1706,56 @@ def loci_qc(inputs: str, out_dir: str, threads: int = 1) -> Dict[str, Any]:
             float_format="%.6f",
         )
         logger.info(f"Global QC summary saved to {out_dir}/qc.txt.gz")
+
+    # Save outlier summary if outlier removal was performed
+    if all_outlier_summaries:
+        global_outlier_summary = pd.concat(all_outlier_summaries, ignore_index=True)
+        global_outlier_summary.to_csv(
+            f"{out_dir}/outlier_removal_summary.txt.gz",
+            sep="	",
+            index=False,
+            compression="gzip",
+            float_format="%.6f",
+        )
+        logger.info(f"Outlier removal summary saved to {out_dir}/outlier_removal_summary.txt.gz")
+
+        # Create cleaned loci info file
+        cleaned_loci_info = []
+        for _, row in global_outlier_summary.iterrows():
+            cleaned_dir = f"{out_dir}/{row['locus_id']}/cleaned"
+            # Use the same prefix logic as Locus.prefix property
+            import hashlib
+            if "+" in row['cohort']:
+                cohort_hash = hashlib.md5(row['cohort'].encode()).hexdigest()[:8]
+                num_cohorts = len(row['cohort'].split("+"))
+                prefix = f"{row['popu']}_meta{num_cohorts}cohorts_{cohort_hash}"
+            else:
+                prefix = f"{row['popu']}_{row['cohort']}"
+            cleaned_loci_info.append({
+                "locus_id": row["locus_id"],
+                "prefix": f"{cleaned_dir}/{prefix}",
+                "popu": row["popu"],
+                "cohort": row["cohort"],
+                "sample_size": loci_info[
+                    (loci_info["locus_id"] == row["locus_id"]) &
+                    (loci_info["popu"] == row["popu"]) &
+                    (loci_info["cohort"] == row["cohort"])
+                ]["sample_size"].iloc[0] if not loci_info.empty else 0,
+                "chr": loci_info[loci_info["locus_id"] == row["locus_id"]]["chr"].iloc[0] if not loci_info.empty else 0,
+                "start": loci_info[loci_info["locus_id"] == row["locus_id"]]["start"].iloc[0] if not loci_info.empty else 0,
+                "end": loci_info[loci_info["locus_id"] == row["locus_id"]]["end"].iloc[0] if not loci_info.empty else 0,
+                "n_snps": row["cleaned_snps"],
+                "outliers_removed": row["outliers_removed"],
+            })
+
+        cleaned_loci_info_df = pd.DataFrame(cleaned_loci_info)
+        cleaned_loci_info_df.to_csv(
+            f"{out_dir}/cleaned_loci_info.txt.gz",
+            sep="	",
+            index=False,
+            compression="gzip",
+        )
+        logger.info(f"Cleaned loci info saved to {out_dir}/cleaned_loci_info.txt.gz")
 
     run_summary["end_time"] = datetime.now().isoformat()
     with log_path.open("w") as log_file:

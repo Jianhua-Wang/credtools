@@ -951,13 +951,59 @@ def run_qc(
     inputs: str = typer.Argument(..., help="Input files."),
     outdir: str = typer.Argument(..., help="Output directory."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
+    remove_outlier: bool = typer.Option(
+        False,
+        "--remove-outlier",
+        help="Remove outliers and re-run QC on cleaned data."
+    ),
+    logLR_threshold: float = typer.Option(
+        1.0,
+        "--logLR-threshold",
+        help="LogLR threshold for LD mismatch detection."
+    ),
+    z_threshold: float = typer.Option(
+        1.0,
+        "--z-threshold",
+        help="Z-score threshold for both LD mismatch and marginal SNP detection."
+    ),
+    z_std_diff_threshold: float = typer.Option(
+        3.0,
+        "--z-std-diff-threshold",
+        help="Z_std_diff threshold for marginal SNP outlier detection."
+    ),
+    r_threshold: float = typer.Option(
+        0.1,
+        "--r-threshold",
+        help="Correlation threshold with lead SNP for marginal SNP detection."
+    ),
+    dentist_s_pvalue_threshold: float = typer.Option(
+        4.0,
+        "--dentist-pvalue-threshold",
+        help="-log10 p-value threshold for Dentist-S outlier detection."
+    ),
+    dentist_s_r2_threshold: float = typer.Option(
+        0.6,
+        "--dentist-r2-threshold",
+        help="R² threshold for Dentist-S outlier detection."
+    ),
     log_file: Optional[str] = typer.Option(
         None, "--log-file", "-l", help="Log output to specified file."
     ),
 ):
     """Quality control of summary statistics and LD matrices."""
     setup_file_logging(log_file)
-    run_summary = loci_qc(inputs, outdir, threads)
+    run_summary = loci_qc(
+        inputs,
+        outdir,
+        threads,
+        remove_outlier,
+        logLR_threshold=logLR_threshold,
+        z_threshold=z_threshold,
+        z_std_diff_threshold=z_std_diff_threshold,
+        r_threshold=r_threshold,
+        dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+        dentist_s_r2_threshold=dentist_s_r2_threshold,
+    )
 
     console = Console()
     if run_summary["failed_loci"] > 0:
