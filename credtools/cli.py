@@ -1158,6 +1158,12 @@ def run_fine_map(
         "-cp",
         help="Method to combine PIPs when using single-input tools with multiple loci.",
     ),
+    significant_threshold: float = typer.Option(
+        5e-8,
+        "--significant-threshold",
+        "-st",
+        help="Minimum p-value required for variants to be considered significant.",
+    ),
     jaccard_threshold: float = typer.Option(
         0.1,
         "--jaccard-threshold",
@@ -1176,6 +1182,12 @@ def run_fine_map(
     ),
     convergence_tol: float = typer.Option(
         1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."
+    ),
+    significant_threshold: float = typer.Option(
+        5e-8,
+        "--significant-threshold",
+        "-st",
+        help="Minimum p-value required for variants to be considered significant.",
     ),
     calculate_lambda_s: bool = typer.Option(
         False,
@@ -1263,6 +1275,7 @@ def run_fine_map(
         "estimate_residual_variance": estimate_residual_variance,
         "min_abs_corr": min_abs_corr,
         "convergence_tol": convergence_tol,
+        "significant_threshold": significant_threshold,
     }
 
     tasks: List[Dict[str, Any]] = []
@@ -1667,6 +1680,7 @@ def run_pipeline(
                 combine_cred=combine_cred,
                 combine_pip=combine_pip,
                 jaccard_threshold=jaccard_threshold,
+                significant_threshold=significant_threshold,
                 # susie parameters
                 max_iter=max_iter,
                 estimate_residual_variance=estimate_residual_variance,

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.40] (2025-10-30)
+### Added
+- add cred and PIP of each cohort in multi cohort fine-mapping
+- output zero credible sets when n_sig 5e-8 = 0
+
 ## [0.0.39] (2025-09-22)
 
 ### Added

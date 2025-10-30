@@ -197,7 +197,7 @@ results/
 
 **pips.txt.gz**: Tab-separated file with variants and their posterior inclusion probabilities
 - Columns: SNPID, CHR, BP, EA, NEA, BETA, SE, P, PIP
-- Additional per-dataset columns (e.g. `EUR_cohortA_PIP`, `EUR_cohortA_CRED`) when single-input tools combine multiple datasets
+- Additional per-dataset columns (e.g. `EUR_cohortA_PIP`, `EUR_cohortA_CRED`) when single-input tools combine multiple datasets. When no variants cross the significance threshold, these columns remain zero to signal the absence of credible sets.
 - Sorted by decreasing PIP values
 - Includes all variants analyzed
 

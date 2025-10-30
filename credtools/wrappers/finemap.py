@@ -25,6 +25,7 @@ def run_finemap(
     n_threads: int = 1,
     timeout_minutes: Optional[float] = None,
     temp_dir: Optional[str] = None,
+    significant_threshold: float = 5e-8,
 ) -> CredibleSet:
     """
     Run FINEMAP with shotgun stochastic search for fine-mapping analysis.
@@ -58,6 +59,10 @@ def run_finemap(
     temp_dir : Optional[str], optional
         Temporary directory for intermediate files, by default None.
         Automatically provided by the @io_in_tempdir decorator.
+    significant_threshold : float, optional
+        Minimum p-value required to consider variants significant. If no variants
+        pass this threshold, the function returns an empty credible set with all
+        posterior probabilities set to zero. Defaults to 5e-8.
 
     Returns
     -------
@@ -152,8 +157,28 @@ def run_finemap(
         "n_iter": n_iter,
         "n_threads": n_threads,
         "timeout_minutes": round(timeout_minutes, 2),
+        "significant_threshold": significant_threshold,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
+    if not (locus.sumstats[ColName.P] <= significant_threshold).any():
+        logger.warning(
+            "No variants pass the significance threshold %.2e. Returning empty result.",
+            significant_threshold,
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(locus.sumstats), dtype=float),
+            index=locus.sumstats[ColName.SNPID].tolist(),
+        )
+        return CredibleSet(
+            tool=Method.FINEMAP,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+        )
     logger.info(
         "Per-locus timeout set to %.2f minutes (%.0f seconds)."
         % (timeout_minutes, timeout_seconds)

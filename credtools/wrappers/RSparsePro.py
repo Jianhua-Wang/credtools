@@ -621,6 +621,7 @@ def run_rsparsepro(
     maxldthres: float = 0.2,
     varemax: float = 100.0,
     varemin: float = 1e-3,
+    significant_threshold: float = 5e-8,
 ) -> CredibleSet:
     """
     Run RSparsePro fine-mapping analysis on a genomic locus.
@@ -667,6 +668,10 @@ def run_rsparsepro(
     varemin : float, optional
         Minimum error parameter to try during adaptation, by default 1e-3.
         Starting point for error parameter optimization.
+    significant_threshold : float, optional
+        Minimum p-value required for a variant to be considered significant. If no
+        variants cross this threshold, returns an empty credible set with zero
+        posterior probabilities. Defaults to 5e-8.
 
     Returns
     -------
@@ -773,8 +778,28 @@ def run_rsparsepro(
         "maxldthres": maxldthres,
         "varemax": varemax,
         "varemin": varemin,
+        "significant_threshold": significant_threshold,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
+    if not (locus.sumstats[ColName.P] <= significant_threshold).any():
+        logger.warning(
+            "No variants pass the significance threshold %.2e. Returning empty result.",
+            significant_threshold,
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(locus.sumstats), dtype=float),
+            index=locus.sumstats[ColName.SNPID].tolist(),
+        )
+        return CredibleSet(
+            tool=Method.RSparsePro,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+        )
 
     sumstats = locus.sumstats.copy()
     ld = locus.ld.r.copy()

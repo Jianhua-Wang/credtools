@@ -5,6 +5,7 @@ import logging
 from typing import List
 
 import pandas as pd
+import numpy as np
 
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet
@@ -22,6 +23,7 @@ def run_susie(
     estimate_residual_variance: bool = False,
     min_abs_corr: float = 0.1,
     convergence_tol: float = 1e-3,
+    significant_threshold: float = 5e-8,
 ) -> CredibleSet:
     """
     Run SuSiE (Sum of Single Effects) fine-mapping with shotgun stochastic search.
@@ -56,6 +58,10 @@ def run_susie(
     convergence_tol : float, optional
         Convergence tolerance for the ELBO (Evidence Lower BOund), by default 1e-3.
         Algorithm stops when ELBO change falls below this threshold.
+    significant_threshold : float, optional
+        Minimum p-value required for a variant to be considered significant. If no
+        variants cross this threshold, the function returns an empty credible set
+        with all posterior probabilities set to zero. Defaults to 5e-8.
 
     Returns
     -------
@@ -170,8 +176,28 @@ def run_susie(
         "estimate_residual_variance": estimate_residual_variance,
         "min_abs_corr": min_abs_corr,
         "convergence_tol": convergence_tol,
+        "significant_threshold": significant_threshold,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
+    if not (locus.sumstats[ColName.P] <= significant_threshold).any():
+        logger.warning(
+            "No variants pass the significance threshold %.2e. Returning empty result.",
+            significant_threshold,
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(locus.sumstats), dtype=float),
+            index=locus.sumstats[ColName.SNPID].tolist(),
+        )
+        return CredibleSet(
+            tool=Method.SUSIE,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+        )
     s = susie_rss(
         bhat=locus.sumstats[ColName.BETA].to_numpy(),
         shat=locus.sumstats[ColName.SE].to_numpy(),

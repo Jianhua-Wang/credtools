@@ -176,6 +176,7 @@ def fine_map(
     jaccard_threshold: float = 0.1,
     timeout_minutes: Optional[float] = None,
     strategy: Optional[str] = None,  # Deprecated parameter
+    significant_threshold: float = 5e-8,
     **kwargs,
 ) -> CredibleSet:
     """
@@ -222,6 +223,10 @@ def fine_map(
     strategy : str, optional
         DEPRECATED. This parameter is no longer used and will be removed in a future version.
         The strategy is now automatically determined based on the tool and data structure.
+    significant_threshold : float, optional
+        Minimum p-value required for variants to be considered significant. If no variants
+        pass this threshold, single-input tools return empty credible sets with zero posterior
+        probabilities. Defaults to 5e-8.
     """
     # Deprecation warning for strategy parameter
     if strategy is not None:
@@ -233,6 +238,8 @@ def fine_map(
             DeprecationWarning,
             stacklevel=2,
         )
+
+    kwargs.setdefault("significant_threshold", significant_threshold)
 
     # Handle timeout defaults for FINEMAP
     if timeout_minutes is None and tool == "finemap":
