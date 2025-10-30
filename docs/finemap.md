@@ -181,7 +181,7 @@ Fine-mapping generates comprehensive results for each locus:
 ```
 results/
 ├── locus_1/
-│   ├── pips.txt              # Posterior inclusion probabilities
+│   ├── pips.txt.gz           # Posterior inclusion probabilities
 │   ├── creds.json            # Credible sets and metadata
 │   ├── tool_specific/        # Tool-specific outputs
 │   │   ├── susie_results.rds
@@ -195,8 +195,9 @@ results/
 
 ### Key Output Files
 
-**pips.txt**: Tab-separated file with variants and their posterior inclusion probabilities
+**pips.txt.gz**: Tab-separated file with variants and their posterior inclusion probabilities
 - Columns: SNPID, CHR, BP, EA, NEA, BETA, SE, P, PIP
+- Additional per-dataset columns (e.g. `EUR_cohortA_PIP`, `EUR_cohortA_CRED`) when single-input tools combine multiple datasets
 - Sorted by decreasing PIP values
 - Includes all variants analyzed
 

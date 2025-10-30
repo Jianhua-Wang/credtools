@@ -66,6 +66,7 @@ class CredibleSet:
         lead_snps: List[str],
         snps: List[List[str]],
         pips: pd.Series,
+        per_locus_results: Optional[Dict[str, "CredibleSet"]] = None,
     ) -> None:
         """
         Initialize CredibleSet object.
@@ -88,6 +89,8 @@ class CredibleSet:
             List of SNPs for each credible set.
         pips : pd.Series
             Posterior inclusion probabilities.
+        per_locus_results : Optional[Dict[str, "CredibleSet"]], optional
+            Mapping of locus identifiers to their individual credible set results.
         """
         self._tool = tool
         self._parameters = parameters
@@ -97,6 +100,7 @@ class CredibleSet:
         self._lead_snps = lead_snps
         self._snps = snps
         self._pips = pips
+        self._per_locus_results: Dict[str, "CredibleSet"] = per_locus_results or {}
         # TODO: add results data like, if it is converged, etc.
 
     @property
@@ -140,6 +144,15 @@ class CredibleSet:
         """Get the PIPs."""
         return self._pips
 
+    @property
+    def per_locus_results(self) -> Dict[str, "CredibleSet"]:
+        """Get per-locus credible set results."""
+        return self._per_locus_results
+
+    def set_per_locus_results(self, per_locus_results: Dict[str, "CredibleSet"]) -> None:
+        """Attach per-locus credible set results."""
+        self._per_locus_results = per_locus_results
+
     def __repr__(self) -> str:
         """
         Return a string representation of the CredibleSet object.
@@ -163,16 +176,25 @@ class CredibleSet:
         CredibleSet
             A copy of the CredibleSet object.
         """
-        return CredibleSet(
+        copied = CredibleSet(
             tool=self.tool,
-            parameters=self.parameters,
+            parameters=dict(self.parameters),
             coverage=self.coverage,
             n_cs=self.n_cs,
-            cs_sizes=self.cs_sizes,
-            lead_snps=self.lead_snps,
-            snps=self.snps,
-            pips=self.pips,
+            cs_sizes=self.cs_sizes.copy(),
+            lead_snps=self.lead_snps.copy(),
+            snps=[list(snp) for snp in self.snps],
+            pips=self.pips.copy(),
         )
+        if self.per_locus_results:
+            per_locus_copy = {}
+            for key, value in self.per_locus_results.items():
+                if value is self:
+                    per_locus_copy[key] = copied
+                else:
+                    per_locus_copy[key] = value.copy()
+            copied.set_per_locus_results(per_locus_copy)
+        return copied
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -318,6 +340,22 @@ class CredibleSet:
                     result_df[f"{prefix}R2"] = result_df[ColName.SNPID].map(snpid_to_r2)
                 else:
                     result_df[f"{prefix}R2"] = np.nan
+
+                # Add per-locus PIP and CRED columns when available
+                if self.per_locus_results:
+                    locus_creds = self.per_locus_results.get(locus.locus_id)
+                    if locus_creds is not None:
+                        pip_col = f"{prefix}PIP"
+                        result_df[pip_col] = (
+                            result_df[ColName.SNPID]
+                            .map(locus_creds.pips.to_dict())
+                            .fillna(0.0)
+                        )
+                        cred_col = f"{prefix}CRED"
+                        result_df[cred_col] = 0
+                        for cs_idx, snp_list in enumerate(locus_creds.snps, 1):
+                            mask = result_df[ColName.SNPID].isin(snp_list)
+                            result_df.loc[mask, cred_col] = cs_idx
 
         # Add credible set assignments (CRED column)
         result_df["CRED"] = 0  # Default: not in any credible set

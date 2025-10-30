@@ -11,6 +11,7 @@ import pytest
 from credtools import __version__
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet
+from credtools.credtools import fine_map
 from credtools.ldmatrix import LDMatrix
 from credtools.locus import Locus, LocusSet, load_locus
 
@@ -124,3 +125,67 @@ def test_file_io(temp_dir, sample_locus):
     assert isinstance(loaded_locus, Locus)
     assert len(loaded_locus.sumstats) == len(sample_locus.sumstats)
     assert loaded_locus.ld.r.shape == sample_locus.ld.r.shape
+
+
+def _make_test_locus(popu: str, cohort: str, beta_scale: float) -> Locus:
+    sumstats = pd.DataFrame(
+        {
+            ColName.SNPID: ["1-100-A-G", "1-200-A-G", "1-300-A-G"],
+            ColName.CHR: [1, 1, 1],
+            ColName.BP: [100, 200, 300],
+            ColName.RSID: ["rs1", "rs2", "rs3"],
+            ColName.EA: ["A", "A", "A"],
+            ColName.NEA: ["G", "G", "G"],
+            ColName.EAF: [0.2, 0.25, 0.3],
+            ColName.MAF: [0.2, 0.25, 0.3],
+            ColName.A1: ["A", "A", "A"],
+            ColName.A2: ["G", "G", "G"],
+            ColName.BETA: [0.2 * beta_scale, 0.15 * beta_scale, 0.1 * beta_scale],
+            ColName.SE: [0.05, 0.05, 0.05],
+            ColName.P: [1e-8, 5e-8, 1e-7],
+        }
+    )
+    ld = LDMatrix(sumstats, np.eye(len(sumstats), dtype=float))
+    return Locus(
+        popu=popu,
+        cohort=cohort,
+        sample_size=1000,
+        sumstats=sumstats,
+        locus_start=0,
+        locus_end=400,
+        ld=ld,
+    )
+
+
+def test_fine_map_embeds_per_dataset_columns():
+    locus_primary = _make_test_locus("EUR", "cohort1", beta_scale=1.0)
+    locus_secondary = _make_test_locus("AFR", "cohort2", beta_scale=0.8)
+    locus_set = LocusSet([locus_primary, locus_secondary])
+
+    combined = fine_map(
+        locus_set,
+        tool="abf",
+        max_causal=1,
+        set_L_by_cojo=False,
+        combine_cred="union",
+        combine_pip="max",
+    )
+
+    combined_df = combined.create_enhanced_pips_df(locus_set)
+    assert not combined_df.empty
+    assert ColName.PIP in combined_df.columns
+
+    expected_columns = {
+        "EUR_cohort1_PIP",
+        "EUR_cohort1_CRED",
+        "AFR_cohort2_PIP",
+        "AFR_cohort2_CRED",
+    }
+    assert expected_columns.issubset(set(combined_df.columns))
+
+    for col in expected_columns:
+        if col.endswith("_PIP"):
+            assert combined_df[col].ge(0).all()
+        else:
+            assert combined_df[col].dtype.kind in {"i", "f"}
+

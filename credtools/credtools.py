@@ -276,9 +276,11 @@ def fine_map(
     if tool in multi_input_tools:
         # Multi-input tools: directly process the entire LocusSet
         logger.info(f"Using multi-input tool {tool} to process {locus_set.n_loci} loci")
-        return tool_func_dict[tool](
+        combined = tool_func_dict[tool](
             locus_set, max_causal=max_causal, **params_dict[tool]
         )
+        combined.set_per_locus_results({})
+        return combined
 
     elif tool in single_input_tools:
         if locus_set.n_loci == 1:
@@ -308,7 +310,7 @@ def fine_map(
 
             # Use adaptive logic if enabled
             if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
-                return _adaptive_fine_map(
+                result = _adaptive_fine_map(
                     locus,
                     tool,
                     max_causal,
@@ -316,9 +318,12 @@ def fine_map(
                     params_dict[tool],
                 )
             else:
-                return tool_func_dict[tool](
+                result = tool_func_dict[tool](
                     locus, max_causal=max_causal, **params_dict[tool]
                 )
+            per_locus_results = {locus.locus_id: result.copy()}
+            result.set_per_locus_results(per_locus_results)
+            return result
 
         else:
             # Multiple loci: analyze each and combine results
@@ -370,12 +375,18 @@ def fine_map(
 
             # Combine results
             logger.info("Combining credible sets from all loci")
-            return combine_creds(
+            combined = combine_creds(
                 all_creds,
                 combine_cred=combine_cred,
                 combine_pip=combine_pip,
                 jaccard_threshold=jaccard_threshold,
             )
+            per_locus_results = {
+                locus.locus_id: cred.copy()
+                for locus, cred in zip(locus_set.loci, all_creds)
+            }
+            combined.set_per_locus_results(per_locus_results)
+            return combined
 
     else:
         raise ValueError(

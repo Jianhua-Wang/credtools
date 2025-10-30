@@ -1058,7 +1058,7 @@ def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
         output_file = os.path.join(locus_dir, "pips.txt.gz")
         enhanced_pips.to_csv(
             output_file,
-            sep="	",
+            sep="\t",
             index=False,
             compression="gzip",
         )
