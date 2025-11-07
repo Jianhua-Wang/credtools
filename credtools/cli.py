@@ -1183,12 +1183,6 @@ def run_fine_map(
     convergence_tol: float = typer.Option(
         1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."
     ),
-    significant_threshold: float = typer.Option(
-        5e-8,
-        "--significant-threshold",
-        "-st",
-        help="Minimum p-value required for variants to be considered significant.",
-    ),
     calculate_lambda_s: bool = typer.Option(
         False,
         "--calculate-lambda-s",

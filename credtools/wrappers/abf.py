@@ -14,9 +14,7 @@ from credtools.locus import Locus
 logger = logging.getLogger("ABF")
 
 
-def run_abf(
-    locus: Locus, max_causal: int = 1, coverage: float = 0.95, var_prior: float = 0.2
-) -> CredibleSet:
+def run_abf(locus: Locus, max_causal: int = 1, coverage: float = 0.95, var_prior: float = 0.2, significant_threshold: float = 5e-8) -> CredibleSet:
     """
     Run Approximate Bayes Factor (ABF) fine-mapping analysis.
 
@@ -46,6 +44,10 @@ def run_abf(
         - 0.15 typically used for quantitative traits
         - 0.2 typically used for binary traits
         - Higher values assume larger effect sizes
+    significant_threshold : float, optional
+        Minimum p-value required for variants to be considered significant. If no variants
+        pass this threshold, returns empty credible set with zero posterior probabilities.
+        Defaults to 5e-8.
 
     Returns
     -------
@@ -61,7 +63,7 @@ def run_abf(
     If max_causal > 1, a warning is logged and max_causal is automatically set to 1,
     as ABF only supports single causal variant analysis.
 
-    If no SNPs have p-value ≤ 1e-5, a warning is logged and an empty credible set
+    If no SNPs have p-value ≤ significant_threshold, a warning is logged and an empty credible set
     is returned.
 
     Notes
@@ -111,49 +113,75 @@ def run_abf(
     4   rs567890    0.0321
     """
     if max_causal > 1:
-        logger.warning(
-            "ABF only support single causal variant. max_causal is set to 1."
-        )
+        logger.warning("ABF only support single causal variant. max_causal is set to 1.")
         max_causal = 1
     logger.info(f"Running ABF on {locus}")
     parameters = {
         "max_causal": max_causal,
         "coverage": coverage,
         "var_prior": var_prior,
+        "significant_threshold": significant_threshold,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
-    df = locus.original_sumstats.copy()
-    df["W2"] = var_prior**2
-    df["SNP_BF"] = np.sqrt(
-        (df[ColName.SE] ** 2 / (df[ColName.SE] ** 2 + df["W2"]))
-    ) * np.exp(
-        df["W2"]
-        / (df[ColName.SE] ** 2 + df["W2"])
-        * (df[ColName.BETA] ** 2 / df[ColName.SE] ** 2)
-        / 2
-    )
-    df[ColName.PIP] = df["SNP_BF"] / df["SNP_BF"].sum()
-    pips = pd.Series(
-        data=df[ColName.PIP].values, index=df[ColName.SNPID].tolist(), name=ColName.ABF
-    )
-    if len(df[df[ColName.P] <= 1e-5]) > 0:
-        ordering = np.argsort(pips.to_numpy())[::-1]
-        idx = np.where(np.cumsum(pips.to_numpy()[ordering]) > coverage)[0][0]
-        cs_snps = pips.index[ordering][: (idx + 1)].to_list()
-        lead_snps = [
-            str(
-                df.loc[
-                    df[df[ColName.SNPID].isin(cs_snps)][ColName.P].idxmin(),
-                    ColName.SNPID,
-                ]
-            )
-        ]
-    else:
+
+    # Check if any variants pass the significance threshold
+    if not (locus.sumstats[ColName.P] <= significant_threshold).any():
         logger.warning(
-            "There are no SNPs with p-value <= 1e-5, output zero credible set"
+            "No variants pass the significance threshold %.2e. Returning empty result.",
+            significant_threshold,
         )
-        cs_snps = []
-        lead_snps = []
+        zero_pips = pd.Series(
+            data=np.zeros(len(locus.sumstats), dtype=float),
+            index=locus.sumstats[ColName.SNPID].tolist(),
+            name=ColName.ABF,
+        )
+        return CredibleSet(
+            tool=Method.ABF,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+        )
+
+    df = locus.original_sumstats.copy()
+    SE = df[ColName.SE].astype(np.float64).to_numpy()
+    BETA = df[ColName.BETA].astype(np.float64).to_numpy()
+    W2 = (var_prior**2) * np.ones_like(SE, dtype=np.float64)
+
+    eps = np.finfo(np.float64).tiny  # ~2.2e-308
+    se_floor = 1e-12  # 可按数据规模调
+    SE_safe2 = np.maximum(SE**2, se_floor**2)
+    W2_safe = np.maximum(W2, 0.0)
+
+    # log(sqrt(SE^2/(SE^2+W2))) = 0.5*(log(SE^2) - log(SE^2+W2))
+    log_prefactor = 0.5 * (np.log(SE_safe2) - np.log(SE_safe2 + W2_safe))
+
+    exponent_term = (W2_safe / (SE_safe2 + W2_safe)) * (BETA**2 / (2.0 * SE_safe2))
+
+    log_bf = log_prefactor + exponent_term
+
+    MAX_LOG = 700.0
+    log_bf_clipped = np.minimum(log_bf, MAX_LOG)
+
+    df["SNP_BF"] = np.exp(log_bf_clipped)
+    df[ColName.PIP] = df["SNP_BF"] / df["SNP_BF"].sum()
+    pips = pd.Series(data=df[ColName.PIP].values, index=df[ColName.SNPID].tolist(), name=ColName.ABF)
+
+    # Calculate credible set
+    ordering = np.argsort(pips.to_numpy())[::-1]
+    idx = np.where(np.cumsum(pips.to_numpy()[ordering]) > coverage)[0][0]
+    cs_snps = pips.index[ordering][: (idx + 1)].to_list()
+    lead_snps = [
+        str(
+            df.loc[
+                df[df[ColName.SNPID].isin(cs_snps)][ColName.P].idxmin(),
+                ColName.SNPID,
+            ]
+        )
+    ]
     logger.info(f"Finished ABF on {locus}")
     logger.info(f"N of credible set: {len(lead_snps)}")
     logger.info(f"Credible set size: [{len(cs_snps)}]")

@@ -28,6 +28,7 @@ def run_abf_cojo(
     window_size: int = 10000000,
     maf_cutoff: float = 0.01,
     diff_freq_cutoff: float = 0.2,
+    significant_threshold: float = 5e-8,
 ) -> CredibleSet:
     """
     Run ABF fine-mapping with COJO conditional analysis for multi-signal loci.
@@ -64,6 +65,10 @@ def run_abf_cojo(
     diff_freq_cutoff : float, optional
         Allele frequency difference cutoff between summary stats and LD reference,
         by default 0.2.
+    significant_threshold : float, optional
+        Minimum p-value required for variants to be considered significant. If no variants
+        pass this threshold, returns empty credible set with zero posterior probabilities.
+        Defaults to 5e-8.
 
     Returns
     -------
@@ -120,8 +125,31 @@ def run_abf_cojo(
         "window_size": window_size,
         "maf_cutoff": maf_cutoff,
         "diff_freq_cutoff": diff_freq_cutoff,
+        "significant_threshold": significant_threshold,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
+
+    # Check if any variants pass the significance threshold
+    if not (locus.sumstats[ColName.P] <= significant_threshold).any():
+        logger.warning(
+            "No variants pass the significance threshold %.2e. Returning empty result.",
+            significant_threshold,
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(locus.sumstats), dtype=float),
+            index=locus.sumstats[ColName.SNPID].tolist(),
+            name=f"{Method.ABF}_COJO",
+        )
+        return CredibleSet(
+            tool=f"{Method.ABF}_COJO",
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+        )
 
     # Step 1: Use COJO to detect independent signals
     logger.info(
@@ -163,7 +191,7 @@ def run_abf_cojo(
         logger.info("Single signal detected, running standard ABF")
         # For single signal, just run standard ABF
         abf_result = run_abf(
-            locus, max_causal=1, coverage=coverage, var_prior=var_prior
+            locus, max_causal=1, coverage=coverage, var_prior=var_prior, significant_threshold=significant_threshold
         )
         # Update the method name and parameters
         abf_result._tool = f"{Method.ABF}_COJO"
@@ -177,7 +205,7 @@ def run_abf_cojo(
         )
         # Step 3: For each signal, perform conditional analysis and run ABF
         return _run_conditional_abf_analysis(
-            locus, cojo_results, coverage, var_prior, parameters
+            locus, cojo_results, coverage, var_prior, significant_threshold, parameters
         )
 
 
@@ -186,6 +214,7 @@ def _run_conditional_abf_analysis(
     cojo_results: pd.DataFrame,
     coverage: float,
     var_prior: float,
+    significant_threshold: float,
     parameters: dict,
 ) -> CredibleSet:
     """
@@ -264,7 +293,7 @@ def _run_conditional_abf_analysis(
 
             try:
                 # Run conditional analysis
-                logger.debug(
+                logger.info(
                     f"Running conditional analysis conditioning on: {conditioning_snps}"
                 )
                 conditional_results = c.run_conditional_analysis(
@@ -287,8 +316,9 @@ def _run_conditional_abf_analysis(
 
         # Run ABF on conditional locus
         signal_abf_result = run_abf(
-            conditional_locus, max_causal=1, coverage=coverage, var_prior=var_prior
+            conditional_locus, max_causal=1, coverage=coverage, var_prior=var_prior, significant_threshold=significant_threshold
         )
+        logger.info(f"ABF result for signal {signal_snp}: {signal_abf_result}")
 
         # Extract results for this signal
         if signal_abf_result.n_cs > 0:
@@ -308,6 +338,7 @@ def _run_conditional_abf_analysis(
     logger.info(
         f"ABF+COJO analysis complete: {n_cs} credible sets from {n_signals} signals"
     )
+    logger.info(f"Lead SNPs: {all_lead_snps}")
 
     return CredibleSet(
         tool=f"{Method.ABF}_COJO",
@@ -353,12 +384,15 @@ def _create_conditional_locus(
             ]
             original_sumstats.loc[idx, ColName.SE] = conditional_map["cond_se"][snpid]
             original_sumstats.loc[idx, ColName.P] = conditional_map["cond_p"][snpid]
+        else:
+            # drop SNPs not in conditional results
+            original_sumstats.loc[idx, ColName.BETA] = np.nan
+            original_sumstats.loc[idx, ColName.SE] = np.nan
+            original_sumstats.loc[idx, ColName.P] = np.nan
+    original_sumstats = original_sumstats.dropna(subset=[ColName.BETA, ColName.SE, ColName.P]).reset_index(drop=True)
 
-    # Update the locus with new summary statistics
-    conditional_locus._sumstats = original_sumstats
+    conditional_locus.sumstats = original_sumstats
 
-    # Also update original_sumstats if it exists
-    if hasattr(conditional_locus, "_original_sumstats"):
-        conditional_locus._original_sumstats = original_sumstats.copy()
+    conditional_locus._original_sumstats = original_sumstats
 
     return conditional_locus
