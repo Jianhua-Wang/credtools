@@ -344,21 +344,35 @@ def plot_maf_corr_barplot(
         )
         return ax
 
-    # Create colors for each cohort
-    colors = [get_population_color(cohort) for cohort in plot_data["cohort_id"]]
+    # Group by cohort_id and population, compute mean and standard deviation of maf_corr
+    group_cols = ["cohort_id", "popu"]
+    summary = (
+        plot_data.groupby(group_cols)["maf_corr"]
+        .agg(["mean", "std", "count"])
+        .reset_index()
+    )
 
-    # Create barplot
-    bars = ax.bar(range(len(plot_data)), plot_data["maf_corr"], color=colors, alpha=0.7)
+    # Assign colors by population for each bar
+    colors = [get_population_color(pop) for pop in summary["popu"]]
 
+    # Create barplot with error bars
+    bars = ax.bar(
+        range(len(summary)),
+        summary["mean"],
+        yerr=summary["std"],
+        color=colors,
+        alpha=0.7,
+        capsize=5,
+    )
     ax.set_ylabel("MAF correlation")
     ax.set_xlabel("cohort")
-    ax.set_xticks(range(len(plot_data)))
-    ax.set_xticklabels(plot_data["cohort_id"], rotation=45, ha="right")
+    ax.set_xticks(range(len(summary)))
+    ax.set_xticklabels(summary["cohort_id"], rotation=45, ha="right")
     ax.grid(True, alpha=0.3, axis="y")
     ax.set_ylim(0, 1)
 
     # Add legend for populations
-    populations = sorted(set(c.split("_")[0] for c in plot_data["cohort_id"].unique()))
+    populations = sorted(set(summary["popu"].unique()))
     legend_elements = [
         plt.Rectangle(
             (0, 0),
@@ -422,20 +436,34 @@ def plot_outliers_barplot(
         )
         return ax
 
-    # Create colors for each cohort
-    colors = [get_population_color(cohort) for cohort in qc_data["cohort_id"]]
+    # Aggregate data: compute mean and standard error of outlier counts for each cohort_id
+    grouped = qc_data.groupby("cohort_id")[outlier_col]
+    mean_counts = grouped.mean()
+    sem_counts = grouped.sem()  # standard error of the mean
 
-    # Create barplot
-    bars = ax.bar(range(len(qc_data)), qc_data[outlier_col], color=colors, alpha=0.7)
+    # Make sure cohort order and colors match population identity
+    cohort_ids = mean_counts.index.tolist()
+    colors = [get_population_color(cohort.split("_")[0]) for cohort in cohort_ids]
 
-    ax.set_ylabel(f"n_{outlier_type}_outlier")
-    ax.set_xlabel("cohort")
-    ax.set_xticks(range(len(qc_data)))
-    ax.set_xticklabels(qc_data["cohort_id"], rotation=45, ha="right")
+    # Create barplot with error bars
+    bars = ax.bar(
+        range(len(cohort_ids)),
+        mean_counts.values,
+        yerr=sem_counts.values,
+        color=colors,
+        alpha=0.7,
+        capsize=5,
+        edgecolor="black",
+    )
+
+    ax.set_ylabel(f"Mean n_{outlier_type}_outlier")
+    ax.set_xlabel("Cohort")
+    ax.set_xticks(range(len(cohort_ids)))
+    ax.set_xticklabels(cohort_ids, rotation=45, ha="right")
     ax.grid(True, alpha=0.3, axis="y")
 
-    # Add legend for populations
-    populations = sorted(set(c.split("_")[0] for c in qc_data["cohort_id"].unique()))
+    # Add legend for populations (mapping by prefix)
+    populations = sorted({c.split("_")[0] for c in cohort_ids})
     legend_elements = [
         plt.Rectangle(
             (0, 0),
@@ -939,6 +967,8 @@ def plot_ld_decay(
         )
 
     ax.set_xlabel("Distance (kb)")
+    # set xscale to log
+    ax.set_xscale("log", base=10)
     ax.set_ylabel("r²")
     ax.grid(True, alpha=0.3)
     ax.legend()
