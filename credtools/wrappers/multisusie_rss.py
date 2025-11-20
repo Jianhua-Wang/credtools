@@ -778,6 +778,7 @@ def susie_multi_ss(
             recover_R_from_XTX(XTX_list[i], X_l2_arr[i])
         R_list = XTX_list
 
+    print(min_abs_corr, low_memory_mode, recover_R)
     s.sets = susie_get_cs(  # type: ignore
         s=s,
         R_list=R_list,
@@ -1850,6 +1851,9 @@ def susie_get_cs(
     else:
         purity = np.array([np.nan for i in range(len(cs))])
 
+    logger.info(f"purity: {purity}")
+    logger.info(f"claimed coverage: {claimed_coverage}")
+    logger.info(f'include mask: {include_mask}')
     return (cs, purity, claimed_coverage, include_mask)
 
 

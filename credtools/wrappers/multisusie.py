@@ -305,8 +305,10 @@ def run_multisusie(
     )
     pip = pd.Series(index=all_variants[ColName.SNPID].tolist(), data=ss_fit.pip)
     cs_snp = []
-    for cs_snp_idx in ss_fit.sets[0]:
-        if len(cs_snp_idx) > 0 and len(cs_snp_idx) < len(pip):
+    for i in range(len(ss_fit.sets[0])):
+        cs_snp_idx = ss_fit.sets[0][i]
+        purity_check = ss_fit.sets[-1][i]
+        if len(cs_snp_idx) > 0 and len(cs_snp_idx) < len(pip) and purity_check:
             snps = all_variants[ColName.SNPID].to_numpy()[cs_snp_idx]
             cs_snp.append(snps.tolist())
     cs_sizes = [len(snpids) for snpids in cs_snp]
