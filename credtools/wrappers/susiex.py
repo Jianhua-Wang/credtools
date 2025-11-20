@@ -26,7 +26,7 @@ def run_susiex(
     mult_step: bool = True,
     keep_ambig: bool = True,
     n_threads: int = 1,
-    min_purity: float = 0,
+    min_purity: float = 0.5,
     max_iter: int = 100,
     tol: float = 1e-3,
     temp_dir: Optional[str] = None,
@@ -73,7 +73,7 @@ def run_susiex(
         Number of parallel threads for computation, by default 1.
         Higher values can speed up analysis but require more memory.
     min_purity : float, optional
-        Minimum purity threshold for credible sets, by default 0.
+        Minimum purity threshold for credible sets, by default 0.5
         Credible sets with purity below this threshold may be filtered
         out as potentially unreliable.
     max_iter : int, optional
@@ -236,7 +236,7 @@ def run_susiex(
             f"{input_prefix}_frq.frq", sep="\t", index=False
         )
         logger.debug(f"Writing {input_prefix}.ld.bin")
-        ld = locus.ld.r**2
+        ld = locus.ld.r
         ld.astype(np.float32).tofile(f"{input_prefix}.ld.bin")
         input_prefix_list.append(input_prefix)
 
