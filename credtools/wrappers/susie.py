@@ -4,8 +4,8 @@ import json
 import logging
 from typing import List
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet

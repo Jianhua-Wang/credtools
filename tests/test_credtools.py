@@ -198,14 +198,20 @@ def test_fine_map_embeds_per_dataset_columns():
             assert combined_df[col].dtype.kind in {"i", "f"}
 
 
-
 def test_single_input_returns_zero_without_significant_snp():
     high_pvals = [1e-4, 2e-4, 1e-3]
-    locus_primary = _make_test_locus("EUR", "cohort1", beta_scale=1.0, p_values=high_pvals)
-    locus_secondary = _make_test_locus("AFR", "cohort2", beta_scale=0.8, p_values=high_pvals)
+    locus_primary = _make_test_locus(
+        "EUR", "cohort1", beta_scale=1.0, p_values=high_pvals
+    )
+    locus_secondary = _make_test_locus(
+        "AFR", "cohort2", beta_scale=0.8, p_values=high_pvals
+    )
     locus_set = LocusSet([locus_primary, locus_secondary])
 
-    prefixes = [f"{locus_primary.popu}_{locus_primary.cohort}_", f"{locus_secondary.popu}_{locus_secondary.cohort}_"]
+    prefixes = [
+        f"{locus_primary.popu}_{locus_primary.cohort}_",
+        f"{locus_secondary.popu}_{locus_secondary.cohort}_",
+    ]
 
     for tool in ("finemap", "susie", "rsparsepro"):
         result = fine_map(
@@ -227,4 +233,3 @@ def test_single_input_returns_zero_without_significant_snp():
             assert cred_col in df.columns
             assert (df[pip_col] == 0).all()
             assert (df[cred_col] == 0).all()
-

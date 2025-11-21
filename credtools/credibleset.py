@@ -149,7 +149,9 @@ class CredibleSet:
         """Get per-locus credible set results."""
         return self._per_locus_results
 
-    def set_per_locus_results(self, per_locus_results: Dict[str, "CredibleSet"]) -> None:
+    def set_per_locus_results(
+        self, per_locus_results: Dict[str, "CredibleSet"]
+    ) -> None:
         """Attach per-locus credible set results."""
         self._per_locus_results = per_locus_results
 

@@ -4,6 +4,7 @@ import inspect
 import json
 import logging
 import os
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -328,9 +329,15 @@ def fine_map(
                 result = tool_func_dict[tool](
                     locus, max_causal=max_causal, **params_dict[tool]
                 )
-            per_locus_results = {locus.locus_id: result.copy()}
-            result.set_per_locus_results(per_locus_results)
-            return result
+                locus_id = getattr(locus, "locus_id", getattr(locus, "name", "locus_0"))
+                if hasattr(result, "copy"):
+                    result_copy = result.copy()
+                else:
+                    result_copy = deepcopy(result)
+                per_locus_results = {locus_id: result_copy}
+                if hasattr(result, "set_per_locus_results"):
+                    result.set_per_locus_results(per_locus_results)
+                return result
 
         else:
             # Multiple loci: analyze each and combine results

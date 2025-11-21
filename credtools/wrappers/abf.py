@@ -14,7 +14,13 @@ from credtools.locus import Locus
 logger = logging.getLogger("ABF")
 
 
-def run_abf(locus: Locus, max_causal: int = 1, coverage: float = 0.95, var_prior: float = 0.2, significant_threshold: float = 5e-8) -> CredibleSet:
+def run_abf(
+    locus: Locus,
+    max_causal: int = 1,
+    coverage: float = 0.95,
+    var_prior: float = 0.2,
+    significant_threshold: float = 5e-8,
+) -> CredibleSet:
     """
     Run Approximate Bayes Factor (ABF) fine-mapping analysis.
 
@@ -113,7 +119,9 @@ def run_abf(locus: Locus, max_causal: int = 1, coverage: float = 0.95, var_prior
     4   rs567890    0.0321
     """
     if max_causal > 1:
-        logger.warning("ABF only support single causal variant. max_causal is set to 1.")
+        logger.warning(
+            "ABF only support single causal variant. max_causal is set to 1."
+        )
         max_causal = 1
     logger.info(f"Running ABF on {locus}")
     parameters = {
@@ -168,7 +176,9 @@ def run_abf(locus: Locus, max_causal: int = 1, coverage: float = 0.95, var_prior
 
     df["SNP_BF"] = np.exp(log_bf_clipped)
     df[ColName.PIP] = df["SNP_BF"] / df["SNP_BF"].sum()
-    pips = pd.Series(data=df[ColName.PIP].values, index=df[ColName.SNPID].tolist(), name=ColName.ABF)
+    pips = pd.Series(
+        data=df[ColName.PIP].values, index=df[ColName.SNPID].tolist(), name=ColName.ABF
+    )
 
     # Calculate credible set
     ordering = np.argsort(pips.to_numpy())[::-1]

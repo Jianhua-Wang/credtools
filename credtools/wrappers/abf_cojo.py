@@ -191,7 +191,11 @@ def run_abf_cojo(
         logger.info("Single signal detected, running standard ABF")
         # For single signal, just run standard ABF
         abf_result = run_abf(
-            locus, max_causal=1, coverage=coverage, var_prior=var_prior, significant_threshold=significant_threshold
+            locus,
+            max_causal=1,
+            coverage=coverage,
+            var_prior=var_prior,
+            significant_threshold=significant_threshold,
         )
         # Update the method name and parameters
         abf_result._tool = f"{Method.ABF}_COJO"
@@ -316,7 +320,11 @@ def _run_conditional_abf_analysis(
 
         # Run ABF on conditional locus
         signal_abf_result = run_abf(
-            conditional_locus, max_causal=1, coverage=coverage, var_prior=var_prior, significant_threshold=significant_threshold
+            conditional_locus,
+            max_causal=1,
+            coverage=coverage,
+            var_prior=var_prior,
+            significant_threshold=significant_threshold,
         )
         logger.info(f"ABF result for signal {signal_snp}: {signal_abf_result}")
 
@@ -389,7 +397,9 @@ def _create_conditional_locus(
             original_sumstats.loc[idx, ColName.BETA] = np.nan
             original_sumstats.loc[idx, ColName.SE] = np.nan
             original_sumstats.loc[idx, ColName.P] = np.nan
-    original_sumstats = original_sumstats.dropna(subset=[ColName.BETA, ColName.SE, ColName.P]).reset_index(drop=True)
+    original_sumstats = original_sumstats.dropna(
+        subset=[ColName.BETA, ColName.SE, ColName.P]
+    ).reset_index(drop=True)
 
     conditional_locus.sumstats = original_sumstats
 

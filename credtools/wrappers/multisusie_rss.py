@@ -1853,7 +1853,7 @@ def susie_get_cs(
 
     logger.info(f"purity: {purity}")
     logger.info(f"claimed coverage: {claimed_coverage}")
-    logger.info(f'include mask: {include_mask}')
+    logger.info(f"include mask: {include_mask}")
     return (cs, purity, claimed_coverage, include_mask)
 
 

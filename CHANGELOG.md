@@ -5,6 +5,9 @@
 - add cred and PIP of each cohort in multi cohort fine-mapping
 - output zero credible sets when n_sig 5e-8 = 0
 
+### Fixed
+- fix multisusie doesn't filter purity issue
+
 ## [0.0.39] (2025-09-22)
 
 ### Added

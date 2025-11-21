@@ -44,7 +44,9 @@ POPULATION_COLORS = {
 def _prepare_upset_series(upset_data: pd.DataFrame) -> pd.Series:
     """Transform boolean membership dataframe into an UpSet-compatible series."""
     if not UPSETPLOT_AVAILABLE or from_memberships is None:
-        raise ImportError("upsetplot package not available; install upsetplot to generate this plot")
+        raise ImportError(
+            "upsetplot package not available; install upsetplot to generate this plot"
+        )
 
     memberships = []
     for _, row in upset_data.iterrows():
@@ -146,7 +148,9 @@ def _coerce_qc_dataframe(
     elif isinstance(qc_data, pd.DataFrame):
         qc_df = qc_data.copy()
     else:
-        raise TypeError("qc_data must be a pandas DataFrame or a path to a QC summary file")
+        raise TypeError(
+            "qc_data must be a pandas DataFrame or a path to a QC summary file"
+        )
 
     if required_columns:
         missing = [col for col in required_columns if col not in qc_df.columns]
@@ -173,7 +177,9 @@ def _load_locus_pips(locus_dir: Union[str, Path]) -> pd.DataFrame:
             pip_table = read_compressed_file(pip_path)
             break
     else:
-        raise FileNotFoundError(f"No pips file found in {locus_path}. Expected pips.txt or pips.txt.gz")
+        raise FileNotFoundError(
+            f"No pips file found in {locus_path}. Expected pips.txt or pips.txt.gz"
+        )
 
     required_columns = {"BP", "CRED", "PIP"}
     missing = required_columns.difference(pip_table.columns)
@@ -198,7 +204,9 @@ LD_COLOR_LABELS: List[str] = [
     "0.8-1.0",
 ]
 LD_COLOR_PALETTE = sns.color_palette("viridis", len(LD_COLOR_LABELS))
-LD_COLOR_MAP: Dict[str, Tuple[float, float, float]] = dict(zip(LD_COLOR_LABELS, LD_COLOR_PALETTE))
+LD_COLOR_MAP: Dict[str, Tuple[float, float, float]] = dict(
+    zip(LD_COLOR_LABELS, LD_COLOR_PALETTE)
+)
 LD_COLOR_DEFAULT = "#B0B0B0"
 
 SIGNIFICANCE_LEVELS = (
@@ -262,7 +270,10 @@ def plot_lambda_s_boxplot(
 
     # Create boxplot
     box_plot = ax.boxplot(
-        [qc_data[qc_data["cohort_id"] == cohort]["lambda_s"].values for cohort in qc_data["cohort_id"].unique()],
+        [
+            qc_data[qc_data["cohort_id"] == cohort]["lambda_s"].values
+            for cohort in qc_data["cohort_id"].unique()
+        ],
         labels=qc_data["cohort_id"].unique(),
         patch_artist=True,
     )
@@ -510,13 +521,17 @@ def plot_locusplot(
 
     cohort_columns = sorted(col for col in pip_table.columns if col.endswith("_P"))
     if not cohort_columns:
-        raise ValueError("No cohort-specific p-value columns found. Expected columns ending with '_P'.")
+        raise ValueError(
+            "No cohort-specific p-value columns found. Expected columns ending with '_P'."
+        )
 
     r2_columns = {}
     for column in cohort_columns:
         r2_column = column[:-2] + "_R2" if column.endswith("_P") else None
         if not r2_column or r2_column not in pip_table.columns:
-            raise ValueError(f"Missing R2 column for {column}. Expected {column[:-2]}_R2 to be present.")
+            raise ValueError(
+                f"Missing R2 column for {column}. Expected {column[:-2]}_R2 to be present."
+            )
         r2_columns[column] = r2_column
 
     fig, axes = plt.subplots(len(cohort_columns), 1, sharex=True, figsize=figsize)
@@ -530,7 +545,9 @@ def plot_locusplot(
         r2_column = r2_columns[column]
         cohort_label = column[:-2] if column.endswith("_P") else column
 
-        cohort_data = pip_table[["BP", "CRED", "PIP", column, r2_column]].dropna(subset=["BP", column])
+        cohort_data = pip_table[["BP", "CRED", "PIP", column, r2_column]].dropna(
+            subset=["BP", column]
+        )
 
         if cohort_data.empty:
             ax.text(
@@ -764,7 +781,9 @@ def plot_locus_pvalues(
 
     # Add significance lines
     ax.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.7, label="5e-8")
-    ax.axhline(y=-np.log10(1e-5), color="orange", linestyle="--", alpha=0.7, label="1e-5")
+    ax.axhline(
+        y=-np.log10(1e-5), color="orange", linestyle="--", alpha=0.7, label="1e-5"
+    )
 
     # Add credible set annotations if available
     if credible_sets_file and Path(credible_sets_file).exists():
@@ -868,7 +887,9 @@ def plot_zscore_qq(
     handles = []
     labels = []
     for cohort in cohorts:
-        cohort_data = z_data[z_data["cohort"] == cohort].dropna(subset=["condmean", "z"])
+        cohort_data = z_data[z_data["cohort"] == cohort].dropna(
+            subset=["condmean", "z"]
+        )
         if cohort_data.empty:
             continue
         color = get_population_color(cohort)
@@ -1083,7 +1104,9 @@ def plot_snp_missingness_upset(
         Matplotlib axes object.
     """
     if not UPSETPLOT_AVAILABLE:
-        raise ImportError("upsetplot package not available; install upsetplot to generate this plot")
+        raise ImportError(
+            "upsetplot package not available; install upsetplot to generate this plot"
+        )
 
     miss_data = read_compressed_file(snp_missingness_file)
     miss_data.columns = [col[:12] for col in miss_data.columns]
@@ -1109,7 +1132,9 @@ def plot_snp_missingness_upset(
         fig.suptitle("SNP Missingness Patterns", fontsize=14, y=0.98)
         return fig
 
-    _embed_upset_subfigure(ax.figure, ax, upset_series, title="SNP Missingness Patterns")
+    _embed_upset_subfigure(
+        ax.figure, ax, upset_series, title="SNP Missingness Patterns"
+    )
     return ax.figure
 
 
@@ -1154,8 +1179,12 @@ def plot_locus_qc(
         if not snp_miss_file.exists():
             raise FileNotFoundError(f"snp_missingness.txt.gz not found in {locus_dir}")
         if not UPSETPLOT_AVAILABLE:
-            raise ImportError("upsetplot package not available; install upsetplot to include locus UpSet panel")
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(figsize[0], figsize[1]))
+            raise ImportError(
+                "upsetplot package not available; install upsetplot to include locus UpSet panel"
+            )
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+            2, 2, figsize=(figsize[0], figsize[1])
+        )
     else:
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=figsize)
         ax5 = None

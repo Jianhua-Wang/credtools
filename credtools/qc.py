@@ -978,30 +978,31 @@ def identify_outliers(
         if not cohort_expected_z.empty:
             # Lambda-s outliers using new combined criteria
             # 1. LD Mismatch Indicators
-            ld_mismatch_condition = (
-                (cohort_expected_z["logLR"] > logLR_threshold) &
-                (cohort_expected_z["z"].abs() > z_threshold)
+            ld_mismatch_condition = (cohort_expected_z["logLR"] > logLR_threshold) & (
+                cohort_expected_z["z"].abs() > z_threshold
             )
 
             # 2. Marginally Non-significant SNPs
             # Get lead SNP correlation from dentist_s results
             cohort_dentist_s = qc_metrics.get("dentist_s", pd.DataFrame())
             if not cohort_dentist_s.empty:
-                cohort_dentist_s = cohort_dentist_s[cohort_dentist_s["cohort"] == cohort]
+                cohort_dentist_s = cohort_dentist_s[
+                    cohort_dentist_s["cohort"] == cohort
+                ]
 
                 # Merge to get r values
                 merged_data = pd.merge(
                     cohort_expected_z[["SNPID", "z", "z_std_diff"]],
                     cohort_dentist_s[["SNPID", "r2"]],
                     on="SNPID",
-                    how="left"
+                    how="left",
                 )
                 merged_data["r_abs"] = np.sqrt(merged_data["r2"].fillna(0))
 
                 marginal_condition = (
                     # (merged_data["z"].abs() < z_threshold) &
-                    (merged_data["z_std_diff"].abs() > z_std_diff_threshold) &
-                    (merged_data["r_abs"] > r_threshold)
+                    (merged_data["z_std_diff"].abs() > z_std_diff_threshold)
+                    & (merged_data["r_abs"] > r_threshold)
                 )
 
                 # Combine conditions
@@ -1017,11 +1018,12 @@ def identify_outliers(
 
         if not cohort_dentist_s.empty:
             dentist_outlier_condition = (
-                (cohort_dentist_s["-log10p_dentist_s"] >= dentist_s_pvalue_threshold) &
-                (cohort_dentist_s["r2"] >= dentist_s_r2_threshold)
-            )
+                cohort_dentist_s["-log10p_dentist_s"] >= dentist_s_pvalue_threshold
+            ) & (cohort_dentist_s["r2"] >= dentist_s_r2_threshold)
 
-            dentist_outliers = cohort_dentist_s[dentist_outlier_condition]["SNPID"].tolist()
+            dentist_outliers = cohort_dentist_s[dentist_outlier_condition][
+                "SNPID"
+            ].tolist()
             outlier_snps.update(dentist_outliers)
 
     return list(outlier_snps)
@@ -1197,29 +1199,37 @@ def remove_outliers_and_rerun_qc(
 
             # Save cleaned data
             cleaned_dir = os.path.join(base_out_dir, locus_id, "cleaned")
-            prefix = locus.prefix  # Use the Locus prefix property which handles long meta-analysis names
+            prefix = (
+                locus.prefix
+            )  # Use the Locus prefix property which handles long meta-analysis names
             save_cleaned_locus(cleaned_locus, cleaned_dir, prefix)
 
-            outlier_summary.append({
-                "locus_id": locus_id,
-                "popu": locus.popu,
-                "cohort": locus.cohort,
-                "original_snps": locus.n_snps,
-                "outliers_removed": len(outlier_snps),
-                "cleaned_snps": cleaned_locus.n_snps,
-                "retention_rate": cleaned_locus.n_snps / locus.n_snps if locus.n_snps > 0 else 0,
-            })
+            outlier_summary.append(
+                {
+                    "locus_id": locus_id,
+                    "popu": locus.popu,
+                    "cohort": locus.cohort,
+                    "original_snps": locus.n_snps,
+                    "outliers_removed": len(outlier_snps),
+                    "cleaned_snps": cleaned_locus.n_snps,
+                    "retention_rate": (
+                        cleaned_locus.n_snps / locus.n_snps if locus.n_snps > 0 else 0
+                    ),
+                }
+            )
         else:
             cleaned_locus = locus
-            outlier_summary.append({
-                "locus_id": locus_id,
-                "popu": locus.popu,
-                "cohort": locus.cohort,
-                "original_snps": locus.n_snps,
-                "outliers_removed": 0,
-                "cleaned_snps": locus.n_snps,
-                "retention_rate": 1.0,
-            })
+            outlier_summary.append(
+                {
+                    "locus_id": locus_id,
+                    "popu": locus.popu,
+                    "cohort": locus.cohort,
+                    "original_snps": locus.n_snps,
+                    "outliers_removed": 0,
+                    "cleaned_snps": locus.n_snps,
+                    "retention_rate": 1.0,
+                }
+            )
 
         cleaned_loci.append(cleaned_locus)
 
@@ -1348,7 +1358,9 @@ def locus_qc_summary(
             lead_snp_corr = None
 
             # Find the locus that matches this cohort to get LD matrix
-            for locus in [l for l in expected_z["cohort"].unique() if l == current_cohort]:
+            for locus in [
+                li for li in expected_z["cohort"].unique() if li == current_cohort
+            ]:
                 # Find the locus object - this is a limitation, we need the actual locus object
                 # For now, we'll approximate using the dentist_s results which has r2 with lead SNP
                 if not cohort_dentist_s.empty:
@@ -1358,9 +1370,11 @@ def locus_qc_summary(
                         cohort_expected_z,
                         cohort_dentist_s[["SNPID", "r2"]],
                         on="SNPID",
-                        how="left"
+                        how="left",
                     )
-                    lead_snp_corr = np.sqrt(merged_data["r2"].fillna(0))  # Convert r2 to |r|
+                    lead_snp_corr = np.sqrt(
+                        merged_data["r2"].fillna(0)
+                    )  # Convert r2 to |r|
                 else:
                     # If no dentist_s data, set correlation to 0 (will not trigger marginal condition)
                     lead_snp_corr = np.zeros(len(cohort_expected_z))
@@ -1369,9 +1383,9 @@ def locus_qc_summary(
                 lead_snp_corr = np.zeros(len(cohort_expected_z))
 
             marginal_condition = (
-                (cohort_expected_z["z"].abs() < z_threshold) &
-                (cohort_expected_z["z_std_diff"].abs() > z_std_diff_threshold) &
-                (lead_snp_corr > r_threshold)
+                (cohort_expected_z["z"].abs() < z_threshold)
+                & (cohort_expected_z["z_std_diff"].abs() > z_std_diff_threshold)
+                & (lead_snp_corr > r_threshold)
             )
         else:
             marginal_condition = pd.Series([False] * len(cohort_expected_z))
@@ -1406,7 +1420,7 @@ def locus_qc_summary(
 
 
 def qc_locus_cli(
-    args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float]
+    args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float],
 ) -> Tuple[str, pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Quality control for a single locus (command-line interface wrapper).
@@ -1717,7 +1731,9 @@ def loci_qc(
             compression="gzip",
             float_format="%.6f",
         )
-        logger.info(f"Outlier removal summary saved to {out_dir}/outlier_removal_summary.txt.gz")
+        logger.info(
+            f"Outlier removal summary saved to {out_dir}/outlier_removal_summary.txt.gz"
+        )
 
         # Create cleaned loci info file
         cleaned_loci_info = []
@@ -1725,28 +1741,53 @@ def loci_qc(
             cleaned_dir = f"{out_dir}/{row['locus_id']}/cleaned"
             # Use the same prefix logic as Locus.prefix property
             import hashlib
-            if "+" in row['cohort']:
-                cohort_hash = hashlib.md5(row['cohort'].encode()).hexdigest()[:8]
-                num_cohorts = len(row['cohort'].split("+"))
+
+            if "+" in row["cohort"]:
+                cohort_hash = hashlib.md5(row["cohort"].encode()).hexdigest()[:8]
+                num_cohorts = len(row["cohort"].split("+"))
                 prefix = f"{row['popu']}_meta{num_cohorts}cohorts_{cohort_hash}"
             else:
                 prefix = f"{row['popu']}_{row['cohort']}"
-            cleaned_loci_info.append({
-                "locus_id": row["locus_id"],
-                "prefix": f"{cleaned_dir}/{prefix}",
-                "popu": row["popu"],
-                "cohort": row["cohort"],
-                "sample_size": loci_info[
-                    (loci_info["locus_id"] == row["locus_id"]) &
-                    (loci_info["popu"] == row["popu"]) &
-                    (loci_info["cohort"] == row["cohort"])
-                ]["sample_size"].iloc[0] if not loci_info.empty else 0,
-                "chr": loci_info[loci_info["locus_id"] == row["locus_id"]]["chr"].iloc[0] if not loci_info.empty else 0,
-                "start": loci_info[loci_info["locus_id"] == row["locus_id"]]["start"].iloc[0] if not loci_info.empty else 0,
-                "end": loci_info[loci_info["locus_id"] == row["locus_id"]]["end"].iloc[0] if not loci_info.empty else 0,
-                "n_snps": row["cleaned_snps"],
-                "outliers_removed": row["outliers_removed"],
-            })
+            cleaned_loci_info.append(
+                {
+                    "locus_id": row["locus_id"],
+                    "prefix": f"{cleaned_dir}/{prefix}",
+                    "popu": row["popu"],
+                    "cohort": row["cohort"],
+                    "sample_size": (
+                        loci_info[
+                            (loci_info["locus_id"] == row["locus_id"])
+                            & (loci_info["popu"] == row["popu"])
+                            & (loci_info["cohort"] == row["cohort"])
+                        ]["sample_size"].iloc[0]
+                        if not loci_info.empty
+                        else 0
+                    ),
+                    "chr": (
+                        loci_info[loci_info["locus_id"] == row["locus_id"]]["chr"].iloc[
+                            0
+                        ]
+                        if not loci_info.empty
+                        else 0
+                    ),
+                    "start": (
+                        loci_info[loci_info["locus_id"] == row["locus_id"]][
+                            "start"
+                        ].iloc[0]
+                        if not loci_info.empty
+                        else 0
+                    ),
+                    "end": (
+                        loci_info[loci_info["locus_id"] == row["locus_id"]]["end"].iloc[
+                            0
+                        ]
+                        if not loci_info.empty
+                        else 0
+                    ),
+                    "n_snps": row["cleaned_snps"],
+                    "outliers_removed": row["outliers_removed"],
+                }
+            )
 
         cleaned_loci_info_df = pd.DataFrame(cleaned_loci_info)
         cleaned_loci_info_df.to_csv(

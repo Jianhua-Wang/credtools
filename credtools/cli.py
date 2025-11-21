@@ -952,39 +952,35 @@ def run_qc(
     outdir: str = typer.Argument(..., help="Output directory."),
     threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
     remove_outlier: bool = typer.Option(
-        False,
-        "--remove-outlier",
-        help="Remove outliers and re-run QC on cleaned data."
+        False, "--remove-outlier", help="Remove outliers and re-run QC on cleaned data."
     ),
     logLR_threshold: float = typer.Option(
-        1.0,
-        "--logLR-threshold",
-        help="LogLR threshold for LD mismatch detection."
+        1.0, "--logLR-threshold", help="LogLR threshold for LD mismatch detection."
     ),
     z_threshold: float = typer.Option(
         1.0,
         "--z-threshold",
-        help="Z-score threshold for both LD mismatch and marginal SNP detection."
+        help="Z-score threshold for both LD mismatch and marginal SNP detection.",
     ),
     z_std_diff_threshold: float = typer.Option(
         3.0,
         "--z-std-diff-threshold",
-        help="Z_std_diff threshold for marginal SNP outlier detection."
+        help="Z_std_diff threshold for marginal SNP outlier detection.",
     ),
     r_threshold: float = typer.Option(
         0.1,
         "--r-threshold",
-        help="Correlation threshold with lead SNP for marginal SNP detection."
+        help="Correlation threshold with lead SNP for marginal SNP detection.",
     ),
     dentist_s_pvalue_threshold: float = typer.Option(
         4.0,
         "--dentist-pvalue-threshold",
-        help="-log10 p-value threshold for Dentist-S outlier detection."
+        help="-log10 p-value threshold for Dentist-S outlier detection.",
     ),
     dentist_s_r2_threshold: float = typer.Option(
         0.6,
         "--dentist-r2-threshold",
-        help="R² threshold for Dentist-S outlier detection."
+        help="R² threshold for Dentist-S outlier detection.",
     ),
     log_file: Optional[str] = typer.Option(
         None, "--log-file", "-l", help="Log output to specified file."
@@ -1406,6 +1402,12 @@ def run_pipeline(
     ),
     coverage: float = typer.Option(
         0.95, "--coverage", "-cv", help="Coverage of the credible set."
+    ),
+    significant_threshold: float = typer.Option(
+        5e-8,
+        "--significant-threshold",
+        "-st",
+        help="Minimum p-value required for variants to be considered significant.",
     ),
     combine_cred: CombineCred = typer.Option(
         CombineCred.union,
