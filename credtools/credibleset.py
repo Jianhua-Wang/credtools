@@ -4,11 +4,14 @@ import json
 import logging
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from scipy.cluster.hierarchy import fcluster, linkage
+
+if TYPE_CHECKING:
+    from credtools.ldmatrix import LDMatrix
 
 logger = logging.getLogger("CREDTOOLS")
 
@@ -67,6 +70,7 @@ class CredibleSet:
         snps: List[List[str]],
         pips: pd.Series,
         per_locus_results: Optional[Dict[str, "CredibleSet"]] = None,
+        purity: Optional[List[Optional[float]]] = None,
     ) -> None:
         """
         Initialize CredibleSet object.
@@ -91,6 +95,10 @@ class CredibleSet:
             Posterior inclusion probabilities.
         per_locus_results : Optional[Dict[str, "CredibleSet"]], optional
             Mapping of locus identifiers to their individual credible set results.
+        purity : Optional[List[Optional[float]]], optional
+            List of purity values for each credible set. Purity is the minimum
+            absolute LD R value between all SNP pairs in a credible set.
+            None if LD matrix is not available.
         """
         self._tool = tool
         self._parameters = parameters
@@ -101,6 +109,7 @@ class CredibleSet:
         self._snps = snps
         self._pips = pips
         self._per_locus_results: Dict[str, "CredibleSet"] = per_locus_results or {}
+        self._purity = purity
         # TODO: add results data like, if it is converged, etc.
 
     @property
@@ -149,6 +158,11 @@ class CredibleSet:
         """Get per-locus credible set results."""
         return self._per_locus_results
 
+    @property
+    def purity(self) -> Optional[List[Optional[float]]]:
+        """Get the purity values for each credible set."""
+        return self._purity
+
     def set_per_locus_results(
         self, per_locus_results: Dict[str, "CredibleSet"]
     ) -> None:
@@ -187,6 +201,7 @@ class CredibleSet:
             lead_snps=self.lead_snps.copy(),
             snps=[list(snp) for snp in self.snps],
             pips=self.pips.copy(),
+            purity=self.purity.copy() if self.purity is not None else None,
         )
         if self.per_locus_results:
             per_locus_copy = {}
@@ -215,6 +230,7 @@ class CredibleSet:
             "snps": self.snps,
             "cs_sizes": self.cs_sizes,
             "parameters": self.parameters,
+            "purity": self.purity,
         }
 
     def create_enhanced_pips_df(self, locus_set) -> pd.DataFrame:
@@ -399,6 +415,7 @@ class CredibleSet:
             lead_snps=data["lead_snps"],
             snps=data["snps"],
             pips=pips,
+            purity=data.get("purity"),
         )
 
 
@@ -450,6 +467,7 @@ def combine_creds(
     combine_cred: str = "union",
     combine_pip: str = "max",
     jaccard_threshold: float = 0.1,
+    ld_matrices: Optional[List["LDMatrix"]] = None,
 ) -> CredibleSet:
     """
     Combine credible sets from multiple tools.
@@ -478,6 +496,11 @@ def combine_creds(
         - "mean": Mean PIP value for each SNP across all tools.
     jaccard_threshold : float, optional
         Jaccard index threshold for the "cluster" method, by default 0.1.
+    ld_matrices : Optional[List[LDMatrix]], optional
+        List of LD matrices for purity calculation, by default None.
+        If provided, purity will be calculated for merged credible sets using
+        multi-ancestry approach (element-wise max across populations).
+        If None, purity will not be calculated for the merged credible sets.
 
     Returns
     -------
@@ -543,6 +566,19 @@ def combine_creds(
     merged_pips = combine_pips([cred.pips for cred in creds], combine_pip)
     paras["combine_cred"] = combine_cred
     paras["combine_pip"] = combine_pip
+
+    # Calculate purity for merged credible sets if LD matrices are provided
+    purity = None
+    if ld_matrices is not None and len(ld_matrices) > 0:
+        purity = []
+        for snp_list in merged_snps:
+            if len(snp_list) > 0:
+                purity_val = calculate_cs_purity(ld_matrices, snp_list)
+                purity.append(purity_val)
+            else:
+                purity.append(None)
+        logger.info(f"Calculated purity for {len(purity)} merged credible sets: {purity}")
+
     merged = CredibleSet(
         tool=creds[0].tool,
         n_cs=len(merged_snps),
@@ -555,6 +591,7 @@ def combine_creds(
         cs_sizes=[len(i) for i in merged_snps],
         pips=merged_pips,
         parameters=paras,
+        purity=purity,
     )
     return merged
 
@@ -739,3 +776,135 @@ def cluster_cs(
     return [
         list(set(cluster_groups[cluster_id])) for cluster_id in sorted(cluster_groups)
     ]
+
+
+def calculate_cs_purity(
+    ld: Union["LDMatrix", List["LDMatrix"]],
+    cs_snp_ids: List[str],
+) -> Optional[float]:
+    """
+    Calculate purity for a single credible set.
+
+    Purity is defined as the minimum absolute LD R value between all pairs of
+    SNPs in the credible set.
+
+    For multiple LD matrices (multi-ancestry case), purity is calculated as:
+    1. Extract CS submatrix from each LD matrix
+    2. Take element-wise maximum of absolute values across all matrices
+    3. Return the minimum value from the resulting meta-LD matrix
+
+    This approach (similar to MultiSuSiE) ensures the credible set has high
+    purity across all populations.
+
+    Parameters
+    ----------
+    ld : LDMatrix or List[LDMatrix]
+        LDMatrix object(s) containing both r matrix and map with SNPIDs.
+        If a list is provided, meta-purity across all matrices is calculated.
+    cs_snp_ids : List[str]
+        List of SNPID strings in the credible set.
+
+    Returns
+    -------
+    Optional[float]
+        - If CS has only 1 SNP, returns 1.0
+        - If CS has multiple SNPs, returns min(|R|) for all SNP pairs
+        - For multiple LD matrices, returns min of element-wise max across matrices
+        - If unable to calculate (e.g., SNPs not in LD matrix), returns None
+
+    Examples
+    --------
+    >>> # Single LD matrix: CS with 3 SNPs having LD R values: 0.8, 0.9, 0.7
+    >>> # Purity = min(|0.8|, |0.9|, |0.7|) = 0.7
+    >>>
+    >>> # Multiple LD matrices: same CS in EUR and AFR
+    >>> # EUR: |R| values = [0.8, 0.9, 0.7]
+    >>> # AFR: |R| values = [0.6, 0.85, 0.75]
+    >>> # Meta |R| = max([0.8, 0.9, 0.7], [0.6, 0.85, 0.75]) = [0.8, 0.9, 0.75]
+    >>> # Purity = min([0.8, 0.9, 0.75]) = 0.75
+    """
+    from credtools.constants import ColName
+
+    if len(cs_snp_ids) == 1:
+        return 1.0
+
+    # Handle single LD matrix vs list of LD matrices
+    if not isinstance(ld, list):
+        ld_list = [ld]
+    else:
+        ld_list = ld
+
+    if len(ld_list) == 0:
+        return None
+
+    # Create union of all CS SNPs across all LD matrices (MultiSuSiE approach)
+    # This ensures all submatrices have the same dimensions
+    union_snps = []
+    for snpid in cs_snp_ids:
+        # Check if SNP appears in at least one LD matrix
+        for ld_matrix in ld_list:
+            snpid_to_idx = {snpid: i for i, snpid in enumerate(ld_matrix.map[ColName.SNPID])}
+            if snpid in snpid_to_idx:
+                union_snps.append(snpid)
+                break
+
+    # Remove duplicates while preserving order
+    seen = set()
+    union_snps = [x for x in union_snps if not (x in seen or seen.add(x))]
+
+    if len(union_snps) < 2:
+        # Not enough SNPs found in any LD matrix
+        return None
+
+    # Create mapping from SNP ID to index in union set
+    variant_to_index = {snpid: i for i, snpid in enumerate(union_snps)}
+    n_union = len(union_snps)
+
+    # Extract and expand CS submatrices from all LD matrices
+    cs_submatrices = []
+    for ld_matrix in ld_list:
+        # Create SNPID to index mapping for this LD matrix
+        snpid_to_idx = {snpid: i for i, snpid in enumerate(ld_matrix.map[ColName.SNPID])}
+
+        # Initialize expanded LD matrix with zeros
+        expand_ld = np.zeros((n_union, n_union), dtype=np.float32)
+
+        # Find SNPs that exist in both union and this LD matrix
+        present_snps = [snpid for snpid in union_snps if snpid in snpid_to_idx]
+
+        if len(present_snps) >= 2:
+            # Get indices in this LD matrix
+            ld_indices = np.array([snpid_to_idx[snpid] for snpid in present_snps])
+            # Get indices in union set
+            union_indices = np.array([variant_to_index[snpid] for snpid in present_snps])
+
+            # Extract submatrix for present SNPs from this LD matrix
+            ld_submatrix = ld_matrix.r[np.ix_(ld_indices, ld_indices)]
+
+            # Place LD values at correct positions in expanded matrix using meshgrid
+            idx_i, idx_j = np.meshgrid(union_indices, union_indices)
+            expand_ld[idx_i, idx_j] = ld_submatrix.astype(np.float32)
+
+        # Set diagonal to 1 (for both present and missing SNPs)
+        np.fill_diagonal(expand_ld, 1.0)
+
+        cs_submatrices.append(expand_ld)
+
+    if len(cs_submatrices) == 0:
+        # No valid submatrices found
+        return None
+
+    # Calculate meta-purity across all LD matrices
+    # Take element-wise maximum of absolute values (MultiSuSiE approach)
+    abs_meta_R = np.abs(cs_submatrices[0])
+    for submatrix in cs_submatrices[1:]:
+        abs_meta_R = np.maximum(abs_meta_R, np.abs(submatrix))
+
+    # Get upper triangle (excluding diagonal) and find minimum
+    upper_tri_indices = np.triu_indices_from(abs_meta_R, k=1)
+    r_values = abs_meta_R[upper_tri_indices]
+
+    if len(r_values) == 0:
+        return None
+
+    return float(np.min(r_values))

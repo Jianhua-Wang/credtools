@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.41] (2025-11-22)
+
+### Fixed
+- **Multi-cohort CS purity calculation**: Fix ValueError when calculating credible set purity across cohorts with non-overlapping SNP sets. The function now takes the union of all CS SNPs across cohorts and expands each cohort's LD matrix to the union size (following MultiSuSiE's approach), with missing SNPs represented as uncorrelated (LD=0, diagonal=1). This resolves broadcasting errors like "operands could not be broadcast together with shapes (96,96) (95,95)".
+
 ## [0.0.40] (2025-10-30)
 ### Added
 - add cred and PIP of each cohort in multi cohort fine-mapping

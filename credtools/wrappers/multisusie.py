@@ -305,18 +305,30 @@ def run_multisusie(
     )
     pip = pd.Series(index=all_variants[ColName.SNPID].tolist(), data=ss_fit.pip)
     cs_snp = []
+    # Extract purity values from MultiSuSiE results
+    # ss_fit.sets is (cs, purity, claimed_coverage, include_mask)
+    purity_array = ss_fit.sets[1] if len(ss_fit.sets) > 1 else None
+    purity_list = []
+
     for i in range(len(ss_fit.sets[0])):
         cs_snp_idx = ss_fit.sets[0][i]
         purity_check = ss_fit.sets[-1][i]
         if len(cs_snp_idx) > 0 and len(cs_snp_idx) < len(pip) and purity_check:
             snps = all_variants[ColName.SNPID].to_numpy()[cs_snp_idx]
             cs_snp.append(snps.tolist())
+            # Extract purity value for this credible set
+            if purity_array is not None and not np.isnan(purity_array[i]):
+                purity_list.append(float(purity_array[i]))
+            else:
+                purity_list.append(None)
+
     cs_sizes = [len(snpids) for snpids in cs_snp]
     lead_snps = [str(pip[pip.index.isin(snpids)].idxmax()) for snpids in cs_snp]
 
     logger.info(f"Finished MultiSuSiE on {locus_set}")
     logger.info(f"N of credible set: {len(cs_snp)}")
     logger.info(f"Credible set size: {cs_sizes}")
+    logger.info(f"Credible set purity: {purity_list}")
 
     return CredibleSet(
         tool=Method.MULTISUSIE,
@@ -327,4 +339,5 @@ def run_multisusie(
         cs_sizes=cs_sizes,
         pips=pip,
         parameters=parameters,
+        purity=purity_list if len(purity_list) > 0 else None,
     )

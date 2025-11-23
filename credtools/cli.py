@@ -1047,6 +1047,50 @@ def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         enhanced_pips = creds.create_enhanced_pips_df(locus_set)
+
+        # Extract causal variants and create CS summary BEFORE formatting
+        # (formatting converts PIP to strings which breaks numeric comparisons)
+        causal_variants = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
+        if not causal_variants.empty:
+            causal_variants["locus_id"] = locus_id
+        causal_variants_records = (
+            causal_variants.to_dict(orient="records") if not causal_variants.empty else []
+        )
+
+        # Create credible sets summary (one row per CS)
+        cs_summary_list = []
+        if not causal_variants.empty:
+            from credtools.credibleset import calculate_cs_purity
+
+            for cs_id in sorted(causal_variants["CRED"].unique()):
+                cs_snps = causal_variants[causal_variants["CRED"] == cs_id]
+                lead_snp_idx = cs_snps["PIP"].idxmax()
+                lead_snp = cs_snps.loc[lead_snp_idx, "SNPID"]
+                cs_size = len(cs_snps)
+                pip_01 = int((cs_snps["PIP"] >= 0.1).sum())
+                pip_05 = int((cs_snps["PIP"] >= 0.5).sum())
+                pip_09 = int((cs_snps["PIP"] >= 0.9).sum())
+
+                # Calculate purity if LD is available
+                # Use all LD matrices for multi-ancestry purity calculation
+                purity = None
+                ld_list = [locus.ld for locus in locus_set.loci if locus.ld is not None]
+                if len(ld_list) > 0:
+                    cs_snp_ids = cs_snps["SNPID"].tolist()
+                    purity = calculate_cs_purity(ld_list, cs_snp_ids)
+
+                cs_summary_list.append({
+                    "locus_id": locus_id,
+                    "cs_id": int(cs_id),
+                    "lead_snp": lead_snp,
+                    "cs_size": cs_size,
+                    "pip_01": pip_01,
+                    "pip_05": pip_05,
+                    "pip_09": pip_09,
+                    "purity": purity,
+                })
+
+        # Now format enhanced_pips for output
         enhanced_pips = _format_enhanced_pips(enhanced_pips)
 
         locus_dir = os.path.join(outdir, str(locus_id))
@@ -1059,17 +1103,11 @@ def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
             compression="gzip",
         )
 
-        cs_summary = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
-        if not cs_summary.empty:
-            cs_summary["locus_id"] = locus_id
-        cs_records = (
-            cs_summary.to_dict(orient="records") if not cs_summary.empty else []
-        )
-
         return {
             "status": "success",
             "locus_id": locus_id,
-            "cs_records": cs_records,
+            "causal_variants_records": causal_variants_records,
+            "cs_summary_records": cs_summary_list,
         }
 
     except Exception as exc:
@@ -1227,7 +1265,8 @@ def run_fine_map(
     }
     run_summary["parameters"]["processes"] = processes
 
-    all_credible_sets: List[pd.DataFrame] = []
+    all_causal_variants: List[pd.DataFrame] = []
+    all_cs_summaries: List[pd.DataFrame] = []
 
     progress = Progress(
         SpinnerColumn(),
@@ -1284,16 +1323,20 @@ def run_fine_map(
         locus_label = result["locus_id"]
         if result["status"] == "success":
             run_summary["successful_loci"] += 1
-            cs_records = result.get("cs_records") or []
-            if cs_records:
-                all_credible_sets.append(pd.DataFrame(cs_records))
+            causal_variants_records = result.get("causal_variants_records") or []
+            cs_summary_records = result.get("cs_summary_records") or []
+            if causal_variants_records:
+                all_causal_variants.append(pd.DataFrame(causal_variants_records))
+            if cs_summary_records:
+                all_cs_summaries.append(pd.DataFrame(cs_summary_records))
         else:
             error_msg = result.get("error", "Unknown error")
             full_msg = f"Locus {locus_label} failed: {error_msg}"
             logger.error(full_msg)
             traceback_text = result.get("traceback")
             if traceback_text:
-                logger.debug(traceback_text)
+                logger.error(f"Traceback:\n{traceback_text}")
+                print(f"\nTraceback for {locus_label}:\n{traceback_text}", file=sys.stderr)
             print(f"ERROR: {full_msg}", file=sys.stderr)
             run_summary["failed_loci"] += 1
             run_summary["errors"].append(full_msg)
@@ -1316,10 +1359,20 @@ def run_fine_map(
                     _handle_result(result)
                     progress.advance(task_id)
 
-    # Save combined credible sets summary
-    if all_credible_sets:
-        combined_cs = pd.concat(all_credible_sets, ignore_index=True)
-        combined_cs.to_csv(
+    # Save combined causal variants (all SNPs in credible sets)
+    if all_causal_variants:
+        combined_causal_variants = pd.concat(all_causal_variants, ignore_index=True)
+        combined_causal_variants.to_csv(
+            f"{outdir}/causal_variants.txt.gz",
+            sep="	",
+            index=False,
+            compression="gzip",
+        )
+
+    # Save combined credible sets summary (one row per CS)
+    if all_cs_summaries:
+        combined_cs_summary = pd.concat(all_cs_summaries, ignore_index=True)
+        combined_cs_summary.to_csv(
             f"{outdir}/credible_sets_summary.txt.gz",
             sep="	",
             index=False,

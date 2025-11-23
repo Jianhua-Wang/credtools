@@ -281,13 +281,35 @@ def run_susiex(
 
     pip_df = pd.read_csv(f"{temp_dir}/chr{chrom}_{start}_{end}.snp", sep="\t")
     cs_snp: List[List[str]] = []
+    purity_list: List[Optional[float]] = []
+
     if len(pip_df.columns) == 2:
         logger.warning("No credible set found, please try other parameters.")
         pip = pd.Series(index=pip_df["SNP"].values.tolist())
     else:
         cs_df = pd.read_csv(f"{temp_dir}/chr{chrom}_{start}_{end}.cs", sep="\t")
-        for _, sub_df in cs_df.groupby("CS_ID"):
+
+        # Read purity from summary file if it exists
+        purity_dict = {}
+        summary_file = f"{temp_dir}/chr{chrom}_{start}_{end}.summary"
+        if os.path.exists(summary_file):
+            try:
+                summary_df = pd.read_csv(summary_file, sep="\t", comment='#')
+                if 'CS_ID' in summary_df.columns and 'CS_PURITY' in summary_df.columns:
+                    purity_dict = dict(zip(summary_df['CS_ID'], summary_df['CS_PURITY']))
+                    logger.info(f"Read purity values from {summary_file}: {purity_dict}")
+            except Exception as e:
+                logger.warning(f"Failed to read purity from {summary_file}: {e}")
+
+        # Extract credible sets and their purity values
+        for cs_id, sub_df in cs_df.groupby("CS_ID"):
             cs_snp.append(sub_df["SNP"].values.tolist())
+            # Get purity for this CS if available
+            if cs_id in purity_dict:
+                purity_list.append(float(purity_dict[cs_id]))
+            else:
+                purity_list.append(None)
+
         pip_cols = [col for col in pip_df.columns if col.startswith("PIP")]
         pip_df = pip_df[pip_cols + ["SNP"]].copy()
         pip_df.set_index("SNP", inplace=True)
@@ -299,6 +321,8 @@ def run_susiex(
     logger.info(f"Finished SuSiEx on {locus_set}")
     logger.info(f"N of credible set: {len(cs_snp)}")
     logger.info(f"Credible set size: {[len(i) for i in cs_snp]}")
+    logger.info(f"Credible set purity: {purity_list}")
+
     return CredibleSet(
         tool=Method.SUSIEX,
         n_cs=len(cs_snp),
@@ -308,4 +332,5 @@ def run_susiex(
         cs_sizes=[len(i) for i in cs_snp],
         pips=pip,
         parameters=parameters,
+        purity=purity_list if len(purity_list) > 0 else None,
     )

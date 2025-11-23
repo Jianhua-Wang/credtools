@@ -329,15 +329,17 @@ def fine_map(
                 result = tool_func_dict[tool](
                     locus, max_causal=max_causal, **params_dict[tool]
                 )
-                locus_id = getattr(locus, "locus_id", getattr(locus, "name", "locus_0"))
-                if hasattr(result, "copy"):
-                    result_copy = result.copy()
-                else:
-                    result_copy = deepcopy(result)
-                per_locus_results = {locus_id: result_copy}
-                if hasattr(result, "set_per_locus_results"):
-                    result.set_per_locus_results(per_locus_results)
-                return result
+
+            # Set per-locus results and return
+            locus_id = getattr(locus, "locus_id", getattr(locus, "name", "locus_0"))
+            if hasattr(result, "copy"):
+                result_copy = result.copy()
+            else:
+                result_copy = deepcopy(result)
+            per_locus_results = {locus_id: result_copy}
+            if hasattr(result, "set_per_locus_results"):
+                result.set_per_locus_results(per_locus_results)
+            return result
 
         else:
             # Multiple loci: analyze each and combine results
@@ -389,11 +391,14 @@ def fine_map(
 
             # Combine results
             logger.info("Combining credible sets from all loci")
+            # Collect LD matrices for purity calculation
+            ld_list = [locus.ld for locus in locus_set.loci if locus.ld is not None]
             combined = combine_creds(
                 all_creds,
                 combine_cred=combine_cred,
                 combine_pip=combine_pip,
                 jaccard_threshold=jaccard_threshold,
+                ld_matrices=ld_list,
             )
             per_locus_results = {
                 locus.locus_id: cred.copy()
@@ -494,22 +499,51 @@ def pipeline(
             # Create enhanced PIPs DataFrame
             enhanced_pips = creds.create_enhanced_pips_df(locus_set)
 
+            # Extract causal variants and create CS summary BEFORE formatting
+            # (formatting converts PIP to strings which breaks numeric comparisons)
+            locus_id = f"{locus_set.chrom}_{locus_set.start}_{locus_set.end}"
+            causal_variants = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
+            if len(causal_variants) > 0:
+                causal_variants["locus_id"] = locus_id
+                all_credible_sets.append(causal_variants)
+
+            # Create credible sets summary (one row per CS)
+            cs_summary_list = []
+            if len(causal_variants) > 0:
+                from credtools.credibleset import calculate_cs_purity
+
+                for cs_id in sorted(causal_variants["CRED"].unique()):
+                    cs_snps = causal_variants[causal_variants["CRED"] == cs_id]
+                    lead_snp_idx = cs_snps["PIP"].idxmax()
+                    lead_snp = cs_snps.loc[lead_snp_idx, "SNPID"]
+                    cs_size = len(cs_snps)
+                    pip_01 = int((cs_snps["PIP"] >= 0.1).sum())
+                    pip_05 = int((cs_snps["PIP"] >= 0.5).sum())
+                    pip_09 = int((cs_snps["PIP"] >= 0.9).sum())
+
+                    # Calculate purity if LD is available
+                    # Use all LD matrices for multi-ancestry purity calculation
+                    purity = None
+                    ld_list = [locus.ld for locus in locus_set.loci if locus.ld is not None]
+                    if len(ld_list) > 0:
+                        cs_snp_ids = cs_snps["SNPID"].tolist()
+                        purity = calculate_cs_purity(ld_list, cs_snp_ids)
+
+                    cs_summary_list.append({
+                        "locus_id": locus_id,
+                        "cs_id": int(cs_id),
+                        "lead_snp": lead_snp,
+                        "cs_size": cs_size,
+                        "pip_01": pip_01,
+                        "pip_05": pip_05,
+                        "pip_09": pip_09,
+                        "purity": purity,
+                    })
+
             # Get appropriate float formats for columns
             format_dict = create_float_format_dict(enhanced_pips)
 
-            # Save enhanced PIPs with compression
-            output_file = f"{outdir}/pips.txt.gz"
-            enhanced_pips.to_csv(
-                output_file,
-                sep="\t",
-                index=False,
-                compression="gzip",
-                float_format=lambda x: "%.4f" % x,  # Default format
-            )
-
-            # Apply specific formats per column if needed
-            # Note: pandas doesn't support per-column float_format directly in to_csv
-            # So we'll format the DataFrame first
+            # Apply specific formats per column
             for col, fmt in format_dict.items():
                 if col in enhanced_pips.columns:
                     if fmt == "%.3e":
@@ -521,7 +555,8 @@ def pipeline(
                             lambda x: f"{x:.4f}" if pd.notna(x) else ""
                         )
 
-            # Save with formatted values
+            # Save formatted enhanced PIPs
+            output_file = f"{outdir}/pips.txt.gz"
             enhanced_pips.to_csv(
                 output_file,
                 sep="\t",
@@ -529,19 +564,23 @@ def pipeline(
                 compression="gzip",
             )
 
-            # Create credible sets summary (all SNPs with CRED != 0)
-            cs_summary = enhanced_pips[enhanced_pips["CRED"] != 0].copy()
-            if len(cs_summary) > 0:
-                cs_summary["locus_id"] = (
-                    f"{locus_set.chrom}_{locus_set.start}_{locus_set.end}"
+            # Save causal variants
+            if len(causal_variants) > 0:
+                causal_variants.to_csv(
+                    f"{outdir}/causal_variants.txt.gz",
+                    sep="\t",
+                    index=False,
+                    compression="gzip",
                 )
-                cs_summary.to_csv(
+
+            if cs_summary_list:
+                cs_summary_df = pd.DataFrame(cs_summary_list)
+                cs_summary_df.to_csv(
                     f"{outdir}/credible_sets_summary.txt.gz",
                     sep="\t",
                     index=False,
                     compression="gzip",
                 )
-                all_credible_sets.append(cs_summary)
 
             # Save parameters (without lead_snps, snps, cs_sizes)
             parameters_dict = {
