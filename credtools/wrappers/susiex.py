@@ -23,10 +23,10 @@ def run_susiex(
     coverage: float = 0.95,
     pval_thresh: float = 1,
     maf_thresh: float = 0.005,
-    mult_step: bool = True,
+    mult_step: bool = False,
     keep_ambig: bool = True,
     n_threads: int = 1,
-    min_purity: float = 0.5,
+    min_abs_corr: float = 0.1,
     max_iter: int = 100,
     tol: float = 1e-3,
     temp_dir: Optional[str] = None,
@@ -62,9 +62,12 @@ def run_susiex(
         Variants with MAF below this threshold in any population are
         excluded to avoid spurious associations from rare variants.
     mult_step : bool, optional
-        Whether to use multi-step refinement procedure, by default True.
+        Whether to use multi-step refinement procedure, by default False.
         Multi-step refinement can improve fine-mapping resolution by
         iteratively updating the analysis with refined credible sets.
+        Note: When using credtools' adaptive_max_causal, keep this False
+        to avoid conflicts between SuSiEx's internal refinement and
+        credtools' adaptive logic.
     keep_ambig : bool, optional
         Whether to retain ambiguous variants in the analysis, by default True.
         Ambiguous variants are those with unclear strand orientation
@@ -210,7 +213,7 @@ def run_susiex(
         "mult_step": mult_step,
         "keep_ambig": keep_ambig,
         "n_threads": n_threads,
-        "min_purity": min_purity,
+        "min_purity": min_abs_corr,
         "max_iter": max_iter,
         "tol": tol,
     }
@@ -268,7 +271,7 @@ def run_susiex(
         f"--mult-step={mult_step}",
         f"--keep-ambig={keep_ambig}",
         f"--threads={n_threads}",
-        f"--min_purity={min_purity}",
+        f"--min_purity={min_abs_corr}",
         f"--max_iter={max_iter}",
         f"--tol={tol}",
     ]

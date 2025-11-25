@@ -1588,7 +1588,7 @@ def run_pipeline(
         False,
         "--mult-step",
         "-ms",
-        help="Whether to use multiple steps in SuSiEx.",
+        help="Whether to use multiple steps in SuSiEx. Keep False when using --adaptive-max-causal.",
         rich_help_panel="SuSiEx",
     ),
     keep_ambig: bool = typer.Option(

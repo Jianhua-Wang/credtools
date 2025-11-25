@@ -602,6 +602,8 @@ def continuous_jaccard(dict1: Dict[str, float], dict2: Dict[str, float]) -> floa
 
     Formula: ∑min(xi,yi)/∑max(xi,yi) where xi, yi are PIP values or 0 if missing
 
+    Citation: Yuan, K. et al. (2024) Nature Genetics https://doi.org/10.1038/s41588-024-01870-z.
+
     Parameters
     ----------
     dict1 : Dict[str, float]

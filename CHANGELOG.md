@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.0] (2025-11-25)
+
+### Added
+- **Adaptive max_causal for multi-input tools**: Extended adaptive max_causal parameter tuning to multi-input fine-mapping tools (multisusie and susiex)
+  - Added `_adaptive_fine_map_multi()` function for LocusSet-level adaptive logic
+  - Same algorithm as single-input tools: increase max_causal by 5 (up to 20) when saturated, decrease by 1 (down to 1) on failure
+  - Multi-input tools now support `--adaptive-max-causal` flag for automatic parameter optimization
+  - Unified adaptive strategy across all supported fine-mapping tools
+
+### Changed
+- **SuSiEx mult_step default**: Changed default value from `True` to `False` to avoid conflicts with credtools' adaptive logic
+  - Users can still enable SuSiEx's internal multi-step refinement by explicitly setting `--mult-step`
+  - Updated documentation to clarify interaction between `--mult-step` and `--adaptive-max-causal`
+
+### Enhanced
+- **Documentation improvements**:
+  - Updated `adaptive_max_causal` parameter documentation to include multi-input tool support
+  - Enhanced CLI help text for `--mult-step` option with usage guidance
+  - Added detailed docstrings explaining adaptive logic for both single-locus and LocusSet processing
+
+### Technical Details
+- Single-input tools (finemap, susie, rsparsepro): Adaptive logic applies per-locus
+- Multi-input tools (multisusie, susiex): Adaptive logic applies to entire LocusSet
+- Backward compatible: `adaptive_max_causal` defaults to `False`, existing workflows unchanged
+
 ## [0.0.41] (2025-11-22)
 
 ### Fixed

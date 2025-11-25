@@ -161,6 +161,103 @@ def _adaptive_fine_map(
     return _empty_credible_set(tool)
 
 
+def _adaptive_fine_map_multi(
+    locus_set: LocusSet,
+    tool: str,
+    initial_max_causal: int,
+    tool_func: Callable,
+    params: dict,
+) -> CredibleSet:
+    """
+    Implement adaptive max_causal logic for multi-input fine-mapping tools.
+
+    This function applies the same adaptive algorithm as _adaptive_fine_map(),
+    but operates on a LocusSet instead of a single Locus. The algorithm:
+
+    Phase 1 (Increase): Start with initial_max_causal, if n_cs >= max_causal,
+                        increase by 5 (max 20)
+    Phase 2 (Decrease): If initial fails, decrease from initial-1 to 1
+
+    Parameters
+    ----------
+    locus_set : LocusSet
+        The locus set to fine-map (containing multiple loci/populations).
+    tool : str
+        The fine-mapping tool name ("multisusie" or "susiex").
+    initial_max_causal : int
+        Initial max_causal value to try.
+    tool_func : Callable
+        The fine-mapping tool function.
+    params : dict
+        Parameters for the tool function.
+
+    Returns
+    -------
+    CredibleSet
+        Fine-mapping result or empty result if all attempts fail.
+    """
+    max_causal = initial_max_causal
+    logger.info(
+        f"Starting adaptive fine-mapping with {tool} on {locus_set.n_loci} loci, "
+        f"initial max_causal={max_causal}"
+    )
+
+    # Phase 1: Try initial max_causal and increase if needed
+    try:
+        result = tool_func(locus_set, max_causal=max_causal, **params)
+        logger.info(
+            f"Initial attempt: found {result.n_cs} credible sets with max_causal={max_causal}"
+        )
+
+        # Success case: found some credible sets but not saturated
+        if _is_success(result, max_causal):
+            logger.info(
+                f"Adaptive fine-mapping successful with max_causal={max_causal}"
+            )
+            return result
+
+        # Too many credible sets: increase max_causal
+        while result.n_cs >= max_causal and max_causal <= 20:
+            max_causal += 5
+            logger.info(
+                f"Too many credible sets found, increasing max_causal to {max_causal}"
+            )
+            try:
+                result = tool_func(locus_set, max_causal=max_causal, **params)
+                logger.info(
+                    f"Attempt with max_causal={max_causal}: found {result.n_cs} credible sets"
+                )
+                if result.n_cs < max_causal:
+                    logger.info(
+                        f"Adaptive fine-mapping successful after increasing max_causal to {max_causal}"
+                    )
+                    return result
+            except Exception as e:
+                logger.warning(f"Failed with max_causal={max_causal}: {e}")
+                break
+
+    except Exception as e:
+        logger.info(f"Initial attempt failed with max_causal={initial_max_causal}: {e}")
+
+    # Phase 2: If initial attempt failed, decrease max_causal
+    max_causal = initial_max_causal - 1
+    while max_causal >= 1:
+        logger.info(f"Trying reduced max_causal={max_causal}")
+        try:
+            result = tool_func(locus_set, max_causal=max_causal, **params)
+            logger.info(
+                f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
+            )
+            return result
+        except Exception as e:
+            logger.info(f"Failed with max_causal={max_causal}: {e}")
+            max_causal -= 1
+
+    # All attempts failed
+    logger.warning(f"All adaptive attempts failed for {tool}, returning empty result")
+    return _empty_credible_set(tool)
+
+
 def fine_map(
     locus_set: LocusSet,
     tool: str = "susie",
@@ -220,7 +317,7 @@ def fine_map(
         When True, automatically adjusts max_causal based on results:
         - If credible sets >= max_causal, increase by 5 (up to 20)
         - If convergence fails, decrease by 1 (down to 1)
-        Only applies to finemap, susie, rsparsepro.
+        Applies to: finemap, susie, rsparsepro (per-locus), multisusie, susiex (LocusSet-level).
     strategy : str, optional
         DEPRECATED. This parameter is no longer used and will be removed in a future version.
         The strategy is now automatically determined based on the tool and data structure.
@@ -284,9 +381,21 @@ def fine_map(
     if tool in multi_input_tools:
         # Multi-input tools: directly process the entire LocusSet
         logger.info(f"Using multi-input tool {tool} to process {locus_set.n_loci} loci")
-        combined = tool_func_dict[tool](
-            locus_set, max_causal=max_causal, **params_dict[tool]
-        )
+
+        # Use adaptive logic if enabled
+        if adaptive_max_causal:
+            combined = _adaptive_fine_map_multi(
+                locus_set,
+                tool,
+                max_causal,
+                tool_func_dict[tool],
+                params_dict[tool],
+            )
+        else:
+            combined = tool_func_dict[tool](
+                locus_set, max_causal=max_causal, **params_dict[tool]
+            )
+
         combined.set_per_locus_results({})
         return combined
 
