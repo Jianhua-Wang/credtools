@@ -26,7 +26,7 @@ def run_susiex(
     mult_step: bool = False,
     keep_ambig: bool = True,
     n_threads: int = 1,
-    min_abs_corr: float = 0.1,
+    purity: float = 0.0,
     max_iter: int = 100,
     tol: float = 1e-3,
     temp_dir: Optional[str] = None,
@@ -75,10 +75,11 @@ def run_susiex(
     n_threads : int, optional
         Number of parallel threads for computation, by default 1.
         Higher values can speed up analysis but require more memory.
-    min_purity : float, optional
-        Minimum purity threshold for credible sets, by default 0.5
-        Credible sets with purity below this threshold may be filtered
-        out as potentially unreliable.
+    purity : float, optional
+        Minimum purity threshold for credible set filtering, by default 0.0.
+        Purity is the minimum absolute LD correlation between all variant pairs in a credible set.
+        Credible sets with purity below this threshold are filtered out by the SuSiEx tool.
+        Set to 0.0 (default) for no filtering.
     max_iter : int, optional
         Maximum number of iterations for the optimization algorithm, by default 100.
         More iterations may improve convergence but increase runtime.
@@ -213,7 +214,7 @@ def run_susiex(
         "mult_step": mult_step,
         "keep_ambig": keep_ambig,
         "n_threads": n_threads,
-        "min_purity": min_abs_corr,
+        "purity": purity,
         "max_iter": max_iter,
         "tol": tol,
     }
@@ -271,7 +272,7 @@ def run_susiex(
         f"--mult-step={mult_step}",
         f"--keep-ambig={keep_ambig}",
         f"--threads={n_threads}",
-        f"--min_purity={min_abs_corr}",
+        f"--min_purity={purity}",
         f"--max_iter={max_iter}",
         f"--tol={tol}",
     ]

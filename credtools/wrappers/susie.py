@@ -21,7 +21,7 @@ def run_susie(
     coverage: float = 0.95,
     max_iter: int = 100,
     estimate_residual_variance: bool = False,
-    min_abs_corr: float = 0.1,
+    purity: float = 0.0,
     convergence_tol: float = 1e-3,
     significant_threshold: float = 5e-8,
 ) -> CredibleSet:
@@ -52,9 +52,11 @@ def run_susie(
     estimate_residual_variance : bool, optional
         Whether to estimate residual variance from data, by default False.
         If False, residual variance is set to 1 (appropriate for z-scores).
-    min_abs_corr : float, optional
-        Minimum absolute correlation threshold for credible set purity, by default 0.1.
-        Credible sets with pairwise correlations below this threshold may be filtered.
+    purity : float, optional
+        Minimum purity threshold for credible set filtering, by default 0.0.
+        Purity is the minimum absolute LD correlation between all variant pairs in a credible set.
+        Credible sets with purity below this threshold are filtered out.
+        Set to 0.0 (default) for no filtering.
     convergence_tol : float, optional
         Convergence tolerance for the ELBO (Evidence Lower BOund), by default 1e-3.
         Algorithm stops when ELBO change falls below this threshold.
@@ -207,7 +209,7 @@ def run_susie(
         coverage=coverage,
         max_iter=max_iter,
         estimate_residual_variance=estimate_residual_variance,
-        min_abs_corr=min_abs_corr,
+        purity=purity,
         tol=convergence_tol,
     )
     pip = s["pip"]

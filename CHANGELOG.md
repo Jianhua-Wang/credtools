@@ -1,5 +1,74 @@
 # Changelog
 
+## [0.2.0] (2025-11-25)
+
+### BREAKING CHANGES
+- **Renamed `min_abs_corr` parameter to `purity`** across all CLI commands and Python API
+  - CLI: `--min-abs-corr` flag replaced with `--purity` (short form: `-p`)
+  - Python API: `min_abs_corr=` parameter renamed to `purity=` in all function signatures
+  - **Migration required**: Update all scripts and workflows to use the new parameter name
+- **Changed default purity threshold from 0.5/0.1 to 0.0** (no filtering by default)
+  - Previous behavior: SuSiE family tools had `min_abs_corr=0.1` (function) or 0.5 (CLI)
+  - New behavior: `purity=0.0` means no filtering unless explicitly set by user
+  - Other tools (ABF, FINEMAP, RSparsePro) previously had no purity filtering
+  - **Migration impact**: Users must explicitly set `--purity` to filter credible sets
+
+### Added
+- **Unified purity calculation and filtering for all fine-mapping tools**
+  - All 7 tools now calculate and store purity values in CredibleSet objects
+  - Purity definition: minimum absolute LD correlation between all variant pairs in a credible set
+  - Tools now include: ABF, ABF+COJO, FINEMAP, RSparsePro (previously unsupported)
+  - Multi-ancestry purity: Element-wise maximum LD across populations, then minimum
+- **Centralized purity filtering logic**
+  - New `filter_credset_by_purity()` function in `credibleset.py`
+  - Filtering applied in `fine_map()` and `combine_creds()` functions
+  - Consistent behavior across all tools and analysis strategies
+- **Enhanced `combine_creds()` function**
+  - Added `min_purity` parameter for filtering combined credible sets
+  - Purity filtering applied after merging credible sets from multiple tools/loci
+
+### Changed
+- **More intuitive parameter naming**: "purity" more clearly describes the metric than "min_abs_corr"
+- **Opt-in filtering model**: Users choose when to apply purity filtering (default: no filtering)
+- **Transparent purity values**: All tools now expose purity calculations for user inspection
+
+### Migration Guide
+
+#### For CLI Users
+```bash
+# Old command (no longer works)
+credtools finemap --min-abs-corr 0.5 [other options]
+
+# New command
+credtools finemap --purity 0.5 [other options]
+
+# Or use short form
+credtools finemap -p 0.5 [other options]
+```
+
+#### For Python API Users
+```python
+# Old code (no longer works)
+from credtools import fine_map
+result = fine_map(locus_set, tool="susie", min_abs_corr=0.5)
+
+# New code
+from credtools import fine_map
+result = fine_map(locus_set, tool="susie", purity=0.5)
+```
+
+#### Recommended Actions
+1. **Update all scripts**: Replace `--min-abs-corr` with `--purity` and `min_abs_corr=` with `purity=`
+2. **Review filtering needs**: Since default changed to 0.0 (no filtering), explicitly set `--purity` if needed
+3. **For old SuSiE behavior**: Use `--purity 0.1` to match previous SuSiE function default
+4. **Check purity values**: All tools now store purity - inspect `credset.purity` for quality assessment
+
+### Benefits
+- **Consistency**: Same purity filtering available for all 7 fine-mapping tools
+- **Flexibility**: Users control filtering threshold per analysis
+- **Transparency**: Purity values accessible for all credible sets
+- **Better quality control**: Unified metric for assessing credible set reliability
+
 ## [0.1.0] (2025-11-25)
 
 ### Added

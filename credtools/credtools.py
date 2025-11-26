@@ -339,6 +339,9 @@ def fine_map(
 
     kwargs.setdefault("significant_threshold", significant_threshold)
 
+    # Extract purity parameter for centralized filtering
+    purity_threshold = kwargs.get("purity", 0.0)
+
     # Handle timeout defaults for FINEMAP
     if timeout_minutes is None and tool == "finemap":
         timeout_minutes = 30.0
@@ -508,6 +511,7 @@ def fine_map(
                 combine_pip=combine_pip,
                 jaccard_threshold=jaccard_threshold,
                 ld_matrices=ld_list,
+                min_purity=purity_threshold,
             )
             per_locus_results = {
                 locus.locus_id: cred.copy()

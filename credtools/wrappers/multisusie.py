@@ -31,7 +31,7 @@ def run_multisusie(
     prior_tol: float = 1e-9,
     max_iter: int = 100,
     tol: float = 1e-3,
-    min_abs_corr: float = 0.1,
+    purity: float = 0.1,
 ) -> CredibleSet:
     """
     Run MultiSuSiE for multi-ancestry fine-mapping analysis.
@@ -102,7 +102,7 @@ def run_multisusie(
     tol : float, optional
         Convergence tolerance for the ELBO, by default 1e-3.
         Algorithm stops when ELBO change falls below this threshold.
-    min_abs_corr : float, optional
+    purity : float, optional
         Minimum absolute correlation for credible set purity, by default 0.1.
         Credible sets with pairwise correlations below this threshold
         may be filtered based on purity criteria.
@@ -223,7 +223,7 @@ def run_multisusie(
         "prior_tol": prior_tol,
         "max_iter": max_iter,
         "tol": tol,
-        "min_abs_corr": min_abs_corr,
+        "purity": purity,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
 
@@ -294,7 +294,7 @@ def run_multisusie(
         pop_spec_effect_priors=pop_spec_effect_priors,
         iter_before_zeroing_effects=iter_before_zeroing_effects,
         prior_tol=prior_tol,
-        min_abs_corr=min_abs_corr,
+        purity=purity,
         float_type=np.float32,
         low_memory_mode=False,
         recover_R=False,

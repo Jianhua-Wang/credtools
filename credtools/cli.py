@@ -1211,8 +1211,13 @@ def run_fine_map(
     estimate_residual_variance: bool = typer.Option(
         False, "--estimate-residual-variance", "-er", help="Estimate residual variance."
     ),
-    min_abs_corr: float = typer.Option(
-        0.5, "--min-abs-corr", "-mc", help="Minimum absolute correlation."
+    purity: float = typer.Option(
+        0.0,
+        "--purity",
+        "-p",
+        help="Minimum purity threshold for credible set filtering. "
+        "Purity is the minimum absolute LD correlation between variants in a credible set. "
+        "Set to 0 (default) for no filtering.",
     ),
     convergence_tol: float = typer.Option(
         1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."
@@ -1302,7 +1307,7 @@ def run_fine_map(
         "jaccard_threshold": jaccard_threshold,
         "max_iter": max_iter,
         "estimate_residual_variance": estimate_residual_variance,
-        "min_abs_corr": min_abs_corr,
+        "purity": purity,
         "convergence_tol": convergence_tol,
         "significant_threshold": significant_threshold,
     }
@@ -1514,11 +1519,13 @@ def run_pipeline(
         help="Estimate residual variance.",
         rich_help_panel="SuSie",
     ),
-    min_abs_corr: float = typer.Option(
-        0.5,
-        "--min-abs-corr",
-        "-mc",
-        help="Minimum absolute correlation.",
+    purity: float = typer.Option(
+        0.0,
+        "--purity",
+        "-p",
+        help="Minimum purity threshold for credible set filtering. "
+        "Purity is the minimum absolute LD correlation between variants in a credible set. "
+        "Set to 0 (default) for no filtering.",
         rich_help_panel="SuSie",
     ),
     convergence_tol: float = typer.Option(
@@ -1675,7 +1682,7 @@ def run_pipeline(
         help="Tolerance for prior variance.",
         rich_help_panel="MULTISUSIE",
     ),
-    # min_abs_corr: float = typer.Option(0, "--min-abs-corr", "-mc", help="Minimum absolute correlation.", rich_help_panel="MULTISUSIE"),
+    # purity: float = typer.Option(0, "--min-abs-corr", "-mc", help="Minimum absolute correlation.", rich_help_panel="MULTISUSIE"),
     # max_iter: int = typer.Option(100, "--max-iter", "-i", help="Maximum number of iterations.", rich_help_panel="MULTISUSIE"),
     # tol: float = typer.Option(1e-3, "--tol", "-t", help="Convergence tolerance.", rich_help_panel="MULTISUSIE"),
     calculate_lambda_s: bool = typer.Option(
@@ -1733,7 +1740,7 @@ def run_pipeline(
                 # susie parameters
                 max_iter=max_iter,
                 estimate_residual_variance=estimate_residual_variance,
-                min_abs_corr=min_abs_corr,
+                purity=purity,
                 convergence_tol=convergence_tol,
                 # ABF parameters
                 var_prior=var_prior,

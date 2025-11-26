@@ -86,7 +86,7 @@ def multisusie_rss(
     tol=1e-3,
     verbose=False,
     coverage=0.95,
-    min_abs_corr=0.0,
+    purity=0.0,
     float_type=np.float32,
     low_memory_mode=False,
     recover_R=False,
@@ -177,9 +177,9 @@ def multisusie_rss(
         are returned if the ELBO increases by less than tol in an ieration
     verbose: boolean which indicates if an progress bar should be displayed
     coverage: float representing the minimum coverage of credible sets
-    min_abs_corr: float representing the minimum absolute correlation between
+    purity: float representing the minimum absolute correlation between
         any pair of variants in a credible set. For each pair of variants,
-        the max is taken across ancestries. In the case where min_abs_corr = 0,
+        the max is taken across ancestries. In the case where purity = 0,
         low_memory_mode = True, and recover_R = False, the purity of credible
         sets will not be calculated.
     float_type: numpy float type used. Set to np.float32 to minimize memory
@@ -419,7 +419,7 @@ def multisusie_rss(
         pop_spec_effect_priors=pop_spec_effect_priors,
         R_list=R_list,
         coverage=coverage,
-        min_abs_corr=min_abs_corr,
+        purity=purity,
         float_type=float_type,
         low_memory_mode=low_memory_mode,
         recover_R=recover_R,
@@ -515,7 +515,7 @@ def susie_multi_ss(
     verbose=False,
     R_list=None,
     coverage=0.95,
-    min_abs_corr=0.5,
+    purity=0.5,
     float_type=np.float32,
     low_memory_mode=False,
     recover_R=False,
@@ -567,12 +567,12 @@ def susie_multi_ss(
         are returned if the ELBO increases by less than tol in an ieration
     verbose: boolean which indicates if an progress bar should be displayed
     R_list: length K list of PxP numpy arrays representing the LD correlation.
-        If set to None, and min_abs_corr > 0, the LD correlation matrices will
+        If set to None, and purity > 0, the LD correlation matrices will
         be recovered from XTX_list.
     coverage: float representing the minimum coverage of credible sets
-    min_abs_corr: float representing the minimum absolute correlation between
+    purity: float representing the minimum absolute correlation between
         any pair of variants in a credible set. For each pair of variants,
-        the max is taken across ancestries. In the case where min_abs_corr = 0,
+        the max is taken across ancestries. In the case where purity = 0,
         low_memory_mode = True, and recover_R = False, the purity of credible
         sets will not be calculated.
     float_type: numpy float type used. Set to np.float32 to minimize memory
@@ -773,20 +773,20 @@ def susie_multi_ss(
         ]
     )
 
-    if (low_memory_mode and (min_abs_corr > 0)) or (low_memory_mode and recover_R):
+    if (low_memory_mode and (purity > 0)) or (low_memory_mode and recover_R):
         for i in range(len(XTX_list)):
             recover_R_from_XTX(XTX_list[i], X_l2_arr[i])
         R_list = XTX_list
 
-    print(min_abs_corr, low_memory_mode, recover_R)
+    print(purity, low_memory_mode, recover_R)
     s.sets = susie_get_cs(  # type: ignore
         s=s,
         R_list=R_list,
         coverage=coverage,
-        min_abs_corr=min_abs_corr,
+        purity=purity,
         dedup=True,
         n_purity=np.inf,  # type: ignore
-        calculate_purity=(not low_memory_mode) or (min_abs_corr > 0) or recover_R,
+        calculate_purity=(not low_memory_mode) or (purity > 0) or recover_R,
     )
 
     return s
@@ -1779,7 +1779,7 @@ def susie_get_cs(
     s,
     R_list,
     coverage=0.95,
-    min_abs_corr=0.5,
+    purity=0.5,
     dedup=True,
     n_purity=100,
     calculate_purity=True,
@@ -1799,7 +1799,7 @@ def susie_get_cs(
         List of LD correlation matrices for each population.
     coverage : float, optional
         Desired coverage level for the credible sets (default is 0.95).
-    min_abs_corr : float, optional
+    purity : float, optional
         Minimum absolute correlation threshold for credible sets (default is 0.5).
     dedup : bool, optional
         Whether to deduplicate the credible sets (default is True).
@@ -1840,14 +1840,14 @@ def susie_get_cs(
         purity = np.array(
             [
                 (
-                    get_purity_x(cs[i], R_list, min_abs_corr, n_purity, X_list)
+                    get_purity_x(cs[i], R_list, purity, n_purity, X_list)
                     if include_mask[i]
                     else np.nan
                 )
                 for i in range(len(cs))
             ]
         )
-        include_mask[purity < min_abs_corr] = False
+        include_mask[purity < purity] = False
     else:
         purity = np.array([np.nan for i in range(len(cs))])
 

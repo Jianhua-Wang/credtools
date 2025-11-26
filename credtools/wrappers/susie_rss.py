@@ -23,7 +23,7 @@ def susie_get_cs(
     X: Optional[np.ndarray] = None,
     Xcorr: Optional[np.ndarray] = None,
     coverage: float = 0.95,
-    min_abs_corr: float = 0.5,
+    purity: float = 0.0,
     dedup: bool = True,
     squared: bool = False,
     check_symmetric: bool = True,
@@ -53,10 +53,11 @@ def susie_get_cs(
     coverage : float, optional
         Target coverage probability for credible sets, by default 0.95.
         Each credible set will contain variants with cumulative PIP ≥ coverage.
-    min_abs_corr : float, optional
-        Minimum absolute correlation threshold for credible set purity, by default 0.5.
-        Credible sets with maximum pairwise correlation below this threshold
-        are filtered out as potentially unreliable.
+    purity : float, optional
+        Minimum purity threshold for credible set filtering, by default 0.0.
+        Purity is the minimum absolute LD correlation between all variant pairs in a credible set.
+        Credible sets with purity below this threshold are filtered out.
+        Set to 0.0 (default) for no filtering.
     dedup : bool, optional
         Whether to remove duplicate credible sets, by default True.
         Duplicate sets can arise when multiple components identify the same signal.
@@ -107,12 +108,12 @@ def susie_get_cs(
        correlation threshold
 
     Purity metrics provide insight into credible set quality:
-    - **min_abs_corr**: Minimum pairwise correlation (key quality metric)
+    - **min_abs_corr**: Minimum pairwise correlation (key quality metric = purity)
     - **mean_abs_corr**: Average pairwise correlation
     - **median_abs_corr**: Median pairwise correlation
 
     High-quality credible sets should have:
-    - min_abs_corr ≥ 0.5 (variants in strong LD)
+    - purity ≥ 0.5 (variants in strong LD)
     - Compact size (< 100 variants typically)
     - High coverage (> 0.95 for reliable inference)
 
@@ -132,7 +133,7 @@ def susie_get_cs(
     ...     susie_fit,
     ...     Xcorr=ld_matrix,
     ...     coverage=0.99,
-    ...     min_abs_corr=0.8
+    ...     purity=0.8
     ... )
     >>> if cs_results['cs'] is not None:
     ...     purity = cs_results['purity']
@@ -208,36 +209,36 @@ def susie_get_cs(
             "requested_coverage": coverage,
         }
     else:
-        purity = []
+        purity_arr = []
         for i, c in enumerate(cs):
             if null_index > 0 and null_index in c:
-                purity.append([-9, -9, -9])
+                purity_arr.append([-9, -9, -9])
             else:
-                purity.append(get_purity(c, X, Xcorr, squared, n_purity))  # type: ignore
+                purity_arr.append(get_purity(c, X, Xcorr, squared, n_purity))  # type: ignore
 
-        purity = np.array(purity)
+        purity_arr = np.array(purity_arr)
         purity_df = {
-            "min_sq_corr" if squared else "min_abs_corr": purity[:, 0],
-            "mean_sq_corr" if squared else "mean_abs_corr": purity[:, 1],
-            "median_sq_corr" if squared else "median_abs_corr": purity[:, 2],
+            "min_sq_corr" if squared else "min_abs_corr": purity_arr[:, 0],
+            "mean_sq_corr" if squared else "mean_abs_corr": purity_arr[:, 1],
+            "median_sq_corr" if squared else "median_abs_corr": purity_arr[:, 2],
         }
 
-        threshold = min_abs_corr**2 if squared else min_abs_corr
-        is_pure = np.where(purity[:, 0] >= threshold)[0]
+        threshold = purity**2 if squared else purity
+        is_pure = np.where(purity_arr[:, 0] >= threshold)[0]
 
         if len(is_pure) > 0:
             cs = [cs[i] for i in is_pure]
-            purity = {k: v[is_pure] for k, v in purity_df.items()}
+            purity_dict = {k: v[is_pure] for k, v in purity_df.items()}
             row_names = [f"L{i}" for i in np.where(include_idx)[0][is_pure]]
             cs_dict = dict(zip(row_names, cs))
 
             # Re-order based on purity
-            ordering = np.argsort(purity["min_sq_corr" if squared else "min_abs_corr"])[
+            ordering = np.argsort(purity_dict["min_sq_corr" if squared else "min_abs_corr"])[
                 ::-1
             ]
             return {
                 "cs": {row_names[i]: cs[i] for i in ordering},
-                "purity": {k: v[ordering] for k, v in purity.items()},
+                "purity": {k: v[ordering] for k, v in purity_dict.items()},
                 "cs_index": np.where(include_idx)[0][is_pure][ordering],
                 "coverage": claimed_coverage[is_pure][ordering],
                 "requested_coverage": coverage,

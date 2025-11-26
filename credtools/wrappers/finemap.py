@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from credtools.constants import ColName, Method
-from credtools.credibleset import CredibleSet
+from credtools.credibleset import CredibleSet, calculate_cs_purity
 from credtools.locus import Locus, intersect_sumstat_ld
 from credtools.utils import io_in_tempdir, tool_manager
 
@@ -319,6 +319,12 @@ def run_finemap(
     logger.info(f"Finished FINEMAP on {locus}")
     logger.info(f"N of credible set: {n_cs}")
     logger.info(f"Credible set size: {cs_sizes}")
+
+    # Calculate purity for each credible set
+    purity = None
+    if n_cs > 0 and locus.ld is not None:
+        purity = [calculate_cs_purity(locus.ld, snps) for snps in cs_snps]
+
     return CredibleSet(
         tool=Method.FINEMAP,
         n_cs=n_cs,
@@ -328,4 +334,5 @@ def run_finemap(
         cs_sizes=cs_sizes,
         pips=pip,
         parameters=parameters,
+        purity=purity,
     )

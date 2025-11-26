@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from credtools.constants import ColName, Method
-from credtools.credibleset import CredibleSet, combine_creds
+from credtools.credibleset import CredibleSet, calculate_cs_purity, combine_creds
 from credtools.locus import Locus
 
 logger = logging.getLogger("ABF")
@@ -195,6 +195,12 @@ def run_abf(
     logger.info(f"Finished ABF on {locus}")
     logger.info(f"N of credible set: {len(lead_snps)}")
     logger.info(f"Credible set size: [{len(cs_snps)}]")
+
+    # Calculate purity if LD matrix available
+    purity = None
+    if len(cs_snps) > 0 and locus.ld is not None:
+        purity = [calculate_cs_purity(locus.ld, cs_snps)]
+
     return CredibleSet(
         tool=Method.ABF,
         n_cs=1 if len(cs_snps) > 0 else 0,
@@ -204,4 +210,5 @@ def run_abf(
         cs_sizes=[len(cs_snps)] if len(cs_snps) > 0 else [],
         pips=pips,
         parameters=parameters,
+        purity=purity,
     )

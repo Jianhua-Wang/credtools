@@ -653,7 +653,7 @@ toml = [
 
 [[package]]
 name = "credtools"
-version = "0.0.40"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "cojopy" },

@@ -13,7 +13,7 @@ import pandas as pd
 from scipy.special import softmax
 
 from credtools.constants import ColName, Method
-from credtools.credibleset import CredibleSet
+from credtools.credibleset import CredibleSet, calculate_cs_purity
 from credtools.locus import Locus, intersect_sumstat_ld
 
 logger = logging.getLogger("RSparsePro")
@@ -831,6 +831,12 @@ def run_rsparsepro(
     cs_sizes = [len(i) for i in cs_snps]
     logger.info(f"N of credible set: {len(cs_snps)}")
     logger.info(f"Credible set size: {cs_sizes}")
+
+    # Calculate purity for each credible set
+    purity = None
+    if len(cs_snps) > 0 and locus.ld is not None:
+        purity = [calculate_cs_purity(locus.ld, snps) for snps in cs_snps]
+
     return CredibleSet(
         tool=Method.RSparsePro,
         n_cs=len(cs_snps),
@@ -840,4 +846,5 @@ def run_rsparsepro(
         cs_sizes=cs_sizes,
         pips=pips,
         parameters=parameters,
+        purity=purity,
     )

@@ -11,7 +11,7 @@ from cojopy.cojopy import COJO
 
 from credtools.cojo import conditional_selection
 from credtools.constants import ColName, Method
-from credtools.credibleset import CredibleSet
+from credtools.credibleset import CredibleSet, calculate_cs_purity
 from credtools.locus import Locus
 from credtools.wrappers.abf import run_abf
 
@@ -348,6 +348,13 @@ def _run_conditional_abf_analysis(
     )
     logger.info(f"Lead SNPs: {all_lead_snps}")
 
+    # Calculate purity for each credible set
+    purity = None
+    if n_cs > 0 and locus.ld is not None:
+        purity = [
+            calculate_cs_purity(locus.ld, cs_snps) for cs_snps in all_credible_sets
+        ]
+
     return CredibleSet(
         tool=f"{Method.ABF}_COJO",
         n_cs=n_cs,
@@ -357,6 +364,7 @@ def _run_conditional_abf_analysis(
         cs_sizes=all_cs_sizes,
         pips=combined_pips,
         parameters=parameters,
+        purity=purity,
     )
 
 

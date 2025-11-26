@@ -468,6 +468,7 @@ def combine_creds(
     combine_pip: str = "max",
     jaccard_threshold: float = 0.1,
     ld_matrices: Optional[List["LDMatrix"]] = None,
+    min_purity: float = 0.0,
 ) -> CredibleSet:
     """
     Combine credible sets from multiple tools.
@@ -501,6 +502,11 @@ def combine_creds(
         If provided, purity will be calculated for merged credible sets using
         multi-ancestry approach (element-wise max across populations).
         If None, purity will not be calculated for the merged credible sets.
+    min_purity : float, optional
+        Minimum purity threshold for filtering credible sets, by default 0.0.
+        After combining credible sets, only those with purity >= min_purity will be kept.
+        Purity is the minimum absolute LD R value between all SNP pairs in a credible set.
+        Set to 0.0 (default) for no filtering.
 
     Returns
     -------
@@ -593,6 +599,11 @@ def combine_creds(
         parameters=paras,
         purity=purity,
     )
+
+    # Apply purity filtering if requested
+    if min_purity > 0:
+        merged = filter_credset_by_purity(merged, min_purity=min_purity)
+
     return merged
 
 
@@ -910,3 +921,111 @@ def calculate_cs_purity(
         return None
 
     return float(np.min(r_values))
+
+
+def filter_credset_by_purity(
+    credset: "CredibleSet",
+    min_purity: float = 0.0,
+) -> "CredibleSet":
+    """
+    Filter credible sets by purity threshold.
+
+    Removes credible sets that do not meet the minimum purity requirement.
+    Purity is defined as the minimum absolute LD R value between all pairs
+    of SNPs in the credible set.
+
+    Parameters
+    ----------
+    credset : CredibleSet
+        CredibleSet object containing credible sets and their purity values.
+    min_purity : float, optional
+        Minimum purity threshold for filtering, by default 0.0.
+        Credible sets with purity < min_purity will be removed.
+        Set to 0.0 (default) for no filtering.
+
+    Returns
+    -------
+    CredibleSet
+        New CredibleSet object with only credible sets meeting purity threshold.
+        If no credible sets pass filtering, returns empty CredibleSet (n_cs=0).
+
+    Notes
+    -----
+    - If credset.purity is None or empty, no filtering is applied (returns original credset)
+    - If min_purity <= 0, no filtering is applied (returns original credset)
+    - Filtered credible sets maintain their original ordering
+    - PIPs are preserved for all variants (not filtered)
+
+    Examples
+    --------
+    >>> # Filter credible sets to keep only high-purity sets (purity >= 0.5)
+    >>> filtered_cs = filter_credset_by_purity(credset, min_purity=0.5)
+    >>> print(f"Original: {credset.n_cs} CS, Filtered: {filtered_cs.n_cs} CS")
+    Original: 5 CS, Filtered: 3 CS
+
+    >>> # No filtering (default)
+    >>> same_cs = filter_credset_by_purity(credset, min_purity=0.0)
+    >>> assert same_cs.n_cs == credset.n_cs
+    """
+    # No filtering if min_purity <= 0
+    if min_purity <= 0:
+        return credset
+
+    # No filtering if purity values are not available
+    if credset.purity is None or len(credset.purity) == 0:
+        logger.warning(
+            "Purity values not available for filtering. "
+            "Returning original credible set without filtering."
+        )
+        return credset
+
+    # No credible sets to filter
+    if credset.n_cs == 0:
+        return credset
+
+    # Filter credible sets by purity threshold
+    keep_indices = []
+    for i, purity_val in enumerate(credset.purity):
+        if purity_val is not None and purity_val >= min_purity:
+            keep_indices.append(i)
+
+    # If no credible sets pass filtering, return empty CredibleSet
+    if len(keep_indices) == 0:
+        logger.warning(
+            f"No credible sets passed purity filtering (min_purity={min_purity}). "
+            f"All {credset.n_cs} credible sets were filtered out."
+        )
+        return CredibleSet(
+            tool=credset.tool,
+            n_cs=0,
+            coverage=credset.coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=credset.pips,
+            parameters=credset.parameters,
+            purity=[],
+        )
+
+    # Filter credible sets
+    filtered_snps = [credset.snps[i] for i in keep_indices]
+    filtered_lead_snps = [credset.lead_snps[i] for i in keep_indices]
+    filtered_cs_sizes = [credset.cs_sizes[i] for i in keep_indices]
+    filtered_purity = [credset.purity[i] for i in keep_indices]
+
+    logger.info(
+        f"Filtered credible sets by purity >= {min_purity}: "
+        f"{credset.n_cs} → {len(keep_indices)} credible sets"
+    )
+
+    return CredibleSet(
+        tool=credset.tool,
+        n_cs=len(keep_indices),
+        coverage=credset.coverage,
+        lead_snps=filtered_lead_snps,
+        snps=filtered_snps,
+        cs_sizes=filtered_cs_sizes,
+        pips=credset.pips,  # Keep all PIPs (not filtered)
+        parameters=credset.parameters,
+        purity=filtered_purity,
+    )
