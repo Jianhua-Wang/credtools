@@ -1,5 +1,71 @@
 # Changelog
 
+## [0.3.0] (2025-12-15)
+
+### Fixed
+- **QC outlier removal output structure**: Reorganized cleaned data output to improve clarity and downstream usability
+  - **BREAKING**: All cleaned data now organized under `{out_dir}/cleaned/` directory instead of `{out_dir}/{locus_id}/cleaned/`
+  - **Fixed missing files for loci without outliers**: Previously, when no outliers were detected, cleaned data files were not saved, causing `cleaned_loci_info.txt.gz` paths to be invalid. Now all loci have cleaned data saved (identical to original if no outliers detected)
+  - **Added missing cleaned QC summaries**:
+    - Per-locus cleaned QC summary: `{out_dir}/cleaned/{locus_id}/qc.txt.gz`
+    - Global cleaned QC summary: `{out_dir}/cleaned/qc_cleaned.txt.gz`
+
+### Changed
+- **New output directory structure for cleaned data**:
+  ```
+  {out_dir}/
+  ├── qc.txt.gz                              # Original QC summary
+  ├── {locus_id}/                            # Original QC results
+  │   ├── qc.txt.gz
+  │   ├── expected_z.txt.gz
+  │   └── ...
+  └── cleaned/                               # NEW: All cleaned results
+      ├── qc_cleaned.txt.gz                  # Global cleaned QC summary
+      ├── outlier_removal_summary.txt.gz     # Global outlier removal summary
+      ├── cleaned_loci_info.txt.gz           # Cleaned loci info for downstream
+      └── {locus_id}/                        # Per-locus cleaned data
+          ├── {prefix}.sumstats.gz
+          ├── {prefix}.ld.npz
+          ├── {prefix}.ldmap.gz
+          ├── qc.txt.gz                      # Per-locus cleaned QC
+          ├── expected_z.txt.gz
+          └── outlier_removal_summary.txt.gz
+  ```
+
+### Migration Guide
+
+#### For users of `credtools qc --remove-outlier`
+
+**Old paths** (no longer valid):
+```
+{out_dir}/qc.txt.gz
+{out_dir}/outlier_removal_summary.txt.gz
+{out_dir}/cleaned_loci_info.txt.gz
+{out_dir}/{locus_id}/cleaned/{prefix}.sumstats.gz
+{out_dir}/{locus_id}/cleaned/outlier_removal_summary.txt.gz
+```
+
+**New paths**:
+```
+{out_dir}/qc.txt.gz                                    # Original QC (unchanged)
+{out_dir}/cleaned/qc_cleaned.txt.gz                    # NEW
+{out_dir}/cleaned/outlier_removal_summary.txt.gz       # MOVED
+{out_dir}/cleaned/cleaned_loci_info.txt.gz             # MOVED
+{out_dir}/cleaned/{locus_id}/{prefix}.sumstats.gz      # MOVED
+{out_dir}/cleaned/{locus_id}/qc.txt.gz                 # NEW
+{out_dir}/cleaned/{locus_id}/outlier_removal_summary.txt.gz  # MOVED
+```
+
+**For downstream fine-mapping**:
+- Use `{out_dir}/cleaned/cleaned_loci_info.txt.gz` as input (path updated but still valid)
+- All paths in this file now correctly point to `{out_dir}/cleaned/{locus_id}/`
+
+### Benefits
+- **Clearer organization**: Original and cleaned data completely separated
+- **Reliable paths**: All cleaned data files guaranteed to exist, even when no outliers detected
+- **Better QC tracking**: Can compare `qc.txt.gz` vs `cleaned/qc_cleaned.txt.gz` to assess cleaning impact
+- **Consistent structure**: All cleaned outputs follow same directory pattern
+
 ## [0.2.0] (2025-11-25)
 
 ### BREAKING CHANGES

@@ -1198,7 +1198,7 @@ def remove_outliers_and_rerun_qc(
             cleaned_locus = remove_snps_from_locus(locus, outlier_snps)
 
             # Save cleaned data
-            cleaned_dir = os.path.join(base_out_dir, locus_id, "cleaned")
+            cleaned_dir = os.path.join(base_out_dir, "cleaned", locus_id)
             prefix = (
                 locus.prefix
             )  # Use the Locus prefix property which handles long meta-analysis names
@@ -1218,7 +1218,14 @@ def remove_outliers_and_rerun_qc(
                 }
             )
         else:
-            cleaned_locus = locus
+            # No outliers detected, but still save to cleaned/ for consistency
+            cleaned_locus = locus.copy()
+
+            # Save to cleaned directory (same content as original)
+            cleaned_dir = os.path.join(base_out_dir, "cleaned", locus_id)
+            prefix = locus.prefix
+            save_cleaned_locus(cleaned_locus, cleaned_dir, prefix)
+
             outlier_summary.append(
                 {
                     "locus_id": locus_id,
@@ -1242,7 +1249,7 @@ def remove_outliers_and_rerun_qc(
         cleaned_locus_set,
         r_tol=r_tol,
         method=method,
-        out_dir=os.path.join(base_out_dir, locus_id, "cleaned"),
+        out_dir=os.path.join(base_out_dir, "cleaned", locus_id),
         dtype=dtype,
     )
 
@@ -1529,6 +1536,7 @@ def qc_locus_cli(
 
     # Handle outlier removal if requested
     outlier_summary = None
+    cleaned_summary = None
     if remove_outlier:
         logger.info(f"Removing outliers and re-running QC for locus {locus_id}")
         _, cleaned_qc_metrics, outlier_summary = remove_outliers_and_rerun_qc(
@@ -1544,30 +1552,51 @@ def qc_locus_cli(
             dentist_s_r2_threshold=dentist_s_r2_threshold,
         )
 
+        # Generate and save cleaned QC summary
+        cleaned_summary = locus_qc_summary(
+            cleaned_qc_metrics,
+            logLR_threshold=logLR_threshold,
+            z_threshold=z_threshold,
+            z_std_diff_threshold=z_std_diff_threshold,
+            r_threshold=r_threshold,
+            dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+            dentist_s_r2_threshold=dentist_s_r2_threshold,
+        )
+        if not cleaned_summary.empty:
+            cleaned_locus_dir = os.path.join(base_out_dir, "cleaned", locus_id)
+            cleaned_summary.to_csv(
+                f"{cleaned_locus_dir}/qc.txt.gz",
+                sep="\t",
+                index=False,
+                compression="gzip",
+                float_format="%.6f",
+            )
+            cleaned_summary["locus_id"] = locus_id
+
         # Save outlier removal summary
         if not outlier_summary.empty:
             outlier_summary.to_csv(
-                f"{locus_out_dir}/cleaned/outlier_removal_summary.txt.gz",
+                f"{base_out_dir}/cleaned/{locus_id}/outlier_removal_summary.txt.gz",
                 sep="\t",
                 index=False,
                 compression="gzip",
                 float_format="%.6f",
             )
 
-    return locus_id, summary, outlier_summary
+    return locus_id, summary, outlier_summary, cleaned_summary
 
 
 def safe_qc_locus_cli(
     args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float],
-) -> Tuple[str, Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[str]]:
+) -> Tuple[str, Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[str]]:
     """Wrapper for qc_locus_cli that captures exceptions."""
     locus_id = args[0]
     try:
-        processed_id, summary, outlier_summary = qc_locus_cli(args)
-        return processed_id, summary, outlier_summary, None
+        processed_id, summary, outlier_summary, cleaned_summary = qc_locus_cli(args)
+        return processed_id, summary, outlier_summary, cleaned_summary, None
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.exception("QC failed for locus %s", locus_id)
-        return locus_id, pd.DataFrame(), None, f"{type(exc).__name__}: {exc}"
+        return locus_id, pd.DataFrame(), None, None, f"{type(exc).__name__}: {exc}"
 
 
 def loci_qc(
@@ -1673,6 +1702,7 @@ def loci_qc(
     ]
     all_summaries: list[pd.DataFrame] = []
     all_outlier_summaries: list[pd.DataFrame] = []
+    all_cleaned_summaries: list[pd.DataFrame] = []
     total_loci = len(locus_groups)
     start_time = datetime.now()
     log_path = Path(out_dir) / "qc_run_summary.log"
@@ -1690,7 +1720,7 @@ def loci_qc(
         task = progress.add_task("[cyan]Processing loci...", total=total_loci)
         if locus_groups:
             with Pool(processes=threads) as pool:
-                for locus_id, summary, outlier_summary, error in pool.imap_unordered(
+                for locus_id, summary, outlier_summary, cleaned_summary, error in pool.imap_unordered(
                     safe_qc_locus_cli, locus_groups
                 ):
                     progress.update(task, advance=1)
@@ -1700,6 +1730,8 @@ def loci_qc(
                             all_summaries.append(summary)
                         if outlier_summary is not None and not outlier_summary.empty:
                             all_outlier_summaries.append(outlier_summary)
+                        if cleaned_summary is not None and not cleaned_summary.empty:
+                            all_cleaned_summaries.append(cleaned_summary)
                     else:
                         run_summary["failed_loci"] += 1
                         run_summary["errors"].append(
@@ -1721,24 +1753,42 @@ def loci_qc(
         )
         logger.info(f"Global QC summary saved to {out_dir}/qc.txt.gz")
 
+    # Save global cleaned QC summary if outlier removal was performed
+    if all_cleaned_summaries:
+        global_cleaned_summary = pd.concat(all_cleaned_summaries, ignore_index=True)
+        cols = ["locus_id"] + [
+            col for col in global_cleaned_summary.columns if col != "locus_id"
+        ]
+        global_cleaned_summary = global_cleaned_summary[cols]
+        os.makedirs(f"{out_dir}/cleaned", exist_ok=True)
+        global_cleaned_summary.to_csv(
+            f"{out_dir}/cleaned/qc_cleaned.txt.gz",
+            sep="\t",
+            index=False,
+            compression="gzip",
+            float_format="%.6f",
+        )
+        logger.info(f"Global cleaned QC summary saved to {out_dir}/cleaned/qc_cleaned.txt.gz")
+
     # Save outlier summary if outlier removal was performed
     if all_outlier_summaries:
         global_outlier_summary = pd.concat(all_outlier_summaries, ignore_index=True)
+        os.makedirs(f"{out_dir}/cleaned", exist_ok=True)
         global_outlier_summary.to_csv(
-            f"{out_dir}/outlier_removal_summary.txt.gz",
+            f"{out_dir}/cleaned/outlier_removal_summary.txt.gz",
             sep="	",
             index=False,
             compression="gzip",
             float_format="%.6f",
         )
         logger.info(
-            f"Outlier removal summary saved to {out_dir}/outlier_removal_summary.txt.gz"
+            f"Outlier removal summary saved to {out_dir}/cleaned/outlier_removal_summary.txt.gz"
         )
 
         # Create cleaned loci info file
         cleaned_loci_info = []
         for _, row in global_outlier_summary.iterrows():
-            cleaned_dir = f"{out_dir}/{row['locus_id']}/cleaned"
+            cleaned_dir = f"{out_dir}/cleaned/{row['locus_id']}"
             # Use the same prefix logic as Locus.prefix property
             import hashlib
 
@@ -1791,12 +1841,12 @@ def loci_qc(
 
         cleaned_loci_info_df = pd.DataFrame(cleaned_loci_info)
         cleaned_loci_info_df.to_csv(
-            f"{out_dir}/cleaned_loci_info.txt.gz",
+            f"{out_dir}/cleaned/cleaned_loci_info.txt.gz",
             sep="	",
             index=False,
             compression="gzip",
         )
-        logger.info(f"Cleaned loci info saved to {out_dir}/cleaned_loci_info.txt.gz")
+        logger.info(f"Cleaned loci info saved to {out_dir}/cleaned/cleaned_loci_info.txt.gz")
 
     run_summary["end_time"] = datetime.now().isoformat()
     with log_path.open("w") as log_file:
