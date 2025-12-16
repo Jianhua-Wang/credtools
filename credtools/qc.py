@@ -1,6 +1,7 @@
 """Quality control functions for CREDTOOLS data."""
 
 import logging
+from math import log
 import os
 from datetime import datetime
 from multiprocessing import Pool
@@ -1251,6 +1252,12 @@ def remove_outliers_and_rerun_qc(
         method=method,
         out_dir=os.path.join(base_out_dir, "cleaned", locus_id),
         dtype=dtype,
+        logLR_threshold=logLR_threshold,
+        z_threshold=z_threshold,
+        z_std_diff_threshold=z_std_diff_threshold,
+        r_threshold=r_threshold,
+        dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+        dentist_s_r2_threshold=dentist_s_r2_threshold,
     )
 
     outlier_summary_df = pd.DataFrame(outlier_summary)
@@ -1301,8 +1308,12 @@ def locus_qc_summary(
         return pd.DataFrame()
 
     cohorts = expected_z["cohort"].unique()
+    logger.info(f"Run QC on parameters: logLR_threshold={logLR_threshold}, z_threshold={z_threshold}, ")
+    logger.info(f"z_std_diff_threshold={z_std_diff_threshold}, r_threshold={r_threshold}, ")
+    logger.info(f"dentist_s_pvalue_threshold={dentist_s_pvalue_threshold}, dentist_s_r2_threshold={dentist_s_r2_threshold}")
 
     for cohort in cohorts:
+        logger.info(f"Generating QC summary for cohort: {cohort}")
         # Parse population and cohort from cohort string (format: "popu_cohort")
         popu, cohort_name = cohort.split("_", 1)
 
@@ -1714,7 +1725,22 @@ def loci_qc(
         "failed_loci": 0,
         "errors": [],
         "log_path": str(log_path),
+        "parameters": {
+            "inputs": inputs,
+            "out_dir": out_dir,
+            "threads": threads,
+            "remove_outlier": remove_outlier,
+            "logLR_threshold": logLR_threshold,
+            "z_threshold": z_threshold,
+            "z_std_diff_threshold": z_std_diff_threshold,
+            "r_threshold": r_threshold,
+            "dentist_s_pvalue_threshold": dentist_s_pvalue_threshold,
+            "dentist_s_r2_threshold": dentist_s_r2_threshold,
+        },
     }
+    logger.info(f"QC run started at {start_time.isoformat()}")
+    logger.info(f"Log file will be saved to {log_path}")
+    logger.info(f"parameters: {run_summary['parameters']}")
 
     with progress:
         task = progress.add_task("[cyan]Processing loci...", total=total_loci)

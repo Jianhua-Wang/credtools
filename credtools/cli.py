@@ -955,10 +955,10 @@ def run_qc(
         False, "--remove-outlier", help="Remove outliers and re-run QC on cleaned data."
     ),
     logLR_threshold: float = typer.Option(
-        1.0, "--logLR-threshold", help="LogLR threshold for LD mismatch detection."
+        2.0, "--logLR-threshold", help="LogLR threshold for LD mismatch detection."
     ),
     z_threshold: float = typer.Option(
-        1.0,
+        2.0,
         "--z-threshold",
         help="Z-score threshold for both LD mismatch and marginal SNP detection.",
     ),
@@ -968,7 +968,7 @@ def run_qc(
         help="Z_std_diff threshold for marginal SNP outlier detection.",
     ),
     r_threshold: float = typer.Option(
-        0.1,
+        0.8,
         "--r-threshold",
         help="Correlation threshold with lead SNP for marginal SNP detection.",
     ),

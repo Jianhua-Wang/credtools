@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1] (2025-12-16)
+
+### Fixed
+- **QC threshold parameter consistency**: Unified default threshold values between CLI and internal functions
+  - Changed CLI defaults: `logLR_threshold` (1.0→2.0), `z_threshold` (1.0→2.0), `r_threshold` (0.1→0.8)
+  - Fixed missing threshold parameters in `remove_outliers_and_rerun_qc()` causing inconsistent outlier detection
+  - Cleaned data now correctly shows `n_lambda_s_outlier = 0` when using same thresholds for detection and re-QC
+
 ## [0.3.0] (2025-12-15)
 
 ### Fixed
