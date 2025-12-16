@@ -1215,8 +1215,9 @@ def run_fine_map(
         0.0,
         "--purity",
         "-p",
-        help="Minimum purity threshold for credible set filtering. "
+        help="Minimum purity threshold for credible set filtering (applied at credtools level). "
         "Purity is the minimum absolute LD correlation between variants in a credible set. "
+        "Filtering is applied uniformly after all fine-mapping tools complete. "
         "Set to 0 (default) for no filtering.",
     ),
     convergence_tol: float = typer.Option(
@@ -1523,8 +1524,9 @@ def run_pipeline(
         0.0,
         "--purity",
         "-p",
-        help="Minimum purity threshold for credible set filtering. "
+        help="Minimum purity threshold for credible set filtering (applied at credtools level). "
         "Purity is the minimum absolute LD correlation between variants in a credible set. "
+        "Filtering is applied uniformly after all fine-mapping tools complete. "
         "Set to 0 (default) for no filtering.",
         rich_help_panel="SuSie",
     ),

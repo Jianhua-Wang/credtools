@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.2] (2025-12-16)
+
+### Changed
+- **Unified purity filtering**: All fine-mapping tools now disable internal purity filtering (set to 0.0) and apply filtering uniformly at the credtools level
+  - SuSiE, MultiSuSiE, and SuSiEx no longer perform tool-internal purity filtering
+  - Purity filtering applied consistently after tool execution via `filter_credset_by_purity()`
+  - Ensures identical filtering behavior across all 7 fine-mapping tools
+  - User-facing `--purity` parameter behavior unchanged (backward compatible)
+
 ## [0.3.1] (2025-12-16)
 
 ### Fixed

@@ -53,10 +53,10 @@ def run_susie(
         Whether to estimate residual variance from data, by default False.
         If False, residual variance is set to 1 (appropriate for z-scores).
     purity : float, optional
-        Minimum purity threshold for credible set filtering, by default 0.0.
-        Purity is the minimum absolute LD correlation between all variant pairs in a credible set.
-        Credible sets with purity below this threshold are filtered out.
-        Set to 0.0 (default) for no filtering.
+        This parameter is kept for backward compatibility but is NOT used for filtering
+        within the SuSiE tool itself. Purity filtering is applied uniformly across all
+        fine-mapping tools at the credtools level after credible sets are generated.
+        The purity values are still calculated and stored in the CredibleSet object.
     convergence_tol : float, optional
         Convergence tolerance for the ELBO (Evidence Lower BOund), by default 1e-3.
         Algorithm stops when ELBO change falls below this threshold.
@@ -176,7 +176,7 @@ def run_susie(
         "coverage": coverage,
         "max_iter": max_iter,
         "estimate_residual_variance": estimate_residual_variance,
-        "min_abs_corr": purity,
+        "min_abs_corr": 0.0,  # Always 0 - purity filtering done at credtools level
         "convergence_tol": convergence_tol,
         "significant_threshold": significant_threshold,
     }
@@ -209,7 +209,7 @@ def run_susie(
         coverage=coverage,
         max_iter=max_iter,
         estimate_residual_variance=estimate_residual_variance,
-        min_abs_corr=purity,
+        min_abs_corr=0.0,  # Disable tool-internal purity filtering
         tol=convergence_tol,
     )
     pip = s["pip"]

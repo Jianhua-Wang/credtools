@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from credtools.cojo import conditional_selection
-from credtools.credibleset import CredibleSet, combine_creds
+from credtools.credibleset import CredibleSet, combine_creds, filter_credset_by_purity
 from credtools.locus import LocusSet, load_locus_set
 from credtools.meta import meta
 from credtools.qc import locus_qc
@@ -399,6 +399,10 @@ def fine_map(
                 locus_set, max_causal=max_causal, **params_dict[tool]
             )
 
+        # Apply purity filtering if requested
+        if purity_threshold > 0:
+            combined = filter_credset_by_purity(combined, min_purity=purity_threshold)
+
         combined.set_per_locus_results({})
         return combined
 
@@ -441,6 +445,10 @@ def fine_map(
                 result = tool_func_dict[tool](
                     locus, max_causal=max_causal, **params_dict[tool]
                 )
+
+            # Apply purity filtering if requested
+            if purity_threshold > 0:
+                result = filter_credset_by_purity(result, min_purity=purity_threshold)
 
             # Set per-locus results and return
             locus_id = getattr(locus, "locus_id", getattr(locus, "name", "locus_0"))
