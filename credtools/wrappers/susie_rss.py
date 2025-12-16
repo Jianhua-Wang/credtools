@@ -23,7 +23,7 @@ def susie_get_cs(
     X: Optional[np.ndarray] = None,
     Xcorr: Optional[np.ndarray] = None,
     coverage: float = 0.95,
-    purity: float = 0.0,
+    min_abs_corr: float = 0.0,
     dedup: bool = True,
     squared: bool = False,
     check_symmetric: bool = True,
@@ -53,7 +53,7 @@ def susie_get_cs(
     coverage : float, optional
         Target coverage probability for credible sets, by default 0.95.
         Each credible set will contain variants with cumulative PIP ≥ coverage.
-    purity : float, optional
+    min_abs_corr : float, optional
         Minimum purity threshold for credible set filtering, by default 0.0.
         Purity is the minimum absolute LD correlation between all variant pairs in a credible set.
         Credible sets with purity below this threshold are filtered out.
@@ -223,7 +223,7 @@ def susie_get_cs(
             "median_sq_corr" if squared else "median_abs_corr": purity_arr[:, 2],
         }
 
-        threshold = purity**2 if squared else purity
+        threshold = min_abs_corr**2 if squared else min_abs_corr
         is_pure = np.where(purity_arr[:, 0] >= threshold)[0]
 
         if len(is_pure) > 0:

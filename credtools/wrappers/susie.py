@@ -176,7 +176,7 @@ def run_susie(
         "coverage": coverage,
         "max_iter": max_iter,
         "estimate_residual_variance": estimate_residual_variance,
-        "min_abs_corr": min_abs_corr,
+        "min_abs_corr": purity,
         "convergence_tol": convergence_tol,
         "significant_threshold": significant_threshold,
     }
@@ -209,7 +209,7 @@ def run_susie(
         coverage=coverage,
         max_iter=max_iter,
         estimate_residual_variance=estimate_residual_variance,
-        purity=purity,
+        min_abs_corr=purity,
         tol=convergence_tol,
     )
     pip = s["pip"]
