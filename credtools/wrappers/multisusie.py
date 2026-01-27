@@ -103,10 +103,9 @@ def run_multisusie(
         Convergence tolerance for the ELBO, by default 1e-3.
         Algorithm stops when ELBO change falls below this threshold.
     purity : float, optional
-        This parameter is kept for backward compatibility but is NOT used for filtering
-        within the MultiSuSiE tool itself. Purity filtering is applied uniformly across
-        all fine-mapping tools at the credtools level after credible sets are generated.
-        The purity values are still calculated and stored in the CredibleSet object.
+        Minimum purity threshold for credible sets, by default 0.1.
+        Credible sets with purity below this threshold will be filtered out by MultiSuSiE.
+        The purity values are calculated and stored in the CredibleSet object.
 
     Returns
     -------
@@ -224,7 +223,7 @@ def run_multisusie(
         "prior_tol": prior_tol,
         "max_iter": max_iter,
         "tol": tol,
-        "purity": 0.0,  # Always 0 - purity filtering done at credtools level
+        "purity": purity,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
 
@@ -295,7 +294,7 @@ def run_multisusie(
         pop_spec_effect_priors=pop_spec_effect_priors,
         iter_before_zeroing_effects=iter_before_zeroing_effects,
         prior_tol=prior_tol,
-        purity=0.0,  # Disable tool-internal purity filtering
+        purity=purity,
         float_type=np.float32,
         low_memory_mode=False,
         recover_R=False,

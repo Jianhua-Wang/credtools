@@ -53,10 +53,9 @@ def run_susie(
         Whether to estimate residual variance from data, by default False.
         If False, residual variance is set to 1 (appropriate for z-scores).
     purity : float, optional
-        This parameter is kept for backward compatibility but is NOT used for filtering
-        within the SuSiE tool itself. Purity filtering is applied uniformly across all
-        fine-mapping tools at the credtools level after credible sets are generated.
-        The purity values are still calculated and stored in the CredibleSet object.
+        Minimum absolute correlation (purity) threshold for credible sets, by default 0.0.
+        Credible sets with purity below this threshold will be filtered out by SuSiE.
+        The purity values are calculated and stored in the CredibleSet object.
     convergence_tol : float, optional
         Convergence tolerance for the ELBO (Evidence Lower BOund), by default 1e-3.
         Algorithm stops when ELBO change falls below this threshold.
@@ -176,7 +175,7 @@ def run_susie(
         "coverage": coverage,
         "max_iter": max_iter,
         "estimate_residual_variance": estimate_residual_variance,
-        "min_abs_corr": 0.0,  # Always 0 - purity filtering done at credtools level
+        "min_abs_corr": purity,
         "convergence_tol": convergence_tol,
         "significant_threshold": significant_threshold,
     }
@@ -209,7 +208,7 @@ def run_susie(
         coverage=coverage,
         max_iter=max_iter,
         estimate_residual_variance=estimate_residual_variance,
-        min_abs_corr=0.0,  # Disable tool-internal purity filtering
+        min_abs_corr=purity,
         tol=convergence_tol,
     )
     pip = s["pip"]
@@ -218,10 +217,16 @@ def run_susie(
         n_cs = len(cs_idx)
         cs_sizes = [len(idx) for idx in cs_idx]
         cred_snps = [locus.sumstats[ColName.SNPID].iloc[idx].tolist() for idx in cs_idx]
+        # Extract purity values from susie_rss results
+        if "purity" in s["sets"] and s["sets"]["purity"] is not None:
+            purity_list = list(s["sets"]["purity"]["min_abs_corr"])
+        else:
+            purity_list = None
     else:
         n_cs = 0
         cs_sizes = []
         cred_snps = []
+        purity_list = None
     pips = pd.Series(data=pip, index=locus.sumstats[ColName.SNPID].tolist())
     lead_snps = [str(pips[pips.index.isin(cred_snps[i])].idxmax()) for i in range(n_cs)]
     logger.info(f"Finished SuSiE on {locus}")
@@ -236,4 +241,5 @@ def run_susie(
         cs_sizes=cs_sizes,
         pips=pips,
         parameters=parameters,
+        purity=purity_list,
     )

@@ -76,10 +76,9 @@ def run_susiex(
         Number of parallel threads for computation, by default 1.
         Higher values can speed up analysis but require more memory.
     purity : float, optional
-        This parameter is kept for backward compatibility but is NOT used for filtering
-        within the SuSiEx tool itself. Purity filtering is applied uniformly across all
-        fine-mapping tools at the credtools level after credible sets are generated.
-        The purity values are still calculated and stored in the CredibleSet object.
+        Minimum purity threshold for credible sets, by default 0.0.
+        Credible sets with purity below this threshold will be filtered out by SuSiEx.
+        The purity values are calculated and stored in the CredibleSet object.
     max_iter : int, optional
         Maximum number of iterations for the optimization algorithm, by default 100.
         More iterations may improve convergence but increase runtime.
@@ -214,7 +213,7 @@ def run_susiex(
         "mult_step": mult_step,
         "keep_ambig": keep_ambig,
         "n_threads": n_threads,
-        "purity": 0.0,  # Always 0 - purity filtering done at credtools level
+        "purity": purity,
         "max_iter": max_iter,
         "tol": tol,
     }
@@ -272,7 +271,7 @@ def run_susiex(
         f"--mult-step={mult_step}",
         f"--keep-ambig={keep_ambig}",
         f"--threads={n_threads}",
-        "--min_purity=0.0",  # Disable tool-internal purity filtering
+        f"--min_purity={purity}",
         f"--max_iter={max_iter}",
         f"--tol={tol}",
     ]
