@@ -1196,7 +1196,8 @@ def run_fine_map(
         5e-8,
         "--significant-threshold",
         "-st",
-        help="Minimum p-value required for variants to be considered significant.",
+        help="Minimum p-value required for variants to be considered significant."
+        "Not used for multi-input tools, like susiex or multisusie.",
     ),
     jaccard_threshold: float = typer.Option(
         0.1,
