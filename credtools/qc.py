@@ -789,7 +789,7 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
     df = k - 1
 
     # Calculate P-value
-    p_value = stats.chi2.sf(Q, df)
+    p_value = np.maximum(stats.chi2.sf(Q, df), 1e-300)
 
     # Calculate I^2
     with np.errstate(invalid="ignore"):
@@ -1337,7 +1337,7 @@ def locus_qc_summary(
 
         # Count p-values < 1e-5 and < 5e-8 (need to calculate p-values from z-scores)
         z_scores = cohort_expected_z["z"].abs()
-        p_values = 2 * (1 - stats.norm.cdf(z_scores))
+        p_values = np.maximum(2 * (1 - stats.norm.cdf(z_scores)), 1e-300)
         n_1e_5 = int((p_values < 1e-5).sum())
         n_5e_8 = int((p_values < 5e-8).sum())
 
@@ -1367,7 +1367,7 @@ def locus_qc_summary(
         if not cohort_expected_z.empty:
             # Calculate p-values from z-scores to find lead SNP
             z_scores_abs = cohort_expected_z["z"].abs()
-            p_values_lead = 2 * (1 - stats.norm.cdf(z_scores_abs))
+            p_values_lead = np.maximum(2 * (1 - stats.norm.cdf(z_scores_abs)), 1e-300)
             lead_idx = p_values_lead.argmin()
 
             # Get correlation matrix for this cohort - need to find the corresponding locus

@@ -275,7 +275,7 @@ def validate_pvalue_consistency(df: pd.DataFrame) -> pd.DataFrame:
         try:
             from scipy.stats import norm
 
-            expected_p = 2 * (1 - norm.cdf(abs(z_score)))
+            expected_p = np.maximum(2 * (1 - norm.cdf(abs(z_score))), 1e-300)
         except ImportError:
             # Fallback if scipy not available
             logger.warning("scipy not available, skipping p-value consistency check")

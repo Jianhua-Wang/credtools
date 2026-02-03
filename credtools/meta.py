@@ -99,7 +99,7 @@ def meta_sumstats(inputs: LocusSet) -> pd.DataFrame:
 
     # Calculate meta-analysis Z-score and p-value
     meta_z = meta_beta / meta_se
-    meta_p = 2 * stats.norm.sf(abs(meta_z))
+    meta_p = np.maximum(2 * stats.norm.sf(abs(meta_z)), 1e-300)
 
     # Calculate meta-analysis EAF
     meta_eaf = sum(

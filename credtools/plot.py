@@ -773,7 +773,7 @@ def plot_locus_pvalues(
         return ax
 
     # Calculate p-values from z-scores
-    p_values = 2 * (1 - stats.norm.cdf(np.abs(z_data["z"])))
+    p_values = np.maximum(2 * (1 - stats.norm.cdf(np.abs(z_data["z"]))), 1e-300)
     neg_log_p = -np.log10(p_values)
 
     # Plot points
@@ -797,7 +797,7 @@ def plot_locus_pvalues(
                     # Find corresponding p-value
                     z_match = z_data[z_data["BP"] == bp]
                     if not z_match.empty:
-                        p_val = 2 * (1 - stats.norm.cdf(np.abs(z_match["z"].iloc[0])))
+                        p_val = max(2 * (1 - stats.norm.cdf(np.abs(z_match["z"].iloc[0]))), 1e-300)
                         y_pos = -np.log10(p_val)
                         circle = Circle(
                             (bp, y_pos),
