@@ -544,3 +544,33 @@ def create_float_format_dict(df) -> Dict[str, str]:
             if fmt:
                 format_dict[col] = fmt
     return format_dict
+
+
+def format_enhanced_pips(enhanced_pips: "pd.DataFrame") -> "pd.DataFrame":
+    """
+    Format numeric columns in the enhanced PIPs table.
+
+    Parameters
+    ----------
+    enhanced_pips : pd.DataFrame
+        Enhanced PIPs DataFrame with numeric columns to format.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with formatted numeric columns.
+    """
+    import pandas as pd
+
+    format_dict = create_float_format_dict(enhanced_pips)
+    for col, fmt in format_dict.items():
+        if col in enhanced_pips.columns:
+            if fmt == "%.3e":
+                enhanced_pips[col] = enhanced_pips[col].apply(
+                    lambda x: f"{x:.3e}" if pd.notna(x) else ""
+                )
+            elif fmt == "%.4f":
+                enhanced_pips[col] = enhanced_pips[col].apply(
+                    lambda x: f"{x:.4f}" if pd.notna(x) else ""
+                )
+    return enhanced_pips

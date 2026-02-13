@@ -249,32 +249,6 @@ CHROM_LENGTHS = {
 }
 
 
-def get_column_mapping(header_list):
-    """
-    Map column headers to standard column names.
-
-    Parameters
-    ----------
-    header_list : list
-        List of column headers from input file.
-
-    Returns
-    -------
-    dict
-        Mapping from input headers to standard column names.
-    """
-    mapping = {}
-
-    for header in header_list:
-        if header in COMMON_COLNAMES:
-            mapping[header] = COMMON_COLNAMES[header]
-        else:
-            # Keep original name if no mapping found
-            mapping[header] = header
-
-    return mapping
-
-
 def suggest_column_mapping(header_list):
     """
     Suggest column mappings for interactive configuration.

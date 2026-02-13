@@ -29,6 +29,50 @@ from credtools.wrappers import (
 logger = logging.getLogger("CREDTOOLS")
 
 
+def _determine_max_causal_by_cojo(
+    locus,
+    p_cutoff: float,
+    collinear_cutoff: float,
+    window_size: int,
+    maf_cutoff: float,
+    diff_freq_cutoff: float,
+    locus_index: Optional[int] = None,
+) -> int:
+    """
+    Determine max_causal using COJO conditional selection.
+
+    Parameters
+    ----------
+    locus : Locus
+        The locus to analyze.
+    p_cutoff, collinear_cutoff, window_size, maf_cutoff, diff_freq_cutoff
+        Parameters for conditional_selection.
+    locus_index : int, optional
+        Locus index for log messages (None for single-locus mode).
+
+    Returns
+    -------
+    int
+        The max_causal value determined by COJO (minimum 1).
+    """
+    max_causal_cojo = len(
+        conditional_selection(
+            locus,
+            p_cutoff=p_cutoff,
+            collinear_cutoff=collinear_cutoff,
+            window_size=window_size,
+            maf_cutoff=maf_cutoff,
+            diff_freq_cutoff=diff_freq_cutoff,
+        )
+    )
+    suffix = "" if locus_index is None else f" for locus {locus_index}"
+    if max_causal_cojo == 0:
+        logger.warning(f"No significant SNPs found by COJO{suffix}, using max_causal=1")
+        max_causal_cojo = 1
+    logger.info(f"COJO determined max_causal={max_causal_cojo}{suffix}")
+    return max_causal_cojo
+
+
 def _is_success(credible_set: CredibleSet, max_causal: int) -> bool:
     """
     Check if fine-mapping result is successful based on credible set count.
@@ -414,23 +458,10 @@ def fine_map(
 
             # COJO analysis for max_causal if enabled (skip for abf_cojo as it handles its own)
             if set_L_by_cojo and tool != "abf_cojo":
-                max_causal_cojo = len(
-                    conditional_selection(
-                        locus,
-                        p_cutoff=p_cutoff,
-                        collinear_cutoff=collinear_cutoff,
-                        window_size=window_size,
-                        maf_cutoff=maf_cutoff,
-                        diff_freq_cutoff=diff_freq_cutoff,
-                    )
+                max_causal = _determine_max_causal_by_cojo(
+                    locus, p_cutoff, collinear_cutoff, window_size,
+                    maf_cutoff, diff_freq_cutoff,
                 )
-                if max_causal_cojo == 0:
-                    logger.warning(
-                        "No significant SNPs found by COJO, using max_causal=1"
-                    )
-                    max_causal_cojo = 1
-                max_causal = max_causal_cojo
-                logger.info(f"COJO determined max_causal={max_causal}")
 
             # Use adaptive logic if enabled
             if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
@@ -474,24 +505,9 @@ def fine_map(
                 # Optionally apply COJO for each locus
                 locus_max_causal = max_causal
                 if set_L_by_cojo and tool != "abf_cojo":
-                    locus_max_causal_cojo = len(
-                        conditional_selection(
-                            locus,
-                            p_cutoff=p_cutoff,
-                            collinear_cutoff=collinear_cutoff,
-                            window_size=window_size,
-                            maf_cutoff=maf_cutoff,
-                            diff_freq_cutoff=diff_freq_cutoff,
-                        )
-                    )
-                    if locus_max_causal_cojo == 0:
-                        logger.warning(
-                            f"No significant SNPs found by COJO for locus {i+1}, using max_causal=1"
-                        )
-                        locus_max_causal_cojo = 1
-                    locus_max_causal = locus_max_causal_cojo
-                    logger.info(
-                        f"COJO determined max_causal={locus_max_causal} for locus {i+1}"
+                    locus_max_causal = _determine_max_causal_by_cojo(
+                        locus, p_cutoff, collinear_cutoff, window_size,
+                        maf_cutoff, diff_freq_cutoff, locus_index=i + 1,
                     )
 
                 # Run fine-mapping for this locus
@@ -566,8 +582,6 @@ def pipeline(
     import sys
     from datetime import datetime
 
-    from credtools.utils import create_float_format_dict
-
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -629,52 +643,14 @@ def pipeline(
                 all_credible_sets.append(causal_variants)
 
             # Create credible sets summary (one row per CS)
-            cs_summary_list = []
-            if len(causal_variants) > 0:
-                from credtools.credibleset import calculate_cs_purity
+            from credtools.credibleset import generate_cs_summary
 
-                for cs_id in sorted(causal_variants["CRED"].unique()):
-                    cs_snps = causal_variants[causal_variants["CRED"] == cs_id]
-                    lead_snp_idx = cs_snps["PIP"].idxmax()
-                    lead_snp = cs_snps.loc[lead_snp_idx, "SNPID"]
-                    cs_size = len(cs_snps)
-                    pip_01 = int((cs_snps["PIP"] >= 0.1).sum())
-                    pip_05 = int((cs_snps["PIP"] >= 0.5).sum())
-                    pip_09 = int((cs_snps["PIP"] >= 0.9).sum())
+            cs_summary_list = generate_cs_summary(causal_variants, locus_id, locus_set)
 
-                    # Calculate purity if LD is available
-                    # Use all LD matrices for multi-ancestry purity calculation
-                    purity = None
-                    ld_list = [locus.ld for locus in locus_set.loci if locus.ld is not None]
-                    if len(ld_list) > 0:
-                        cs_snp_ids = cs_snps["SNPID"].tolist()
-                        purity = calculate_cs_purity(ld_list, cs_snp_ids)
+            # Format enhanced PIPs for output
+            from credtools.utils import format_enhanced_pips
 
-                    cs_summary_list.append({
-                        "locus_id": locus_id,
-                        "cs_id": int(cs_id),
-                        "lead_snp": lead_snp,
-                        "cs_size": cs_size,
-                        "pip_01": pip_01,
-                        "pip_05": pip_05,
-                        "pip_09": pip_09,
-                        "purity": purity,
-                    })
-
-            # Get appropriate float formats for columns
-            format_dict = create_float_format_dict(enhanced_pips)
-
-            # Apply specific formats per column
-            for col, fmt in format_dict.items():
-                if col in enhanced_pips.columns:
-                    if fmt == "%.3e":
-                        enhanced_pips[col] = enhanced_pips[col].apply(
-                            lambda x: f"{x:.3e}" if pd.notna(x) else ""
-                        )
-                    elif fmt == "%.4f":
-                        enhanced_pips[col] = enhanced_pips[col].apply(
-                            lambda x: f"{x:.4f}" if pd.notna(x) else ""
-                        )
+            enhanced_pips = format_enhanced_pips(enhanced_pips)
 
             # Save formatted enhanced PIPs
             output_file = f"{outdir}/pips.txt.gz"

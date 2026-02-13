@@ -1,6 +1,6 @@
 """Tests for the constants module."""
 
-from credtools.constants import CHROM_LIST, ColName
+from credtools.constants import ColName
 
 
 def test_colname_mandatory_columns():
@@ -49,15 +49,3 @@ def test_colname_loci_columns():
     """
     expected_cols = ["CHR", "START", "END", "LEAD_SNP", "LEAD_SNP_P", "LEAD_SNP_BP"]
     assert ColName.loci_cols == expected_cols
-
-
-def test_chrom_list():
-    """
-    Test that the chromosome list is correctly defined.
-
-    Returns
-    -------
-    None
-    """
-    expected_chrom_list = [i for i in range(1, 24)]
-    assert CHROM_LIST == expected_chrom_list

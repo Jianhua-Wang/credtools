@@ -1,7 +1,6 @@
 """Quality control functions for CREDTOOLS data."""
 
 import logging
-from math import log
 import os
 from datetime import datetime
 from multiprocessing import Pool

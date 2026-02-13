@@ -68,9 +68,6 @@ class Method:
     MULTISUSIE = "MULTISUSIE"
 
 
-# only support autosomes
-CHROM_LIST = [i for i in range(1, 24)]
-
 chrom_len = {
     1: 249250621,
     2: 243199373,

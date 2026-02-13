@@ -12,6 +12,7 @@ from scipy.cluster.hierarchy import fcluster, linkage
 
 if TYPE_CHECKING:
     from credtools.ldmatrix import LDMatrix
+    from credtools.locus import LocusSet
 
 logger = logging.getLogger("CREDTOOLS")
 
@@ -1029,3 +1030,63 @@ def filter_credset_by_purity(
         parameters=credset.parameters,
         purity=filtered_purity,
     )
+
+
+def generate_cs_summary(
+    causal_variants: pd.DataFrame,
+    locus_id: str,
+    locus_set: "LocusSet",
+) -> List[Dict]:
+    """
+    Generate credible set summary from causal variants.
+
+    Creates one summary row per credible set, including lead SNP, size,
+    PIP thresholds, and purity metrics.
+
+    Parameters
+    ----------
+    causal_variants : pd.DataFrame
+        DataFrame of causal variants (rows where CRED != 0), must have
+        columns: CRED, PIP, SNPID.
+    locus_id : str
+        Locus identifier string.
+    locus_set : LocusSet
+        LocusSet object for LD-based purity calculation.
+
+    Returns
+    -------
+    List[Dict]
+        List of summary dictionaries, one per credible set.
+    """
+    if causal_variants.empty:
+        return []
+
+    cs_summary_list = []
+    for cs_id in sorted(causal_variants["CRED"].unique()):
+        cs_snps = causal_variants[causal_variants["CRED"] == cs_id]
+        lead_snp_idx = cs_snps["PIP"].idxmax()
+        lead_snp = cs_snps.loc[lead_snp_idx, "SNPID"]
+        cs_size = len(cs_snps)
+        pip_01 = int((cs_snps["PIP"] >= 0.1).sum())
+        pip_05 = int((cs_snps["PIP"] >= 0.5).sum())
+        pip_09 = int((cs_snps["PIP"] >= 0.9).sum())
+
+        # Calculate purity if LD is available
+        purity = None
+        ld_list = [locus.ld for locus in locus_set.loci if locus.ld is not None]
+        if len(ld_list) > 0:
+            cs_snp_ids = cs_snps["SNPID"].tolist()
+            purity = calculate_cs_purity(ld_list, cs_snp_ids)
+
+        cs_summary_list.append({
+            "locus_id": locus_id,
+            "cs_id": int(cs_id),
+            "lead_snp": lead_snp,
+            "cs_size": cs_size,
+            "pip_01": pip_01,
+            "pip_05": pip_05,
+            "pip_09": pip_09,
+            "purity": purity,
+        })
+
+    return cs_summary_list

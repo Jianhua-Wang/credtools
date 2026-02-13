@@ -2184,27 +2184,3 @@ def summary_susie(object, **kwargs):
 
     out = {"vars": variables, "cs": cs}
     return out
-
-
-if __name__ == "__main__":
-    np.random.seed(1)
-    # read beta from betahat.txt
-    beta = np.loadtxt("/project/voight_nextflow/wjh/WJH_packages/susiepy/betahat.txt")
-    sebetahat = np.loadtxt(
-        "/project/voight_nextflow/wjh/WJH_packages/susiepy/sebetahat.txt"
-    )
-    R = np.loadtxt("/project/voight_nextflow/wjh/WJH_packages/susiepy/R.txt")
-    var_y = 7.84240878887082
-    n = 574
-    s = susie_rss(
-        bhat=beta,
-        shat=sebetahat,
-        n=n,
-        R=R,
-        # var_y=var_y,
-        L=10,
-        # estimate_residual_variance=True,
-    )
-    res = summary_susie(s)
-    res["vars"].to_csv("/project/voight_nextflow/wjh/WJH_packages/susiepy/pyvars.csv")
-    res["cs"].to_csv("/project/voight_nextflow/wjh/WJH_packages/susiepy/pycs.csv")

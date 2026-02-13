@@ -509,35 +509,6 @@ def check_loci_info(loci_info: pd.DataFrame) -> pd.DataFrame:
     return loci_info
 
 
-def intersect_loci(list_loci: List[Locus]) -> List[Locus]:
-    """
-    Intersect the Variant IDs in the LD matrices and the sumstats files of a list of Locus objects.
-
-    Parameters
-    ----------
-    list_loci : List[Locus]
-        List of Locus objects.
-
-    Returns
-    -------
-    List[Locus]
-        List of Locus objects containing the intersected LD matrices and sumstats files.
-
-    Raises
-    ------
-    NotImplementedError
-        This function is not yet implemented.
-
-    Notes
-    -----
-    This function is planned to intersect variant IDs across multiple loci
-    to ensure consistent variant sets for multi-ancestry analysis.
-    """
-    raise NotImplementedError(
-        "Intersect the Variant IDs in the LD matrices and the sumstats files of a list of Locus objects."
-    )
-
-
 def load_locus(
     prefix: str,
     popu: str,

@@ -2,7 +2,6 @@
 
 import json
 import logging
-import logging.handlers
 import os
 import sys
 import traceback
@@ -1013,23 +1012,6 @@ def run_qc(
     console.print(f"[dim]QC run summary saved to {run_summary['log_path']}[/dim]")
 
 
-def _format_enhanced_pips(enhanced_pips: pd.DataFrame) -> pd.DataFrame:
-    """Format numeric columns in the enhanced PIPs table."""
-    from credtools.utils import create_float_format_dict
-
-    format_dict = create_float_format_dict(enhanced_pips)
-    for col, fmt in format_dict.items():
-        if fmt == "%.3e":
-            enhanced_pips[col] = enhanced_pips[col].apply(
-                lambda x: f"{x:.3e}" if pd.notna(x) else ""
-            )
-        elif fmt == "%.4f":
-            enhanced_pips[col] = enhanced_pips[col].apply(
-                lambda x: f"{x:.4f}" if pd.notna(x) else ""
-            )
-    return enhanced_pips
-
-
 def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
     """Run fine-mapping for a single locus in a worker process."""
     locus_id = task["locus_id"]
@@ -1058,40 +1040,13 @@ def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         # Create credible sets summary (one row per CS)
-        cs_summary_list = []
-        if not causal_variants.empty:
-            from credtools.credibleset import calculate_cs_purity
+        from credtools.credibleset import generate_cs_summary
+        from credtools.utils import format_enhanced_pips
 
-            for cs_id in sorted(causal_variants["CRED"].unique()):
-                cs_snps = causal_variants[causal_variants["CRED"] == cs_id]
-                lead_snp_idx = cs_snps["PIP"].idxmax()
-                lead_snp = cs_snps.loc[lead_snp_idx, "SNPID"]
-                cs_size = len(cs_snps)
-                pip_01 = int((cs_snps["PIP"] >= 0.1).sum())
-                pip_05 = int((cs_snps["PIP"] >= 0.5).sum())
-                pip_09 = int((cs_snps["PIP"] >= 0.9).sum())
-
-                # Calculate purity if LD is available
-                # Use all LD matrices for multi-ancestry purity calculation
-                purity = None
-                ld_list = [locus.ld for locus in locus_set.loci if locus.ld is not None]
-                if len(ld_list) > 0:
-                    cs_snp_ids = cs_snps["SNPID"].tolist()
-                    purity = calculate_cs_purity(ld_list, cs_snp_ids)
-
-                cs_summary_list.append({
-                    "locus_id": locus_id,
-                    "cs_id": int(cs_id),
-                    "lead_snp": lead_snp,
-                    "cs_size": cs_size,
-                    "pip_01": pip_01,
-                    "pip_05": pip_05,
-                    "pip_09": pip_09,
-                    "purity": purity,
-                })
+        cs_summary_list = generate_cs_summary(causal_variants, locus_id, locus_set)
 
         # Now format enhanced_pips for output
-        enhanced_pips = _format_enhanced_pips(enhanced_pips)
+        enhanced_pips = format_enhanced_pips(enhanced_pips)
 
         locus_dir = os.path.join(outdir, str(locus_id))
         os.makedirs(locus_dir, exist_ok=True)
