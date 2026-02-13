@@ -1271,6 +1271,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#credtools.utils.format_enhanced_pips" class="md-nav__link">
+    <span class="md-ellipsis">
+      format_enhanced_pips
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="format_enhanced_pips">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#credtools.utils.format_enhanced_pips--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credtools.utils.format_enhanced_pips--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#credtools.utils.format_float" class="md-nav__link">
     <span class="md-ellipsis">
       format_float
@@ -2039,6 +2072,39 @@
         
           <li class="md-nav__item">
   <a href="#credtools.utils.create_float_format_dict--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#credtools.utils.format_enhanced_pips" class="md-nav__link">
+    <span class="md-ellipsis">
+      format_enhanced_pips
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="format_enhanced_pips">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#credtools.utils.format_enhanced_pips--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credtools.utils.format_enhanced_pips--returns" class="md-nav__link">
     <span class="md-ellipsis">
       Returns
     </span>
@@ -3910,6 +3976,89 @@ path : str
 <a id="__codelineno-0-544" name="__codelineno-0-544"></a>            <span class="k">if</span> <span class="n">fmt</span><span class="p">:</span>
 <a id="__codelineno-0-545" name="__codelineno-0-545"></a>                <span class="n">format_dict</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">fmt</span>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="k">return</span> <span class="n">format_dict</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="credtools.utils.format_enhanced_pips" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">format_enhanced_pips</span><span class="p">(</span><span class="n">enhanced_pips</span><span class="p">)</span></code>
+
+<a href="#credtools.utils.format_enhanced_pips" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Format numeric columns in the enhanced PIPs table.</p>
+<h4 id="credtools.utils.format_enhanced_pips--parameters">Parameters<a class="headerlink" href="#credtools.utils.format_enhanced_pips--parameters" title="Permanent link">&para;</a></h4>
+<p>enhanced_pips : pd.DataFrame
+    Enhanced PIPs DataFrame with numeric columns to format.</p>
+<h4 id="credtools.utils.format_enhanced_pips--returns">Returns<a class="headerlink" href="#credtools.utils.format_enhanced_pips--returns" title="Permanent link">&para;</a></h4>
+<p>pd.DataFrame
+    DataFrame with formatted numeric columns.</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>credtools/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#__codelineno-0-551">551</a></span>
+<span class="normal"><a href="#__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#__codelineno-0-565">565</a></span>
+<span class="normal"><a href="#__codelineno-0-566">566</a></span>
+<span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span>
+<span class="normal"><a href="#__codelineno-0-573">573</a></span>
+<span class="normal"><a href="#__codelineno-0-574">574</a></span>
+<span class="normal"><a href="#__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#__codelineno-0-576">576</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="k">def</span><span class="w"> </span><span class="nf">format_enhanced_pips</span><span class="p">(</span><span class="n">enhanced_pips</span><span class="p">:</span> <span class="s2">&quot;pd.DataFrame&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;pd.DataFrame&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a><span class="sd">    Format numeric columns in the enhanced PIPs table.</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">    enhanced_pips : pd.DataFrame</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="sd">        Enhanced PIPs DataFrame with numeric columns to format.</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="sd">    pd.DataFrame</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">        DataFrame with formatted numeric columns.</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>    <span class="n">format_dict</span> <span class="o">=</span> <span class="n">create_float_format_dict</span><span class="p">(</span><span class="n">enhanced_pips</span><span class="p">)</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>    <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">fmt</span> <span class="ow">in</span> <span class="n">format_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>        <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">enhanced_pips</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="si">%.3e</span><span class="s2">&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>                <span class="n">enhanced_pips</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">enhanced_pips</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>                    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">notna</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>                <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>            <span class="k">elif</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="si">%.4f</span><span class="s2">&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>                <span class="n">enhanced_pips</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">enhanced_pips</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>                    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">notna</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>                <span class="p">)</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>    <span class="k">return</span> <span class="n">enhanced_pips</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
