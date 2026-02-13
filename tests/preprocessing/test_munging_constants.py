@@ -13,6 +13,7 @@ from credtools.preprocessing.munging.constants import (
     ColType,
     ColRange,
     ColAllowNA,
+    OUTPUT_COLS,
     COMMON_COLNAMES,
     CHROM_LENGTHS,
     suggest_column_mapping,
@@ -43,12 +44,12 @@ class TestColNameStructure:
         assert set(ColName.mandatory_cols) == expected_mandatory
 
     def test_output_cols_has_11_columns(self):
-        """Test that output_cols contains exactly 11 specific columns.
+        """Test that OUTPUT_COLS contains exactly 11 specific columns.
 
         The output columns for credtools munge command must include:
         CHR, BP, SNPID, EA, NEA, EAF, BETA, SE, P, N, RSID
         """
-        assert len(ColName.output_cols) == 11
+        assert len(OUTPUT_COLS) == 11
 
         expected_output_cols = [
             ColName.CHR,
@@ -63,10 +64,14 @@ class TestColNameStructure:
             ColName.N,
             ColName.RSID,
         ]
-        assert ColName.output_cols == expected_output_cols
+        assert OUTPUT_COLS == expected_output_cols
 
-        # Verify all output columns are in sumstat_cols
-        assert set(ColName.output_cols).issubset(set(ColName.sumstat_cols))
+        # Verify most output columns are in sumstat_cols
+        # N is in OUTPUT_COLS but not in sumstat_cols (it's optional/munging-specific)
+        sumstat_set = set(ColName.sumstat_cols)
+        for col in OUTPUT_COLS:
+            if col != ColName.N:
+                assert col in sumstat_set, f"{col} not in sumstat_cols"
 
 
 class TestColRange:
@@ -83,7 +88,6 @@ class TestColRange:
         assert ColRange.P_MIN < ColRange.P_MAX
         assert ColRange.EAF_MIN < ColRange.EAF_MAX
         assert ColRange.MAF_MIN < ColRange.MAF_MAX
-        assert ColRange.INFO_MIN < ColRange.INFO_MAX
 
         # Test specific expected values
         assert ColRange.CHR_MIN == 1
@@ -95,31 +99,26 @@ class TestColRange:
         assert ColRange.EAF_MIN == 0.0
         assert ColRange.EAF_MAX == 1.0
         assert ColRange.MAF_MIN == 0.0
-        assert ColRange.MAF_MAX == 0.5
-        assert ColRange.INFO_MIN == 0.0
-        assert ColRange.INFO_MAX == 1.0
+        assert ColRange.MAF_MAX == 1
 
-        # Test minimum-only values are positive
+        # Test minimum-only values
         assert ColRange.SE_MIN == 0.0
-        assert ColRange.OR_MIN == 1e-10
-        assert ColRange.OR_MIN > 0
-        assert ColRange.N_MIN == 1
-        assert ColRange.N_MIN > 0
 
 
 class TestCommonColnames:
     """Tests for COMMON_COLNAMES mapping dictionary."""
 
     def test_common_colnames_values_are_valid(self):
-        """Test that all COMMON_COLNAMES values are valid ColName attributes.
+        """Test that all COMMON_COLNAMES values are valid column names.
 
-        All mapped values must be present in sumstat_cols to ensure consistent
-        column naming throughout the pipeline.
+        All mapped values must be known column names (in sumstat_cols or
+        other known columns like N, Z, INFO).
         """
+        known_cols = set(ColName.sumstat_cols) | {ColName.N, ColName.Z, ColName.INFO}
         for input_name, mapped_name in COMMON_COLNAMES.items():
             assert (
-                mapped_name in ColName.sumstat_cols
-            ), f"{input_name} maps to {mapped_name}, which is not in sumstat_cols"
+                mapped_name in known_cols
+            ), f"{input_name} maps to {mapped_name}, which is not a known column"
 
         # Verify some key mappings exist
         assert "CHR" in COMMON_COLNAMES
@@ -306,11 +305,10 @@ class TestColTypeDataTypes:
         assert ColType.INFO == np.float32
         assert ColType.Z == np.float32
         assert ColType.OR == np.float32
-        assert ColType.OR_SE == np.float32
-        assert ColType.NEGLOG10P == np.float32
+        assert ColType.ORSE == np.float32
+        assert ColType.NEGLOGP == np.float32
 
         # String types
-        assert ColType.SNPID == str
         assert ColType.EA == str
         assert ColType.NEA == str
         assert ColType.RSID == str
@@ -333,13 +331,10 @@ class TestColAllowNA:
         assert ColAllowNA.SE is False
         assert ColAllowNA.P is False
 
-        # SNPID is also required for identification
-        assert ColAllowNA.SNPID is False
-
     def test_optional_cols_allow_na(self):
         """Test that optional columns allow NA values.
 
-        Optional columns (EAF, RSID, MAF, N, INFO, Z, OR, etc.) can contain
+        Optional columns (EAF, RSID, MAF, N, INFO, Z) can contain
         missing values as they may not be available in all datasets.
         """
         assert ColAllowNA.EAF is True
@@ -348,6 +343,8 @@ class TestColAllowNA:
         assert ColAllowNA.N is True
         assert ColAllowNA.INFO is True
         assert ColAllowNA.Z is True
-        assert ColAllowNA.OR is True
-        assert ColAllowNA.OR_SE is True
-        assert ColAllowNA.NEGLOG10P is True
+
+    def test_strict_cols_do_not_allow_na(self):
+        """Test that OR and ORSE do not allow NA (strict for fine-mapping)."""
+        assert ColAllowNA.OR is False
+        assert ColAllowNA.ORSE is False

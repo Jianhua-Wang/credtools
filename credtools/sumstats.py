@@ -7,7 +7,28 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
-from .constants import ColName, ColRange, ColType
+from .constants import ColAllowNA, ColName, ColRange, ColType
+
+
+def _get_validate_and_clean_column():
+    """Lazy import to avoid circular dependency."""
+    from .preprocessing.munging.validation import validate_and_clean_column
+
+    return validate_and_clean_column
+
+
+def _get_transform_chr():
+    """Lazy import to avoid circular dependency."""
+    from .preprocessing.munging.core import transform_chr
+
+    return transform_chr
+
+
+def _get_transform_allele():
+    """Lazy import to avoid circular dependency."""
+    from .preprocessing.munging.core import transform_allele
+
+    return transform_allele
 
 logger = logging.getLogger("Sumstats")
 
@@ -147,13 +168,13 @@ def make_SNPID_unique(
     ...     'BP': [12345, 12345, 67890],
     ...     'EA': ['A', 'A', 'G'],
     ...     'NEA': ['G', 'G', 'A'],
-    ...     'rsID': ['rs1', 'rs2', 'rs3'],
+    ...     'RSID': ['rs1', 'rs2', 'rs3'],
     ...     'P': [1e-5, 1e-6, 1e-7]
     ... }
     >>> df = pd.DataFrame(data)
     >>> unique_df = make_SNPID_unique(df, remove_duplicates=True)
     >>> print(unique_df)
-        SNPID       CHR     BP EA NEA rsID         P
+        SNPID       CHR     BP EA NEA RSID         P
     0  1-12345-A-G    1  12345  A   G  rs2  1.000000e-06
     1  2-67890-A-G    2  67890  G   A  rs3  1.000000e-07
     """
@@ -355,9 +376,10 @@ def munge(df: pd.DataFrame) -> pd.DataFrame:
     outdf = outdf.sort_values(by=[ColName.CHR, ColName.BP])
     outdf = munge_beta(outdf)
     outdf = munge_se(outdf)
-    outdf = munge_eaf(outdf)
-    outdf[ColName.MAF] = outdf[ColName.EAF]
-    outdf = munge_maf(outdf)
+    if ColName.EAF in outdf.columns:
+        outdf = munge_eaf(outdf)
+        outdf[ColName.MAF] = outdf[ColName.EAF]
+        outdf = munge_maf(outdf)
     if ColName.RSID in outdf.columns:
         outdf = munge_rsid(outdf)
     outdf = check_colnames(outdf)
@@ -414,21 +436,15 @@ def munge_chr(df: pd.DataFrame) -> pd.DataFrame:
 
     Invalid chromosome values are removed and logged.
     """
-    pre_n = df.shape[0]
-    outdf = df[df[ColName.CHR].notnull()].copy()
-    outdf[ColName.CHR] = outdf[ColName.CHR].astype(str)
-    outdf[ColName.CHR] = outdf[ColName.CHR].str.replace("chr", "")
-    outdf[ColName.CHR] = outdf[ColName.CHR].replace(["X", "x"], 23)
-    outdf[ColName.CHR] = pd.to_numeric(outdf[ColName.CHR], errors="coerce")
-    outdf = outdf[outdf[ColName.CHR].notnull()]
-    outdf = outdf[
-        (outdf[ColName.CHR] >= ColRange.CHR_MIN)
-        & (outdf[ColName.CHR] <= ColRange.CHR_MAX)
-    ]
-    after_n = outdf.shape[0]
-    logger.debug(f"Remove {pre_n - after_n} rows because of invalid chromosome.")
-    outdf[ColName.CHR] = outdf[ColName.CHR].astype(ColType.CHR)
-    return outdf
+    return _get_validate_and_clean_column()(
+        df=df,
+        col_name=ColName.CHR,
+        col_type=ColType.CHR,
+        min_val=ColRange.CHR_MIN,
+        max_val=ColRange.CHR_MAX,
+        allow_na=ColAllowNA.CHR,
+        transform_func=_get_transform_chr(),
+    )
 
 
 def munge_bp(df: pd.DataFrame) -> pd.DataFrame:
@@ -451,22 +467,21 @@ def munge_bp(df: pd.DataFrame) -> pd.DataFrame:
 
     1. Removes rows with missing position values
     2. Converts position to numeric type
-    3. Validates positions are within acceptable range
+    3. Validates positions are within acceptable range (exclusive: > 0, < 300M)
     4. Converts to appropriate data type
 
     Invalid position values are removed and logged.
     """
-    pre_n = df.shape[0]
-    outdf = df[df[ColName.BP].notnull()].copy()
-    outdf[ColName.BP] = pd.to_numeric(outdf[ColName.BP], errors="coerce")
-    outdf = outdf[outdf[ColName.BP].notnull()]
-    outdf = outdf[
-        (outdf[ColName.BP] > ColRange.BP_MIN) & (outdf[ColName.BP] < ColRange.BP_MAX)
-    ]
-    after_n = outdf.shape[0]
-    logger.debug(f"Remove {pre_n - after_n} rows because of invalid position.")
-    outdf[ColName.BP] = outdf[ColName.BP].astype(ColType.BP)
-    return outdf
+    return _get_validate_and_clean_column()(
+        df=df,
+        col_name=ColName.BP,
+        col_type=ColType.BP,
+        min_val=ColRange.BP_MIN,
+        max_val=ColRange.BP_MAX,
+        allow_na=ColAllowNA.BP,
+        exclude_min=True,
+        exclude_max=True,
+    )
 
 
 def munge_allele(df: pd.DataFrame) -> pd.DataFrame:
@@ -494,14 +509,17 @@ def munge_allele(df: pd.DataFrame) -> pd.DataFrame:
 
     Invalid alleles and monomorphic variants are removed and logged.
     """
+    validate = _get_validate_and_clean_column()
+    _transform_allele = _get_transform_allele()
     outdf = df.copy()
     for col in [ColName.EA, ColName.NEA]:
-        pre_n = outdf.shape[0]
-        outdf = outdf[outdf[col].notnull()]
-        outdf[col] = outdf[col].astype(str).str.upper()
-        outdf = outdf[outdf[col].str.match(r"^[ACGT]+$")]
-        after_n = outdf.shape[0]
-        logger.debug(f"Remove {pre_n - after_n} rows because of invalid {col}.")
+        outdf = validate(
+            df=outdf,
+            col_name=col,
+            col_type=ColType.EA,
+            allow_na=ColAllowNA.EA,
+            transform_func=_transform_allele,
+        )
     outdf = outdf[outdf[ColName.EA] != outdf[ColName.NEA]]
     return outdf
 
@@ -526,22 +544,21 @@ def munge_pvalue(df: pd.DataFrame) -> pd.DataFrame:
 
     1. Converts p-values to numeric type
     2. Removes rows with missing p-values
-    3. Validates p-values are within acceptable range (0, 1)
+    3. Validates p-values are within acceptable range (exclusive: > 0, < 1)
     4. Converts to appropriate data type
 
     Invalid p-values are removed and logged.
     """
-    outdf = df.copy()
-    pre_n = outdf.shape[0]
-    outdf[ColName.P] = pd.to_numeric(outdf[ColName.P], errors="coerce")
-    outdf = outdf[outdf[ColName.P].notnull()]
-    outdf = outdf[
-        (outdf[ColName.P] > ColRange.P_MIN) & (outdf[ColName.P] < ColRange.P_MAX)
-    ]
-    after_n = outdf.shape[0]
-    logger.debug(f"Remove {pre_n - after_n} rows because of invalid p-value.")
-    outdf[ColName.P] = outdf[ColName.P].astype(ColType.P)
-    return outdf
+    return _get_validate_and_clean_column()(
+        df=df,
+        col_name=ColName.P,
+        col_type=ColType.P,
+        min_val=ColRange.P_MIN,
+        max_val=ColRange.P_MAX,
+        allow_na=ColAllowNA.P,
+        exclude_min=True,
+        exclude_max=True,
+    )
 
 
 def munge_beta(df: pd.DataFrame) -> pd.DataFrame:
@@ -568,14 +585,12 @@ def munge_beta(df: pd.DataFrame) -> pd.DataFrame:
 
     Invalid beta values are removed and logged.
     """
-    pre_n = df.shape[0]
-    outdf = df.copy()
-    outdf[ColName.BETA] = pd.to_numeric(outdf[ColName.BETA], errors="coerce")
-    outdf = outdf[outdf[ColName.BETA].notnull()]
-    after_n = outdf.shape[0]
-    logger.debug(f"Remove {pre_n - after_n} rows because of invalid beta.")
-    outdf[ColName.BETA] = outdf[ColName.BETA].astype(ColType.BETA)
-    return outdf
+    return _get_validate_and_clean_column()(
+        df=df,
+        col_name=ColName.BETA,
+        col_type=ColType.BETA,
+        allow_na=ColAllowNA.BETA,
+    )
 
 
 def munge_se(df: pd.DataFrame) -> pd.DataFrame:
@@ -598,20 +613,19 @@ def munge_se(df: pd.DataFrame) -> pd.DataFrame:
 
     1. Converts standard error values to numeric type
     2. Removes rows with missing standard error values
-    3. Validates standard errors are positive
+    3. Validates standard errors are positive (exclusive: > 0)
     4. Converts to appropriate data type
 
     Invalid standard error values are removed and logged.
     """
-    pre_n = df.shape[0]
-    outdf = df.copy()
-    outdf[ColName.SE] = pd.to_numeric(outdf[ColName.SE], errors="coerce")
-    outdf = outdf[outdf[ColName.SE].notnull()]
-    outdf = outdf[outdf[ColName.SE] > ColRange.SE_MIN]
-    after_n = outdf.shape[0]
-    logger.debug(f"Remove {pre_n - after_n} rows because of invalid standard error.")
-    outdf[ColName.SE] = outdf[ColName.SE].astype(ColType.SE)
-    return outdf
+    return _get_validate_and_clean_column()(
+        df=df,
+        col_name=ColName.SE,
+        col_type=ColType.SE,
+        min_val=ColRange.SE_MIN,
+        allow_na=ColAllowNA.SE,
+        exclude_min=True,
+    )
 
 
 def munge_eaf(df: pd.DataFrame) -> pd.DataFrame:
@@ -634,25 +648,27 @@ def munge_eaf(df: pd.DataFrame) -> pd.DataFrame:
 
     1. Converts EAF values to numeric type
     2. Removes rows with missing EAF values
-    3. Validates EAF values are within range [0, 1]
+    3. Validates EAF values are within range [0, 1] (inclusive)
     4. Converts to appropriate data type
 
     Invalid EAF values are removed and logged.
     """
-    pre_n = df.shape[0]
-    outdf = df.copy()
-    outdf[ColName.EAF] = pd.to_numeric(outdf[ColName.EAF], errors="coerce")
-    outdf = outdf[outdf[ColName.EAF].notnull()]
-    outdf = outdf[
-        (outdf[ColName.EAF] >= ColRange.EAF_MIN)
-        & (outdf[ColName.EAF] <= ColRange.EAF_MAX)
-    ]
-    after_n = outdf.shape[0]
-    logger.debug(
-        f"Remove {pre_n - after_n} rows because of invalid effect allele frequency."
+    return _get_validate_and_clean_column()(
+        df=df,
+        col_name=ColName.EAF,
+        col_type=ColType.EAF,
+        min_val=ColRange.EAF_MIN,
+        max_val=ColRange.EAF_MAX,
+        allow_na=ColAllowNA.EAF,
     )
-    outdf[ColName.EAF] = outdf[ColName.EAF].astype(ColType.EAF)
-    return outdf
+
+
+def _transform_maf(series: pd.Series) -> pd.Series:
+    """Transform MAF values, flipping > 0.5 to 1 - value."""
+    result = pd.to_numeric(series, errors="coerce")
+    mask = result > 0.5
+    result.loc[mask] = 1 - result.loc[mask]
+    return result
 
 
 def munge_maf(df: pd.DataFrame) -> pd.DataFrame:
@@ -681,21 +697,15 @@ def munge_maf(df: pd.DataFrame) -> pd.DataFrame:
 
     Invalid MAF values are removed and logged.
     """
-    pre_n = df.shape[0]
-    outdf = df.copy()
-    outdf[ColName.MAF] = pd.to_numeric(outdf[ColName.MAF], errors="coerce")
-    outdf = outdf[outdf[ColName.MAF].notnull()]
-    outdf[ColName.MAF] = outdf[ColName.MAF].apply(lambda x: 1 - x if x > 0.5 else x)
-    outdf = outdf[
-        (outdf[ColName.MAF] >= ColRange.MAF_MIN)
-        & (outdf[ColName.MAF] <= ColRange.MAF_MAX)
-    ]
-    after_n = outdf.shape[0]
-    logger.debug(
-        f"Remove {pre_n - after_n} rows because of invalid minor allele frequency."
+    return _get_validate_and_clean_column()(
+        df=df,
+        col_name=ColName.MAF,
+        col_type=ColType.MAF,
+        min_val=ColRange.MAF_MIN,
+        max_val=ColRange.MAF_MAX,
+        allow_na=ColAllowNA.MAF,
+        transform_func=_transform_maf,
     )
-    outdf[ColName.MAF] = outdf[ColName.MAF].astype(ColType.MAF)
-    return outdf
 
 
 def sort_alleles(df: pd.DataFrame) -> pd.DataFrame:

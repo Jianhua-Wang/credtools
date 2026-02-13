@@ -165,7 +165,7 @@ def _fuzzy_match_header(header: str) -> Optional[str]:
         ColName.SE: ["se", "stderr", "error"],
         ColName.P: ["p", "pval", "pvalue", "p_val"],
         ColName.EAF: ["eaf", "freq", "maf", "af"],
-        ColName.OR: ["or", "odds"],
+        # OR not in standard output columns, skip fuzzy matching
         ColName.N: ["n", "sample", "size"],
         ColName.INFO: ["info", "imputation", "quality"],
         ColName.Z: ["z", "zscore", "stat"],

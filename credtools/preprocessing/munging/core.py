@@ -15,7 +15,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from .constants import ColAllowNA, ColName, ColRange, ColType
+from .constants import OUTPUT_COLS, ColAllowNA, ColName, ColRange, ColType
 from .validation import check_mandatory_cols, validate_and_clean_column
 
 logger = logging.getLogger("Munging")
@@ -198,11 +198,11 @@ def _munge_chr(df: pd.DataFrame) -> pd.DataFrame:
         min_val=ColRange.CHR_MIN,
         max_val=ColRange.CHR_MAX,
         allow_na=ColAllowNA.CHR,
-        transform_func=_transform_chr,
+        transform_func=transform_chr,
     )
 
 
-def _transform_chr(series: pd.Series) -> pd.Series:
+def transform_chr(series: pd.Series) -> pd.Series:
     """Transform chromosome values to standard format."""
     # Convert to string first
     result = series.astype(str)
@@ -241,7 +241,7 @@ def _munge_alleles(df: pd.DataFrame) -> pd.DataFrame:
         col_name=ColName.EA,
         col_type=ColType.EA,
         allow_na=ColAllowNA.EA,
-        transform_func=_transform_allele,
+        transform_func=transform_allele,
     )
 
     # Clean non-effect allele
@@ -250,7 +250,7 @@ def _munge_alleles(df: pd.DataFrame) -> pd.DataFrame:
         col_name=ColName.NEA,
         col_type=ColType.NEA,
         allow_na=ColAllowNA.NEA,
-        transform_func=_transform_allele,
+        transform_func=transform_allele,
     )
 
     # Remove rows where EA == NEA
@@ -266,7 +266,7 @@ def _munge_alleles(df: pd.DataFrame) -> pd.DataFrame:
     return outdf
 
 
-def _transform_allele(series: pd.Series) -> pd.Series:
+def transform_allele(series: pd.Series) -> pd.Series:
     """Transform allele values to standard format."""
     result = series.astype(str).str.upper()
 
@@ -339,11 +339,11 @@ def _finalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     outdf = df.copy()
 
     # Add missing output columns with None values
-    for col in ColName.output_cols:
+    for col in OUTPUT_COLS:
         if col not in outdf.columns:
             outdf[col] = None
 
-    # Reorder columns to standard output order (CHR, BP, SNPID, EA, NEA, EAF, BETA, SE, P, RSID)
-    outdf = outdf[ColName.output_cols]
+    # Reorder columns to standard output order
+    outdf = outdf[OUTPUT_COLS]
 
     return outdf

@@ -15,7 +15,7 @@ from credtools.preprocessing.munging import (
     read_config,
     validate_config,
 )
-from credtools.preprocessing.munging.constants import ColName
+from credtools.preprocessing.munging.constants import OUTPUT_COLS, ColName
 
 
 # ==================== Tests for read_config() ====================
@@ -62,7 +62,7 @@ def test_load_and_munge_tab_file_auto_mapping(tab_sumstats_file):
     assert len(result) > 0
 
     # Should have all output columns
-    for col in ColName.output_cols:
+    for col in OUTPUT_COLS:
         assert col in result.columns, f"Missing expected output column: {col}"
 
     # CHR and BP should be integer types (munge converts CHR to int8, BP to int32)
@@ -143,7 +143,7 @@ def test_load_and_munge_output_has_expected_format(tab_sumstats_file):
     result = load_and_munge(tab_sumstats_file)
 
     # Should have exactly the output columns (11 columns)
-    expected_cols = set(ColName.output_cols)
+    expected_cols = set(OUTPUT_COLS)
     actual_cols = set(result.columns)
 
     # Check all output columns are present
@@ -151,7 +151,7 @@ def test_load_and_munge_output_has_expected_format(tab_sumstats_file):
         f"Missing columns: {expected_cols - actual_cols}"
 
     # Verify it's 11 columns as specified
-    assert len(ColName.output_cols) == 11
+    assert len(OUTPUT_COLS) == 11
 
 
 # ==================== Tests for validate_config() ====================

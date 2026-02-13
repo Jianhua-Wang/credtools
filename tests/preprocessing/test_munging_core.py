@@ -12,12 +12,12 @@ from credtools.preprocessing.munging.core import (
     _munge_pvalue,
     _munge_se,
     _remove_all_na_columns,
-    _transform_allele,
-    _transform_chr,
+    transform_allele,
+    transform_chr,
     make_SNPID_unique,
     munge,
 )
-from credtools.preprocessing.munging.constants import ColName
+from credtools.preprocessing.munging.constants import OUTPUT_COLS, ColName
 
 
 class TestMunge:
@@ -28,7 +28,7 @@ class TestMunge:
         result = munge(minimal_gwas_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) > 0
-        assert list(result.columns) == ColName.output_cols
+        assert list(result.columns) == OUTPUT_COLS
 
     def test_munge_with_eaf_column(self, full_gwas_df):
         """With EAF column, EAF is processed correctly."""
@@ -43,9 +43,9 @@ class TestMunge:
         assert result[ColName.EAF].isna().all()
 
     def test_munge_output_columns(self, minimal_gwas_df):
-        """Output columns match ColName.output_cols in correct order."""
+        """Output columns match OUTPUT_COLS in correct order."""
         result = munge(minimal_gwas_df)
-        assert list(result.columns) == ColName.output_cols
+        assert list(result.columns) == OUTPUT_COLS
         assert len(result.columns) == 11
 
     def test_munge_sorted_by_chr_bp(self, minimal_gwas_df):
@@ -229,52 +229,52 @@ class TestRemoveAllNAColumns:
 
 
 class TestTransformChr:
-    """Tests for _transform_chr() function."""
+    """Tests for transform_chr() function."""
 
     def test_chr_prefix_removal(self):
         """'chr1' is converted to 1."""
         series = pd.Series(["chr1", "CHR2", "Chr3"])
-        result = _transform_chr(series)
+        result = transform_chr(series)
         assert result.tolist() == [1, 2, 3]
 
     def test_x_chromosome_conversion(self):
         """'X' and 'x' are converted to 23."""
         series = pd.Series(["X", "x"])
-        result = _transform_chr(series)
+        result = transform_chr(series)
         assert result.tolist() == [23, 23]
 
     def test_invalid_chr_to_nan(self):
         """'abc' is converted to NaN."""
         series = pd.Series(["abc", "xyz"])
-        result = _transform_chr(series)
+        result = transform_chr(series)
         assert result.isna().all()
 
     def test_numeric_string_conversion(self):
         """Numeric string '5' is converted to 5."""
         series = pd.Series(["5", "10", "22"])
-        result = _transform_chr(series)
+        result = transform_chr(series)
         assert result.tolist() == [5, 10, 22]
 
 
 class TestTransformAllele:
-    """Tests for _transform_allele() function."""
+    """Tests for transform_allele() function."""
 
     def test_lowercase_to_uppercase(self):
         """Lowercase alleles converted to uppercase: 'acgt' -> 'ACGT'."""
         series = pd.Series(["a", "c", "g", "t", "acgt"])
-        result = _transform_allele(series)
+        result = transform_allele(series)
         assert result.tolist() == ["A", "C", "G", "T", "ACGT"]
 
     def test_invalid_characters_to_nan(self):
         """Invalid characters converted to NaN: '123', 'N'."""
         series = pd.Series(["123", "N", "X", "abc123"])
-        result = _transform_allele(series)
+        result = transform_allele(series)
         assert result.isna().all()
 
     def test_multibase_valid_preserved(self):
         """Multi-base valid alleles like 'ACG' are preserved."""
         series = pd.Series(["ACG", "ATCG", "GC"])
-        result = _transform_allele(series)
+        result = transform_allele(series)
         assert result.tolist() == ["ACG", "ATCG", "GC"]
 
 
@@ -411,4 +411,4 @@ class TestFinalizeColumns:
     def test_correct_column_order(self, minimal_gwas_df):
         """Output has correct column order."""
         result = _finalize_columns(minimal_gwas_df)
-        assert list(result.columns) == ColName.output_cols
+        assert list(result.columns) == OUTPUT_COLS

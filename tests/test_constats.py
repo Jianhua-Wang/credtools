@@ -11,7 +11,7 @@ def test_colname_mandatory_columns():
     -------
     None
     """
-    expected_cols = ["CHR", "BP", "EA", "NEA", "EAF", "BETA", "SE", "P"]
+    expected_cols = ["CHR", "BP", "EA", "NEA", "BETA", "SE", "P"]
     assert ColName.mandatory_cols == expected_cols
 
 
@@ -27,7 +27,7 @@ def test_colname_sumstat_columns():
         "SNPID",
         "CHR",
         "BP",
-        "rsID",
+        "RSID",
         "EA",
         "NEA",
         "EAF",

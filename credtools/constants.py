@@ -9,7 +9,7 @@ class ColName:
     # mandatory columns
     CHR = "CHR"
     BP = "BP"
-    RSID = "rsID"
+    RSID = "RSID"
     EA = "EA"
     NEA = "NEA"
     P = "P"
@@ -47,11 +47,9 @@ class ColName:
     FINEMAP = "FINEMAP"
     ABF = "ABF"
     SUSIE = "SUSIE"
-    # PP_POLYFUN_FINEMAP = "PP_POLYFUN_FINEMAP"
-    # PP_POLYFUN_SUSIE = "PP_POLYFUN_SUSIE"
 
     # ordered columns
-    mandatory_cols = [CHR, BP, EA, NEA, EAF, BETA, SE, P]
+    mandatory_cols = [CHR, BP, EA, NEA, BETA, SE, P]
     sumstat_cols = [SNPID, CHR, BP, RSID, EA, NEA, EAF, MAF, BETA, SE, P]
     loci_cols = [CHR, START, END, LEAD_SNP, LEAD_SNP_P, LEAD_SNP_BP]
     map_cols = [CHR, BP, A1, A2]
@@ -97,22 +95,22 @@ chrom_len = {
 class ColType:
     """Define column types."""
 
-    CHR = int
-    BP = int
+    CHR = np.int8
+    BP = np.int32
     RSID = str
     EA = str
     NEA = str
-    P = float
-    NEGLOGP = float
-    BETA = float
-    OR = float
-    ORSE = float
-    SE = float
-    EAF = float
-    MAF = float
-    N = int
-    Z = float
-    INFO = float
+    P = np.float64
+    NEGLOGP = np.float32
+    BETA = np.float32
+    OR = np.float32
+    ORSE = np.float32
+    SE = np.float32
+    EAF = np.float32
+    MAF = np.float32
+    N = np.int32
+    Z = np.float32
+    INFO = np.float32
 
 
 class ColAllowNA:
@@ -123,11 +121,11 @@ class ColAllowNA:
     RSID = True
     EA = False
     NEA = False
-    P = True
-    BETA = True
-    OR = True
-    ORSE = True
-    SE = True
+    P = False
+    BETA = False
+    OR = False
+    ORSE = False
+    SE = False
     EAF = True
     MAF = True
     N = True

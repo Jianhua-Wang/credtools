@@ -5,137 +5,27 @@ Adapted from smunger (https://github.com/Jianhua-Wang/smunger)
 Original author: Jianhua Wang
 License: MIT
 
-This module provides standardized column names, data types, validation ranges,
-and other constants needed for processing GWAS summary statistics.
+This module re-exports shared definitions from the main credtools.constants
+and provides munging-specific constants (output columns, column name aliases,
+chromosome lengths, and column mapping suggestions).
 """
 
-from typing import Any, Dict
+from credtools.constants import ColAllowNA, ColName, ColRange, ColType  # noqa: F401
 
-import numpy as np
-
-
-class ColName:
-    """Standard column names for GWAS summary statistics."""
-
-    # Core required columns
-    CHR = "CHR"
-    BP = "BP"
-    SNPID = "SNPID"
-    EA = "EA"
-    NEA = "NEA"
-    EAF = "EAF"
-    BETA = "BETA"
-    SE = "SE"
-    P = "P"
-
-    # Optional columns
-    RSID = "RSID"
-    MAF = "MAF"
-    N = "N"
-    INFO = "INFO"
-    Z = "Z"
-    OR = "OR"
-    OR_SE = "OR_SE"
-    NEGLOG10P = "NEGLOG10P"
-
-    # All standard columns
-    sumstat_cols = [
-        CHR,
-        BP,
-        SNPID,
-        EA,
-        NEA,
-        EAF,
-        BETA,
-        SE,
-        P,
-        RSID,
-        MAF,
-        N,
-        INFO,
-        Z,
-        OR,
-        OR_SE,
-        NEGLOG10P,
-    ]
-
-    # Mandatory columns for basic functionality
-    mandatory_cols = [CHR, BP, EA, NEA, BETA, SE, P]
-
-    # Output columns for credtools munge command (user requirement)
-    output_cols = [CHR, BP, SNPID, EA, NEA, EAF, BETA, SE, P, N, RSID]
-
-
-class ColType:
-    """Data types for each column."""
-
-    CHR = np.int8
-    BP = np.int32
-    SNPID = str
-    EA = str
-    NEA = str
-    EAF = np.float32
-    BETA = np.float32
-    SE = np.float32
-    P = np.float64
-    RSID = str
-    MAF = np.float32
-    N = np.int32
-    INFO = np.float32
-    Z = np.float32
-    OR = np.float32
-    OR_SE = np.float32
-    NEGLOG10P = np.float32
-
-
-class ColRange:
-    """Valid ranges for numerical columns."""
-
-    CHR_MIN = 1
-    CHR_MAX = 23  # Including X chromosome as 23
-
-    BP_MIN = 0
-    BP_MAX = 300_000_000  # 300Mb, larger than any human chromosome
-
-    P_MIN = 0.0
-    P_MAX = 1.0
-
-    EAF_MIN = 0.0
-    EAF_MAX = 1.0
-
-    MAF_MIN = 0.0
-    MAF_MAX = 0.5
-
-    INFO_MIN = 0.0
-    INFO_MAX = 1.0
-
-    SE_MIN = 0.0  # Standard error must be positive
-
-    OR_MIN = 1e-10  # Odds ratio must be positive
-
-    N_MIN = 1  # Sample size must be positive
-
-
-class ColAllowNA:
-    """Whether columns can have NA values."""
-
-    CHR = False
-    BP = False
-    SNPID = False
-    EA = False
-    NEA = False
-    EAF = True
-    BETA = False
-    SE = False
-    P = False
-    RSID = True
-    MAF = True
-    N = True
-    INFO = True
-    Z = True
-    OR = True
-    OR_SE = True
-    NEGLOG10P = True
+# Munging-specific: output columns for credtools munge command
+OUTPUT_COLS = [
+    ColName.CHR,
+    ColName.BP,
+    ColName.SNPID,
+    ColName.EA,
+    ColName.NEA,
+    ColName.EAF,
+    ColName.BETA,
+    ColName.SE,
+    ColName.P,
+    ColName.N,
+    ColName.RSID,
+]
 
 
 # Common alternative column names found in GWAS files
@@ -196,10 +86,6 @@ COMMON_COLNAMES = {
     "pvalue": ColName.P,
     "P-value": ColName.P,
     "p_value": ColName.P,
-    # Odds ratio
-    "OR": ColName.OR,
-    "or": ColName.OR,
-    "odds_ratio": ColName.OR,
     # Sample size
     "N": ColName.N,
     "n": ColName.N,

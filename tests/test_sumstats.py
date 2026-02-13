@@ -121,7 +121,7 @@ def sample_df1():
             ColName.BP: [12345, 12345, 67890, 67890],
             ColName.EA: ["A", "A", "G", "A"],
             ColName.NEA: ["G", "G", "A", "G"],
-            "rsID": ["rs1", "rs2", "rs3", "rs4"],
+            ColName.RSID: ["rs1", "rs2", "rs3", "rs4"],
             ColName.P: [1e-5, 1e-6, 1e-7, 1e-8],
         }
     )
@@ -338,6 +338,7 @@ def test_munge_function_calls(
     mock_munge_pvalue.assert_called_once()
     mock_munge_beta.assert_called_once()
     mock_munge_se.assert_called_once()
+    # EAF/MAF only called when EAF column exists (sample_df3 has EAF)
     mock_munge_eaf.assert_called_once()
     mock_munge_maf.assert_called_once()
     mock_munge_rsid.assert_called_once()
@@ -587,3 +588,175 @@ def test_load_sumstats_empty_file(create_test_file):
 def test_load_sumstats_file_not_found():
     with pytest.raises(FileNotFoundError):
         load_sumstats("nonexistent_file.txt")
+
+
+# ==================== Boundary behavior pinning tests (step 2.1) ====================
+
+from credtools.sumstats import (
+    munge_bp,
+    munge_chr,
+    munge_eaf,
+    munge_maf,
+    munge_pvalue,
+    munge_se,
+)
+
+
+class TestMungeBpBoundary:
+    """Pinning tests for munge_bp exclusive boundaries (> 0, < 300M)."""
+
+    def test_bp_zero_excluded(self):
+        """BP=0 should be excluded (exclusive lower bound)."""
+        df = pd.DataFrame(
+            {
+                ColName.CHR: [1, 1],
+                ColName.BP: [0, 1000],
+                ColName.EA: ["A", "C"],
+                ColName.NEA: ["G", "T"],
+            }
+        )
+        result = munge_bp(df)
+        assert 0 not in result[ColName.BP].values
+        assert len(result) == 1
+
+    def test_bp_positive_included(self):
+        """BP=1 should be included."""
+        df = pd.DataFrame({ColName.BP: [1, 100000]})
+        result = munge_bp(df)
+        assert 1 in result[ColName.BP].values
+
+    def test_bp_300M_excluded(self):
+        """BP=300000000 should be excluded (exclusive upper bound)."""
+        df = pd.DataFrame({ColName.BP: [1000, 300000000]})
+        result = munge_bp(df)
+        assert 300000000 not in result[ColName.BP].values
+        assert len(result) == 1
+
+    def test_bp_just_below_300M_included(self):
+        """BP=299999999 should be included."""
+        df = pd.DataFrame({ColName.BP: [299999999]})
+        result = munge_bp(df)
+        assert 299999999 in result[ColName.BP].values
+
+    def test_bp_negative_excluded(self):
+        """Negative BP should be excluded."""
+        df = pd.DataFrame({ColName.BP: [-1, 1000]})
+        result = munge_bp(df)
+        assert -1 not in result[ColName.BP].values
+
+
+class TestMungePvalueBoundary:
+    """Pinning tests for munge_pvalue exclusive boundaries (> 0, < 1)."""
+
+    def test_pvalue_zero_excluded(self):
+        """P=0 should be excluded (exclusive lower bound)."""
+        df = pd.DataFrame({ColName.P: [0, 0.5]})
+        result = munge_pvalue(df)
+        assert 0 not in result[ColName.P].values
+        assert len(result) == 1
+
+    def test_pvalue_one_excluded(self):
+        """P=1 should be excluded (exclusive upper bound)."""
+        df = pd.DataFrame({ColName.P: [0.5, 1.0]})
+        result = munge_pvalue(df)
+        assert 1.0 not in result[ColName.P].values
+        assert len(result) == 1
+
+    def test_pvalue_small_positive_included(self):
+        """Very small positive P should be included."""
+        df = pd.DataFrame({ColName.P: [1e-300]})
+        result = munge_pvalue(df)
+        assert len(result) == 1
+
+    def test_pvalue_just_below_one_included(self):
+        """P=0.999999 should be included."""
+        df = pd.DataFrame({ColName.P: [0.999999]})
+        result = munge_pvalue(df)
+        assert len(result) == 1
+
+
+class TestMungeSeBoundary:
+    """Pinning tests for munge_se exclusive minimum (> 0)."""
+
+    def test_se_zero_excluded(self):
+        """SE=0 should be excluded (exclusive lower bound)."""
+        df = pd.DataFrame({ColName.SE: [0, 0.05]})
+        result = munge_se(df)
+        assert 0 not in result[ColName.SE].values
+        assert len(result) == 1
+
+    def test_se_small_positive_included(self):
+        """Very small positive SE should be included."""
+        df = pd.DataFrame({ColName.SE: [1e-10]})
+        result = munge_se(df)
+        assert len(result) == 1
+
+    def test_se_negative_excluded(self):
+        """Negative SE should be excluded."""
+        df = pd.DataFrame({ColName.SE: [-0.01, 0.05]})
+        result = munge_se(df)
+        assert len(result) == 1
+
+
+class TestMungeChrBoundary:
+    """Pinning tests for munge_chr inclusive boundaries (>= 1, <= 23)."""
+
+    def test_chr_one_included(self):
+        """CHR=1 should be included (inclusive lower bound)."""
+        df = pd.DataFrame({ColName.CHR: [1]})
+        result = munge_chr(df)
+        assert 1 in result[ColName.CHR].values
+
+    def test_chr_23_included(self):
+        """CHR=23 should be included (inclusive upper bound)."""
+        df = pd.DataFrame({ColName.CHR: [23]})
+        result = munge_chr(df)
+        assert 23 in result[ColName.CHR].values
+
+    def test_chr_zero_excluded(self):
+        """CHR=0 should be excluded."""
+        df = pd.DataFrame({ColName.CHR: [0, 1]})
+        result = munge_chr(df)
+        assert 0 not in result[ColName.CHR].values
+        assert len(result) == 1
+
+    def test_chr_24_excluded(self):
+        """CHR=24 should be excluded."""
+        df = pd.DataFrame({ColName.CHR: [1, 24]})
+        result = munge_chr(df)
+        assert 24 not in result[ColName.CHR].values
+        assert len(result) == 1
+
+    def test_chr_x_maps_to_23(self):
+        """CHR='X' should map to 23."""
+        df = pd.DataFrame({ColName.CHR: ["X"]})
+        result = munge_chr(df)
+        assert 23 in result[ColName.CHR].values
+
+
+class TestMungeEafBoundary:
+    """Pinning tests for munge_eaf inclusive boundaries (>= 0, <= 1)."""
+
+    def test_eaf_zero_included(self):
+        """EAF=0 should be included (inclusive lower bound)."""
+        df = pd.DataFrame({ColName.EAF: [0, 0.5]})
+        result = munge_eaf(df)
+        assert 0 in result[ColName.EAF].values or np.float32(0) in result[ColName.EAF].values
+
+    def test_eaf_one_included(self):
+        """EAF=1 should be included (inclusive upper bound)."""
+        df = pd.DataFrame({ColName.EAF: [0.5, 1.0]})
+        result = munge_eaf(df)
+        assert len(result) == 2
+
+    def test_eaf_negative_excluded(self):
+        """EAF=-0.1 should be excluded."""
+        df = pd.DataFrame({ColName.EAF: [-0.1, 0.5]})
+        result = munge_eaf(df)
+        assert len(result) == 1
+
+    def test_eaf_above_one_excluded(self):
+        """EAF=1.1 should be excluded."""
+        df = pd.DataFrame({ColName.EAF: [0.5, 1.1]})
+        result = munge_eaf(df)
+        assert len(result) == 1

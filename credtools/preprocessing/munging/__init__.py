@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 
 from .constants import ColName
-from .core import make_SNPID_unique, munge
+from .core import make_SNPID_unique, munge, transform_allele, transform_chr
 from .headers import (
     apply_header_mapping,
     create_config_template,
@@ -43,6 +43,8 @@ __all__ = [
     "create_config_template",
     "make_SNPID_unique",
     "load_and_munge",
+    "transform_chr",
+    "transform_allele",
 ]
 
 
