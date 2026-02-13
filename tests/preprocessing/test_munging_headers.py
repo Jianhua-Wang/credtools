@@ -19,7 +19,7 @@ from credtools.preprocessing.munging.constants import ColName
 
 
 def test_detect_separator_tab_file(tab_sumstats_file):
-    """Test separator detection for tab-separated file.
+    r"""Test separator detection for tab-separated file.
 
     Note: When tab_count == space_count (short column names without spaces),
     the detector falls through to \\s+ which still correctly reads tab files.

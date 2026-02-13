@@ -1,4 +1,5 @@
 """Unit tests for GWAS summary statistics validation functions."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -17,55 +18,63 @@ class TestCheckMandatoryCols:
 
     def test_all_columns_present(self):
         """All mandatory columns present should not raise error."""
-        df = pd.DataFrame({
-            "CHR": [1],
-            "BP": [1000],
-            "EA": ["A"],
-            "NEA": ["G"],
-            "BETA": [0.1],
-            "SE": [0.01],
-            "P": [0.05],
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1],
+                "BP": [1000],
+                "EA": ["A"],
+                "NEA": ["G"],
+                "BETA": [0.1],
+                "SE": [0.01],
+                "P": [0.05],
+            }
+        )
         check_mandatory_cols(df)  # Should not raise
 
     def test_missing_one_column(self):
         """Missing one mandatory column should raise ValueError with column name."""
-        df = pd.DataFrame({
-            "CHR": [1],
-            "BP": [1000],
-            "EA": ["A"],
-            "NEA": ["G"],
-            "BETA": [0.1],
-            "SE": [0.01],
-            # Missing "P"
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1],
+                "BP": [1000],
+                "EA": ["A"],
+                "NEA": ["G"],
+                "BETA": [0.1],
+                "SE": [0.01],
+                # Missing "P"
+            }
+        )
         with pytest.raises(ValueError, match="P"):
             check_mandatory_cols(df)
 
     def test_missing_multiple_columns(self):
         """Missing multiple columns should raise ValueError."""
-        df = pd.DataFrame({
-            "CHR": [1],
-            "BP": [1000],
-            "EA": ["A"],
-            # Missing NEA, BETA, SE, P
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1],
+                "BP": [1000],
+                "EA": ["A"],
+                # Missing NEA, BETA, SE, P
+            }
+        )
         with pytest.raises(ValueError, match="Missing mandatory columns"):
             check_mandatory_cols(df)
 
     def test_extra_columns_present(self):
         """Extra columns beyond mandatory ones should not raise error."""
-        df = pd.DataFrame({
-            "CHR": [1],
-            "BP": [1000],
-            "EA": ["A"],
-            "NEA": ["G"],
-            "BETA": [0.1],
-            "SE": [0.01],
-            "P": [0.05],
-            "EXTRA1": ["value"],
-            "EXTRA2": [123],
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1],
+                "BP": [1000],
+                "EA": ["A"],
+                "NEA": ["G"],
+                "BETA": [0.1],
+                "SE": [0.01],
+                "P": [0.05],
+                "EXTRA1": ["value"],
+                "EXTRA2": [123],
+            }
+        )
         check_mandatory_cols(df)  # Should not raise
 
 
@@ -211,30 +220,36 @@ class TestValidateAlleleConsistency:
 
     def test_ea_equals_nea_rows_removed(self):
         """Rows where EA equals NEA should be removed."""
-        df = pd.DataFrame({
-            "EA": ["A", "A", "C"],
-            "NEA": ["G", "A", "T"],
-        })
+        df = pd.DataFrame(
+            {
+                "EA": ["A", "A", "C"],
+                "NEA": ["G", "A", "T"],
+            }
+        )
         result = validate_allele_consistency(df)
         assert len(result) == 2
         assert 1 not in result.index
 
     def test_valid_rows_preserved(self):
         """Valid rows with different alleles should be preserved."""
-        df = pd.DataFrame({
-            "EA": ["A", "C", "G"],
-            "NEA": ["G", "T", "A"],
-        })
+        df = pd.DataFrame(
+            {
+                "EA": ["A", "C", "G"],
+                "NEA": ["G", "T", "A"],
+            }
+        )
         result = validate_allele_consistency(df)
         assert len(result) == 3
         pd.testing.assert_frame_equal(result, df)
 
     def test_na_allele_rows_removed(self):
         """Rows with NA alleles should be removed."""
-        df = pd.DataFrame({
-            "EA": ["A", np.nan, "C", "G"],
-            "NEA": ["G", "T", np.nan, "A"],
-        })
+        df = pd.DataFrame(
+            {
+                "EA": ["A", np.nan, "C", "G"],
+                "NEA": ["G", "T", np.nan, "A"],
+            }
+        )
         result = validate_allele_consistency(df)
         assert len(result) == 2
         assert result.loc[0, "EA"] == "A"
@@ -252,10 +267,12 @@ class TestValidateStatisticalConsistency:
 
     def test_se_zero_or_negative_rows_removed(self):
         """Rows with SE=0 or SE<0 should be removed."""
-        df = pd.DataFrame({
-            "BETA": [0.1, 0.2, 0.3, 0.4],
-            "SE": [0.01, 0.0, -0.01, 0.02],
-        })
+        df = pd.DataFrame(
+            {
+                "BETA": [0.1, 0.2, 0.3, 0.4],
+                "SE": [0.01, 0.0, -0.01, 0.02],
+            }
+        )
         result = validate_statistical_consistency(df)
         assert len(result) == 2
         assert 1 not in result.index
@@ -263,10 +280,12 @@ class TestValidateStatisticalConsistency:
 
     def test_se_positive_preserved(self):
         """Rows with SE>0 should be preserved."""
-        df = pd.DataFrame({
-            "BETA": [0.1, 0.2, 0.3],
-            "SE": [0.01, 0.02, 0.03],
-        })
+        df = pd.DataFrame(
+            {
+                "BETA": [0.1, 0.2, 0.3],
+                "SE": [0.01, 0.02, 0.03],
+            }
+        )
         result = validate_statistical_consistency(df)
         pd.testing.assert_frame_equal(result, df)
 
@@ -291,10 +310,12 @@ class TestValidateFrequencyConsistency:
 
     def test_eaf_maf_discrepancy_corrected(self):
         """EAF/MAF discrepancy should be corrected."""
-        df = pd.DataFrame({
-            "EAF": [0.2, 0.8, 0.3],
-            "MAF": [0.5, 0.2, 0.3],  # Wrong values
-        })
+        df = pd.DataFrame(
+            {
+                "EAF": [0.2, 0.8, 0.3],
+                "MAF": [0.5, 0.2, 0.3],  # Wrong values
+            }
+        )
         result = validate_frequency_consistency(df)
         # Expected MAF from EAF: min(0.2, 0.8)=0.2, min(0.8, 0.2)=0.2, min(0.3, 0.7)=0.3
         assert abs(result.loc[0, "MAF"] - 0.2) < 0.01

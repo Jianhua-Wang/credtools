@@ -1,4 +1,5 @@
 """Unit tests for credtools/preprocessing/munging/core.py."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -55,9 +56,9 @@ class TestMunge:
         df.loc[1, "CHR"] = 5
         result = munge(df)
         assert result[ColName.CHR].is_monotonic_increasing or (
-            result.groupby(ColName.CHR)[ColName.BP].apply(
-                lambda x: x.is_monotonic_increasing
-            ).all()
+            result.groupby(ColName.CHR)[ColName.BP]
+            .apply(lambda x: x.is_monotonic_increasing)
+            .all()
         )
 
     def test_munge_missing_mandatory_column_raises_error(self, minimal_gwas_df):
@@ -164,14 +165,28 @@ class TestMakeSNPIDUnique:
 
     def test_allele_sorting(self):
         """G-A and A-G produce same SNPID (alleles sorted alphabetically)."""
-        df1 = pd.DataFrame({
-            "CHR": [1], "BP": [1000], "EA": ["G"], "NEA": ["A"],
-            "BETA": [0.1], "SE": [0.01], "P": [0.05]
-        })
-        df2 = pd.DataFrame({
-            "CHR": [1], "BP": [1000], "EA": ["A"], "NEA": ["G"],
-            "BETA": [0.1], "SE": [0.01], "P": [0.05]
-        })
+        df1 = pd.DataFrame(
+            {
+                "CHR": [1],
+                "BP": [1000],
+                "EA": ["G"],
+                "NEA": ["A"],
+                "BETA": [0.1],
+                "SE": [0.01],
+                "P": [0.05],
+            }
+        )
+        df2 = pd.DataFrame(
+            {
+                "CHR": [1],
+                "BP": [1000],
+                "EA": ["A"],
+                "NEA": ["G"],
+                "BETA": [0.1],
+                "SE": [0.01],
+                "P": [0.05],
+            }
+        )
         result1 = make_SNPID_unique(df1, remove_duplicates=False)
         result2 = make_SNPID_unique(df2, remove_duplicates=False)
         assert result1[ColName.SNPID].iloc[0] == result2[ColName.SNPID].iloc[0]
@@ -184,16 +199,23 @@ class TestMakeSNPIDUnique:
 
     def test_custom_column_names(self):
         """Custom column names work correctly."""
-        df = pd.DataFrame({
-            "chromosome": [1], "position": [1000],
-            "effect_allele": ["A"], "other_allele": ["G"],
-            "pvalue": [0.05]
-        })
+        df = pd.DataFrame(
+            {
+                "chromosome": [1],
+                "position": [1000],
+                "effect_allele": ["A"],
+                "other_allele": ["G"],
+                "pvalue": [0.05],
+            }
+        )
         result = make_SNPID_unique(
-            df, remove_duplicates=False,
-            col_chr="chromosome", col_bp="position",
-            col_ea="effect_allele", col_nea="other_allele",
-            col_p="pvalue"
+            df,
+            remove_duplicates=False,
+            col_chr="chromosome",
+            col_bp="position",
+            col_ea="effect_allele",
+            col_nea="other_allele",
+            col_p="pvalue",
         )
         assert ColName.SNPID in result.columns
         assert result[ColName.SNPID].iloc[0] == "1-1000-A-G"
@@ -283,15 +305,17 @@ class TestMungeChr:
 
     def test_chr_prefix_removal_and_x_conversion(self):
         """CHR prefix removal and X->23 conversion."""
-        df = pd.DataFrame({
-            "CHR": ["chr1", "X", "chr5"],
-            "BP": [1000, 2000, 3000],
-            "EA": ["A", "C", "G"],
-            "NEA": ["G", "T", "A"],
-            "BETA": [0.1, 0.2, 0.3],
-            "SE": [0.01, 0.02, 0.03],
-            "P": [0.05, 0.01, 0.001]
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": ["chr1", "X", "chr5"],
+                "BP": [1000, 2000, 3000],
+                "EA": ["A", "C", "G"],
+                "NEA": ["G", "T", "A"],
+                "BETA": [0.1, 0.2, 0.3],
+                "SE": [0.01, 0.02, 0.03],
+                "P": [0.05, 0.01, 0.001],
+            }
+        )
         result = _munge_chr(df)
         assert result[ColName.CHR].tolist() == [1, 23, 5]
 
@@ -301,15 +325,17 @@ class TestMungeBp:
 
     def test_bp_range_validation(self):
         """BP range validation removes -1 and values > 300000000."""
-        df = pd.DataFrame({
-            "CHR": [1, 1, 1, 1],
-            "BP": [-1, 1000, 300000001, 100000],
-            "EA": ["A", "C", "G", "T"],
-            "NEA": ["G", "T", "A", "C"],
-            "BETA": [0.1, 0.2, 0.3, 0.4],
-            "SE": [0.01, 0.02, 0.03, 0.04],
-            "P": [0.05, 0.01, 0.001, 0.0001]
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1, 1, 1, 1],
+                "BP": [-1, 1000, 300000001, 100000],
+                "EA": ["A", "C", "G", "T"],
+                "NEA": ["G", "T", "A", "C"],
+                "BETA": [0.1, 0.2, 0.3, 0.4],
+                "SE": [0.01, 0.02, 0.03, 0.04],
+                "P": [0.05, 0.01, 0.001, 0.0001],
+            }
+        )
         result = _munge_bp(df)
         assert len(result) == 2
         assert -1 not in result[ColName.BP].values
@@ -321,15 +347,17 @@ class TestMungeAlleles:
 
     def test_invalid_allele_and_identical_removed(self):
         """Invalid allele and EA==NEA rows are removed."""
-        df = pd.DataFrame({
-            "CHR": [1, 1, 1, 1],
-            "BP": [1000, 2000, 3000, 4000],
-            "EA": ["A", "123", "G", "A"],
-            "NEA": ["G", "C", "G", "C"],
-            "BETA": [0.1, 0.2, 0.3, 0.4],
-            "SE": [0.01, 0.02, 0.03, 0.04],
-            "P": [0.05, 0.01, 0.001, 0.0001]
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1, 1, 1, 1],
+                "BP": [1000, 2000, 3000, 4000],
+                "EA": ["A", "123", "G", "A"],
+                "NEA": ["G", "C", "G", "C"],
+                "BETA": [0.1, 0.2, 0.3, 0.4],
+                "SE": [0.01, 0.02, 0.03, 0.04],
+                "P": [0.05, 0.01, 0.001, 0.0001],
+            }
+        )
         result = _munge_alleles(df)
         assert len(result) == 2
         assert "123" not in result[ColName.EA].values
@@ -342,15 +370,17 @@ class TestMungePvalue:
 
     def test_pvalue_zero_removed(self):
         """P=0 is removed (exclude_min)."""
-        df = pd.DataFrame({
-            "CHR": [1, 1, 1],
-            "BP": [1000, 2000, 3000],
-            "EA": ["A", "C", "G"],
-            "NEA": ["G", "T", "A"],
-            "BETA": [0.1, 0.2, 0.3],
-            "SE": [0.01, 0.02, 0.03],
-            "P": [0, 0.05, 0.01]
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1, 1, 1],
+                "BP": [1000, 2000, 3000],
+                "EA": ["A", "C", "G"],
+                "NEA": ["G", "T", "A"],
+                "BETA": [0.1, 0.2, 0.3],
+                "SE": [0.01, 0.02, 0.03],
+                "P": [0, 0.05, 0.01],
+            }
+        )
         result = _munge_pvalue(df)
         assert len(result) == 2
         assert 0 not in result[ColName.P].values
@@ -361,15 +391,17 @@ class TestMungeSe:
 
     def test_se_zero_removed(self):
         """SE=0 is removed (exclude_min)."""
-        df = pd.DataFrame({
-            "CHR": [1, 1, 1],
-            "BP": [1000, 2000, 3000],
-            "EA": ["A", "C", "G"],
-            "NEA": ["G", "T", "A"],
-            "BETA": [0.1, 0.2, 0.3],
-            "SE": [0, 0.02, 0.03],
-            "P": [0.05, 0.01, 0.001]
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1, 1, 1],
+                "BP": [1000, 2000, 3000],
+                "EA": ["A", "C", "G"],
+                "NEA": ["G", "T", "A"],
+                "BETA": [0.1, 0.2, 0.3],
+                "SE": [0, 0.02, 0.03],
+                "P": [0.05, 0.01, 0.001],
+            }
+        )
         result = _munge_se(df)
         assert len(result) == 2
         assert 0 not in result[ColName.SE].values
@@ -380,16 +412,18 @@ class TestMungeEaf:
 
     def test_eaf_range_validation(self):
         """EAF range [0,1] is validated."""
-        df = pd.DataFrame({
-            "CHR": [1, 1, 1, 1],
-            "BP": [1000, 2000, 3000, 4000],
-            "EA": ["A", "C", "G", "T"],
-            "NEA": ["G", "T", "A", "C"],
-            "BETA": [0.1, 0.2, 0.3, 0.4],
-            "SE": [0.01, 0.02, 0.03, 0.04],
-            "P": [0.05, 0.01, 0.001, 0.0001],
-            "EAF": [-0.1, 0.5, 1.5, 0.3]
-        })
+        df = pd.DataFrame(
+            {
+                "CHR": [1, 1, 1, 1],
+                "BP": [1000, 2000, 3000, 4000],
+                "EA": ["A", "C", "G", "T"],
+                "NEA": ["G", "T", "A", "C"],
+                "BETA": [0.1, 0.2, 0.3, 0.4],
+                "SE": [0.01, 0.02, 0.03, 0.04],
+                "P": [0.05, 0.01, 0.001, 0.0001],
+                "EAF": [-0.1, 0.5, 1.5, 0.3],
+            }
+        )
         result = _munge_eaf(df)
         assert len(result) == 2
         assert (result[ColName.EAF] >= 0).all()

@@ -459,8 +459,12 @@ def fine_map(
             # COJO analysis for max_causal if enabled (skip for abf_cojo as it handles its own)
             if set_L_by_cojo and tool != "abf_cojo":
                 max_causal = _determine_max_causal_by_cojo(
-                    locus, p_cutoff, collinear_cutoff, window_size,
-                    maf_cutoff, diff_freq_cutoff,
+                    locus,
+                    p_cutoff,
+                    collinear_cutoff,
+                    window_size,
+                    maf_cutoff,
+                    diff_freq_cutoff,
                 )
 
             # Use adaptive logic if enabled
@@ -506,8 +510,13 @@ def fine_map(
                 locus_max_causal = max_causal
                 if set_L_by_cojo and tool != "abf_cojo":
                     locus_max_causal = _determine_max_causal_by_cojo(
-                        locus, p_cutoff, collinear_cutoff, window_size,
-                        maf_cutoff, diff_freq_cutoff, locus_index=i + 1,
+                        locus,
+                        p_cutoff,
+                        collinear_cutoff,
+                        window_size,
+                        maf_cutoff,
+                        diff_freq_cutoff,
+                        locus_index=i + 1,
                     )
 
                 # Run fine-mapping for this locus

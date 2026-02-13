@@ -297,10 +297,14 @@ def run_susiex(
         summary_file = f"{temp_dir}/chr{chrom}_{start}_{end}.summary"
         if os.path.exists(summary_file):
             try:
-                summary_df = pd.read_csv(summary_file, sep="\t", comment='#')
-                if 'CS_ID' in summary_df.columns and 'CS_PURITY' in summary_df.columns:
-                    purity_dict = dict(zip(summary_df['CS_ID'], summary_df['CS_PURITY']))
-                    logger.info(f"Read purity values from {summary_file}: {purity_dict}")
+                summary_df = pd.read_csv(summary_file, sep="\t", comment="#")
+                if "CS_ID" in summary_df.columns and "CS_PURITY" in summary_df.columns:
+                    purity_dict = dict(
+                        zip(summary_df["CS_ID"], summary_df["CS_PURITY"])
+                    )
+                    logger.info(
+                        f"Read purity values from {summary_file}: {purity_dict}"
+                    )
             except Exception as e:
                 logger.warning(f"Failed to read purity from {summary_file}: {e}")
 

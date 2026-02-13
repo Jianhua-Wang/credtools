@@ -66,7 +66,9 @@ class TestMungeSumstatsInputNormalization:
     """Tests for munge_sumstats input normalization to dict format."""
 
     @patch(f"{_MUNGING}.load_and_munge")
-    def test_string_input_normalized_to_dict(self, mock_load, tmp_path, valid_sumstats_file):
+    def test_string_input_normalized_to_dict(
+        self, mock_load, tmp_path, valid_sumstats_file
+    ):
         """String input should be normalized to dict with filename as key."""
         mock_load.return_value = pd.DataFrame({"CHR": [1], "BP": [1000]})
         output_dir = str(tmp_path / "output")
@@ -78,7 +80,9 @@ class TestMungeSumstatsInputNormalization:
         assert result[expected_key].endswith(f"{expected_key}.munged.txt.gz")
 
     @patch(f"{_MUNGING}.load_and_munge")
-    def test_list_input_normalized_to_dict(self, mock_load, tmp_path, valid_sumstats_file):
+    def test_list_input_normalized_to_dict(
+        self, mock_load, tmp_path, valid_sumstats_file
+    ):
         """List input should be normalized to dict with filenames as keys."""
         mock_load.return_value = pd.DataFrame({"CHR": [1], "BP": [1000]})
         file2 = tmp_path / "file2.tsv"
@@ -107,7 +111,9 @@ class TestMungeSumstatsInputNormalization:
         """Invalid input type (e.g., int) should raise ValueError."""
         output_dir = str(tmp_path / "output")
 
-        with pytest.raises(ValueError, match="must be a string, list of strings, or dictionary"):
+        with pytest.raises(
+            ValueError, match="must be a string, list of strings, or dictionary"
+        ):
             munge_sumstats(12345, output_dir)
 
 
@@ -179,7 +185,9 @@ class TestMungeSumstatsOverwriteBehavior:
     """Tests for munge_sumstats force_overwrite parameter."""
 
     @patch(f"{_MUNGING}.load_and_munge")
-    def test_force_false_skips_existing_files(self, mock_load, tmp_path, valid_sumstats_file):
+    def test_force_false_skips_existing_files(
+        self, mock_load, tmp_path, valid_sumstats_file
+    ):
         """force_overwrite=False should skip existing output files without modification."""
         output_dir = str(tmp_path / "output")
         os.makedirs(output_dir, exist_ok=True)
@@ -203,7 +211,9 @@ class TestMungeSumstatsOverwriteBehavior:
         mock_load.assert_not_called()
 
     @patch(f"{_MUNGING}.load_and_munge")
-    def test_force_true_overwrites_existing_files(self, mock_load, tmp_path, valid_sumstats_file):
+    def test_force_true_overwrites_existing_files(
+        self, mock_load, tmp_path, valid_sumstats_file
+    ):
         """force_overwrite=True should overwrite existing output files."""
         output_dir = str(tmp_path / "output")
         os.makedirs(output_dir, exist_ok=True)
@@ -246,7 +256,9 @@ class TestMungeSumstatsConfigHandling:
             json.dump(mock_config, f)
 
         output_dir = str(tmp_path / "output")
-        result = munge_sumstats(valid_sumstats_file, output_dir, config_file=str(config_file))
+        result = munge_sumstats(
+            valid_sumstats_file, output_dir, config_file=str(config_file)
+        )
 
         mock_read_config.assert_called_once_with(str(config_file))
 

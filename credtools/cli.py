@@ -1036,7 +1036,9 @@ def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
         if not causal_variants.empty:
             causal_variants["locus_id"] = locus_id
         causal_variants_records = (
-            causal_variants.to_dict(orient="records") if not causal_variants.empty else []
+            causal_variants.to_dict(orient="records")
+            if not causal_variants.empty
+            else []
         )
 
         # Create credible sets summary (one row per CS)
@@ -1298,7 +1300,9 @@ def run_fine_map(
             traceback_text = result.get("traceback")
             if traceback_text:
                 logger.error(f"Traceback:\n{traceback_text}")
-                print(f"\nTraceback for {locus_label}:\n{traceback_text}", file=sys.stderr)
+                print(
+                    f"\nTraceback for {locus_label}:\n{traceback_text}", file=sys.stderr
+                )
             print(f"ERROR: {full_msg}", file=sys.stderr)
             run_summary["failed_loci"] += 1
             run_summary["errors"].append(full_msg)

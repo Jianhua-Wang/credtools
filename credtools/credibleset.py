@@ -584,7 +584,9 @@ def combine_creds(
                 purity.append(purity_val)
             else:
                 purity.append(None)
-        logger.info(f"Calculated purity for {len(purity)} merged credible sets: {purity}")
+        logger.info(
+            f"Calculated purity for {len(purity)} merged credible sets: {purity}"
+        )
 
     merged = CredibleSet(
         tool=creds[0].tool,
@@ -857,7 +859,9 @@ def calculate_cs_purity(
     for snpid in cs_snp_ids:
         # Check if SNP appears in at least one LD matrix
         for ld_matrix in ld_list:
-            snpid_to_idx = {snpid: i for i, snpid in enumerate(ld_matrix.map[ColName.SNPID])}
+            snpid_to_idx = {
+                snpid: i for i, snpid in enumerate(ld_matrix.map[ColName.SNPID])
+            }
             if snpid in snpid_to_idx:
                 union_snps.append(snpid)
                 break
@@ -878,7 +882,9 @@ def calculate_cs_purity(
     cs_submatrices = []
     for ld_matrix in ld_list:
         # Create SNPID to index mapping for this LD matrix
-        snpid_to_idx = {snpid: i for i, snpid in enumerate(ld_matrix.map[ColName.SNPID])}
+        snpid_to_idx = {
+            snpid: i for i, snpid in enumerate(ld_matrix.map[ColName.SNPID])
+        }
 
         # Initialize expanded LD matrix with zeros
         expand_ld = np.zeros((n_union, n_union), dtype=np.float32)
@@ -890,7 +896,9 @@ def calculate_cs_purity(
             # Get indices in this LD matrix
             ld_indices = np.array([snpid_to_idx[snpid] for snpid in present_snps])
             # Get indices in union set
-            union_indices = np.array([variant_to_index[snpid] for snpid in present_snps])
+            union_indices = np.array(
+                [variant_to_index[snpid] for snpid in present_snps]
+            )
 
             # Extract submatrix for present SNPs from this LD matrix
             ld_submatrix = ld_matrix.r[np.ix_(ld_indices, ld_indices)]
@@ -1078,15 +1086,17 @@ def generate_cs_summary(
             cs_snp_ids = cs_snps["SNPID"].tolist()
             purity = calculate_cs_purity(ld_list, cs_snp_ids)
 
-        cs_summary_list.append({
-            "locus_id": locus_id,
-            "cs_id": int(cs_id),
-            "lead_snp": lead_snp,
-            "cs_size": cs_size,
-            "pip_01": pip_01,
-            "pip_05": pip_05,
-            "pip_09": pip_09,
-            "purity": purity,
-        })
+        cs_summary_list.append(
+            {
+                "locus_id": locus_id,
+                "cs_id": int(cs_id),
+                "lead_snp": lead_snp,
+                "cs_size": cs_size,
+                "pip_01": pip_01,
+                "pip_05": pip_05,
+                "pip_09": pip_09,
+                "purity": purity,
+            }
+        )
 
     return cs_summary_list

@@ -7,7 +7,10 @@ import subprocess
 import tempfile
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, TypeVar, Union
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger("Utils")
 

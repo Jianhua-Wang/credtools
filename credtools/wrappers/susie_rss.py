@@ -233,9 +233,9 @@ def susie_get_cs(
             cs_dict = dict(zip(row_names, cs))
 
             # Re-order based on purity
-            ordering = np.argsort(purity_dict["min_sq_corr" if squared else "min_abs_corr"])[
-                ::-1
-            ]
+            ordering = np.argsort(
+                purity_dict["min_sq_corr" if squared else "min_abs_corr"]
+            )[::-1]
             return {
                 "cs": {row_names[i]: cs[i] for i in ordering},
                 "purity": {k: v[ordering] for k, v in purity_dict.items()},

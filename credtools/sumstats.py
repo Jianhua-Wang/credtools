@@ -30,6 +30,7 @@ def _get_transform_allele():
 
     return transform_allele
 
+
 logger = logging.getLogger("Sumstats")
 
 

@@ -797,7 +797,10 @@ def plot_locus_pvalues(
                     # Find corresponding p-value
                     z_match = z_data[z_data["BP"] == bp]
                     if not z_match.empty:
-                        p_val = max(2 * (1 - stats.norm.cdf(np.abs(z_match["z"].iloc[0]))), 1e-300)
+                        p_val = max(
+                            2 * (1 - stats.norm.cdf(np.abs(z_match["z"].iloc[0]))),
+                            1e-300,
+                        )
                         y_pos = -np.log10(p_val)
                         circle = Circle(
                             (bp, y_pos),

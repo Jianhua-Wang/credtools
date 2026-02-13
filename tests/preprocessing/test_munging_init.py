@@ -73,15 +73,17 @@ def test_load_and_munge_tab_file_auto_mapping(tab_sumstats_file):
 def test_load_and_munge_with_config_mapping(tmp_path, sample_config_dict):
     """Test load_and_munge() applies config column_mapping correctly."""
     # Create a file with non-standard column names
-    df = pd.DataFrame({
-        "CHROM": [1, 2],
-        "POS": [1000, 2000],
-        "A1": ["A", "C"],
-        "A2": ["G", "T"],
-        "BETA": [0.1, -0.2],
-        "SE": [0.05, 0.06],
-        "PVAL": [0.01, 0.001],
-    })
+    df = pd.DataFrame(
+        {
+            "CHROM": [1, 2],
+            "POS": [1000, 2000],
+            "A1": ["A", "C"],
+            "A2": ["G", "T"],
+            "BETA": [0.1, -0.2],
+            "SE": [0.05, 0.06],
+            "PVAL": [0.01, 0.001],
+        }
+    )
     filepath = tmp_path / "custom_headers.tsv"
     df.to_csv(filepath, sep="\t", index=False)
 
@@ -126,11 +128,13 @@ def test_load_and_munge_explicit_sep_parameter(tmp_path, minimal_gwas_df):
 def test_load_and_munge_missing_mandatory_cols_raises_error(tmp_path):
     """Test load_and_munge() raises ValueError when mandatory columns missing."""
     # Create file with unmappable columns
-    df = pd.DataFrame({
-        "foo": [1, 2, 3],
-        "bar": [100, 200, 300],
-        "baz": ["A", "B", "C"],
-    })
+    df = pd.DataFrame(
+        {
+            "foo": [1, 2, 3],
+            "bar": [100, 200, 300],
+            "baz": ["A", "B", "C"],
+        }
+    )
     filepath = tmp_path / "bad_headers.tsv"
     df.to_csv(filepath, sep="\t", index=False)
 
@@ -147,8 +151,9 @@ def test_load_and_munge_output_has_expected_format(tab_sumstats_file):
     actual_cols = set(result.columns)
 
     # Check all output columns are present
-    assert expected_cols.issubset(actual_cols), \
-        f"Missing columns: {expected_cols - actual_cols}"
+    assert expected_cols.issubset(
+        actual_cols
+    ), f"Missing columns: {expected_cols - actual_cols}"
 
     # Verify it's 11 columns as specified
     assert len(OUTPUT_COLS) == 11
@@ -166,9 +171,7 @@ def test_validate_config_valid_complete_config(sample_config_dict):
 
 def test_validate_config_missing_column_mapping_key():
     """Test validate_config() returns False when column_mapping key missing."""
-    invalid_config = {
-        "some_other_key": "value"
-    }
+    invalid_config = {"some_other_key": "value"}
 
     result = validate_config(invalid_config)
 
@@ -177,9 +180,7 @@ def test_validate_config_missing_column_mapping_key():
 
 def test_validate_config_column_mapping_not_dict():
     """Test validate_config() returns False when column_mapping is not a dict."""
-    invalid_config = {
-        "column_mapping": "not a dictionary"
-    }
+    invalid_config = {"column_mapping": "not a dictionary"}
 
     result = validate_config(invalid_config)
 

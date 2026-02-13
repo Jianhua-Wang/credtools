@@ -1307,9 +1307,15 @@ def locus_qc_summary(
         return pd.DataFrame()
 
     cohorts = expected_z["cohort"].unique()
-    logger.info(f"Run QC on parameters: logLR_threshold={logLR_threshold}, z_threshold={z_threshold}, ")
-    logger.info(f"z_std_diff_threshold={z_std_diff_threshold}, r_threshold={r_threshold}, ")
-    logger.info(f"dentist_s_pvalue_threshold={dentist_s_pvalue_threshold}, dentist_s_r2_threshold={dentist_s_r2_threshold}")
+    logger.info(
+        f"Run QC on parameters: logLR_threshold={logLR_threshold}, z_threshold={z_threshold}, "
+    )
+    logger.info(
+        f"z_std_diff_threshold={z_std_diff_threshold}, r_threshold={r_threshold}, "
+    )
+    logger.info(
+        f"dentist_s_pvalue_threshold={dentist_s_pvalue_threshold}, dentist_s_r2_threshold={dentist_s_r2_threshold}"
+    )
 
     for cohort in cohorts:
         logger.info(f"Generating QC summary for cohort: {cohort}")
@@ -1598,7 +1604,13 @@ def qc_locus_cli(
 
 def safe_qc_locus_cli(
     args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float],
-) -> Tuple[str, Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[str]]:
+) -> Tuple[
+    str,
+    Optional[pd.DataFrame],
+    Optional[pd.DataFrame],
+    Optional[pd.DataFrame],
+    Optional[str],
+]:
     """Wrapper for qc_locus_cli that captures exceptions."""
     locus_id = args[0]
     try:
@@ -1745,9 +1757,13 @@ def loci_qc(
         task = progress.add_task("[cyan]Processing loci...", total=total_loci)
         if locus_groups:
             with Pool(processes=threads) as pool:
-                for locus_id, summary, outlier_summary, cleaned_summary, error in pool.imap_unordered(
-                    safe_qc_locus_cli, locus_groups
-                ):
+                for (
+                    locus_id,
+                    summary,
+                    outlier_summary,
+                    cleaned_summary,
+                    error,
+                ) in pool.imap_unordered(safe_qc_locus_cli, locus_groups):
                     progress.update(task, advance=1)
                     if error is None:
                         run_summary["successful_loci"] += 1
@@ -1793,7 +1809,9 @@ def loci_qc(
             compression="gzip",
             float_format="%.6f",
         )
-        logger.info(f"Global cleaned QC summary saved to {out_dir}/cleaned/qc_cleaned.txt.gz")
+        logger.info(
+            f"Global cleaned QC summary saved to {out_dir}/cleaned/qc_cleaned.txt.gz"
+        )
 
     # Save outlier summary if outlier removal was performed
     if all_outlier_summaries:
@@ -1871,7 +1889,9 @@ def loci_qc(
             index=False,
             compression="gzip",
         )
-        logger.info(f"Cleaned loci info saved to {out_dir}/cleaned/cleaned_loci_info.txt.gz")
+        logger.info(
+            f"Cleaned loci info saved to {out_dir}/cleaned/cleaned_loci_info.txt.gz"
+        )
 
     run_summary["end_time"] = datetime.now().isoformat()
     with log_path.open("w") as log_file:

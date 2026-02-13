@@ -40,8 +40,12 @@ def make_fake_process_task(output_root: Path):
         return {
             "status": "success",
             "locus_id": task["locus_id"],
-            "causal_variants_records": [{"SNP": "rs1", "CRED": 1, "locus_id": task["locus_id"]}],
-            "cs_summary_records": [{"locus_id": task["locus_id"], "cs_id": 1, "cs_size": 1}],
+            "causal_variants_records": [
+                {"SNP": "rs1", "CRED": 1, "locus_id": task["locus_id"]}
+            ],
+            "cs_summary_records": [
+                {"locus_id": task["locus_id"], "cs_id": 1, "cs_size": 1}
+            ],
         }
 
     _fake_process_task.calls = []

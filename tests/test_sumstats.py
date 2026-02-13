@@ -741,7 +741,10 @@ class TestMungeEafBoundary:
         """EAF=0 should be included (inclusive lower bound)."""
         df = pd.DataFrame({ColName.EAF: [0, 0.5]})
         result = munge_eaf(df)
-        assert 0 in result[ColName.EAF].values or np.float32(0) in result[ColName.EAF].values
+        assert (
+            0 in result[ColName.EAF].values
+            or np.float32(0) in result[ColName.EAF].values
+        )
 
     def test_eaf_one_included(self):
         """EAF=1 should be included (inclusive upper bound)."""
