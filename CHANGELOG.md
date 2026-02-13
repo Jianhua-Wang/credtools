@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.3.4] (2026-02-13)
+
+### Added
+- **Comprehensive unit tests for munge command**: 153 new tests covering the entire `credtools/preprocessing/munging/` module
+  - `test_munging_constants.py` — column definitions, ranges, and alias mapping (12 tests)
+  - `test_munging_validation.py` — data validation and cleaning logic (30 tests)
+  - `test_munging_headers.py` — separator detection, header mapping, fuzzy matching (27 tests)
+  - `test_munging_core.py` — core munge pipeline, SNPID generation, allele transforms (38 tests)
+  - `test_munging_init.py` — config I/O, load-and-munge integration (15 tests)
+  - `test_munge.py` — CLI entry point, file handling, overwrite behavior (20 tests)
+  - Shared test fixtures in `tests/preprocessing/conftest.py`
+  - Coverage: constants 100%, core 98%, munge 95%, validation 85%, headers 79%
+
+### Changed
+- **Improved munge documentation** (`docs/munge.md`): rewritten with mkdocs-material admonitions, tabbed quick start, column auto-detection table, data cleaning rules, mermaid pipeline diagram, collapsible FAQ, and runnable example using bundled test data
+
+## [0.3.3] (2026-02-13)
+
+### Changed
+- Remove dead code and extract shared COJO/PIPs/CS-summary logic
+- Fix p-value numerical underflow for extreme Z-scores
+- Update CLI help text and dependencies
+- Enable internal purity filtering for SuSiE-based tools
+
 ## [0.3.2] (2025-12-16)
 
 ### Changed
