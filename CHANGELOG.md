@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.5] (2026-02-13)
+
+### Changed
+- **Unified constants**: Munging submodule now re-exports `ColName`, `ColType`, `ColRange`, `ColAllowNA` from main `credtools.constants` instead of maintaining duplicate definitions
+- **Memory-efficient column types**: Switched `ColType` to numpy types (`np.int8`, `np.int32`, `np.float32`, `np.float64`) for reduced memory footprint
+- **Stricter NA policy**: `P`, `BETA`, `SE`, `OR`, `ORSE` no longer allow NA values
+- **Refactored sumstats munge functions**: `munge_chr`, `munge_bp`, `munge_allele`, `munge_pvalue`, `munge_beta`, `munge_se`, `munge_eaf`, `munge_maf` now reuse `validate_and_clean_column` from the munging module
+- **Conditional EAF/MAF processing**: `munge()` in `sumstats.py` skips EAF/MAF steps when the EAF column is absent
+- **Standardized RSID naming**: Renamed `ColName.RSID` from `"rsID"` to `"RSID"` for consistency
+- **Removed EAF from mandatory columns**: `ColName.mandatory_cols` no longer requires EAF
+- **Public transform API**: `transform_chr` and `transform_allele` exposed as public functions in munging module
+
+### Added
+- Boundary behavior pinning tests for `munge_bp`, `munge_chr`, `munge_pvalue`, `munge_se`, `munge_eaf`
+
+### Removed
+- Duplicate `ColName`/`ColType`/`ColRange`/`ColAllowNA` classes from `munging/constants.py`
+- `OR` column from `COMMON_COLNAMES` alias mapping and fuzzy header matching
+- Dead commented-out `PP_POLYFUN_*` constants
+
 ## [0.3.4] (2026-02-13)
 
 ### Added
