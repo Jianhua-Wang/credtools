@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.6] (2026-02-13)
+
+### Fixed
+- **Fix test_run_fine_map_parallel**: Renamed deprecated `min_abs_corr` parameter to `purity` and aligned mock return keys (`causal_variants_records`, `cs_summary_records`) with the actual `_process_fine_map_task` contract
+
 ## [0.3.5] (2026-02-13)
 
 ### Changed

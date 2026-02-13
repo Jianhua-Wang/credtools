@@ -40,7 +40,8 @@ def make_fake_process_task(output_root: Path):
         return {
             "status": "success",
             "locus_id": task["locus_id"],
-            "cs_records": [{"SNP": "rs1", "CRED": 1, "locus_id": task["locus_id"]}],
+            "causal_variants_records": [{"SNP": "rs1", "CRED": 1, "locus_id": task["locus_id"]}],
+            "cs_summary_records": [{"locus_id": task["locus_id"], "cs_id": 1, "cs_size": 1}],
         }
 
     _fake_process_task.calls = []
@@ -103,7 +104,7 @@ def test_run_fine_map_parallel(tmp_path, monkeypatch, processes):
         jaccard_threshold=0.1,
         max_iter=100,
         estimate_residual_variance=False,
-        min_abs_corr=0.5,
+        purity=0.5,
         convergence_tol=1e-3,
         calculate_lambda_s=False,
         log_file=None,
