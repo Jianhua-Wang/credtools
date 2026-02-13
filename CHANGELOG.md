@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.7] (2026-02-13)
+
+### Fixed
+- Code formatting fixes (isort/black) and lint issue fixes (F821 undefined name, D104 missing docstring, D301 raw docstring)
+
 ## [0.3.6] (2026-02-13)
 
 ### Fixed
