@@ -4580,9 +4580,7 @@ cs_snp_ids : List[str]
 
             <details class="quote">
               <summary>Source code in <code>credtools/credibleset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-795">795</a></span>
-<span class="normal"><a href="#__codelineno-0-796">796</a></span>
-<span class="normal"><a href="#__codelineno-0-797">797</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-797">797</a></span>
 <span class="normal"><a href="#__codelineno-0-798">798</a></span>
 <span class="normal"><a href="#__codelineno-0-799">799</a></span>
 <span class="normal"><a href="#__codelineno-0-800">800</a></span>
@@ -4709,136 +4707,150 @@ cs_snp_ids : List[str]
 <span class="normal"><a href="#__codelineno-0-921">921</a></span>
 <span class="normal"><a href="#__codelineno-0-922">922</a></span>
 <span class="normal"><a href="#__codelineno-0-923">923</a></span>
-<span class="normal"><a href="#__codelineno-0-924">924</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-795" name="__codelineno-0-795"></a><span class="k">def</span><span class="w"> </span><span class="nf">calculate_cs_purity</span><span class="p">(</span>
-<a id="__codelineno-0-796" name="__codelineno-0-796"></a>    <span class="n">ld</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;LDMatrix&quot;</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;LDMatrix&quot;</span><span class="p">]],</span>
-<a id="__codelineno-0-797" name="__codelineno-0-797"></a>    <span class="n">cs_snp_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-<a id="__codelineno-0-798" name="__codelineno-0-798"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-799" name="__codelineno-0-799"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="sd">    Calculate purity for a single credible set.</span>
-<a id="__codelineno-0-801" name="__codelineno-0-801"></a>
-<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">    Purity is defined as the minimum absolute LD R value between all pairs of</span>
-<a id="__codelineno-0-803" name="__codelineno-0-803"></a><span class="sd">    SNPs in the credible set.</span>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a>
-<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">    For multiple LD matrices (multi-ancestry case), purity is calculated as:</span>
-<a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">    1. Extract CS submatrix from each LD matrix</span>
-<a id="__codelineno-0-807" name="__codelineno-0-807"></a><span class="sd">    2. Take element-wise maximum of absolute values across all matrices</span>
-<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">    3. Return the minimum value from the resulting meta-LD matrix</span>
-<a id="__codelineno-0-809" name="__codelineno-0-809"></a>
-<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">    This approach (similar to MultiSuSiE) ensures the credible set has high</span>
-<a id="__codelineno-0-811" name="__codelineno-0-811"></a><span class="sd">    purity across all populations.</span>
-<a id="__codelineno-0-812" name="__codelineno-0-812"></a>
-<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-814" name="__codelineno-0-814"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-815" name="__codelineno-0-815"></a><span class="sd">    ld : LDMatrix or List[LDMatrix]</span>
-<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">        LDMatrix object(s) containing both r matrix and map with SNPIDs.</span>
-<a id="__codelineno-0-817" name="__codelineno-0-817"></a><span class="sd">        If a list is provided, meta-purity across all matrices is calculated.</span>
-<a id="__codelineno-0-818" name="__codelineno-0-818"></a><span class="sd">    cs_snp_ids : List[str]</span>
-<a id="__codelineno-0-819" name="__codelineno-0-819"></a><span class="sd">        List of SNPID strings in the credible set.</span>
-<a id="__codelineno-0-820" name="__codelineno-0-820"></a>
-<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-822" name="__codelineno-0-822"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-823" name="__codelineno-0-823"></a><span class="sd">    Optional[float]</span>
-<a id="__codelineno-0-824" name="__codelineno-0-824"></a><span class="sd">        - If CS has only 1 SNP, returns 1.0</span>
-<a id="__codelineno-0-825" name="__codelineno-0-825"></a><span class="sd">        - If CS has multiple SNPs, returns min(|R|) for all SNP pairs</span>
-<a id="__codelineno-0-826" name="__codelineno-0-826"></a><span class="sd">        - For multiple LD matrices, returns min of element-wise max across matrices</span>
-<a id="__codelineno-0-827" name="__codelineno-0-827"></a><span class="sd">        - If unable to calculate (e.g., SNPs not in LD matrix), returns None</span>
-<a id="__codelineno-0-828" name="__codelineno-0-828"></a>
-<a id="__codelineno-0-829" name="__codelineno-0-829"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-830" name="__codelineno-0-830"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-831" name="__codelineno-0-831"></a><span class="sd">    &gt;&gt;&gt; # Single LD matrix: CS with 3 SNPs having LD R values: 0.8, 0.9, 0.7</span>
-<a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="sd">    &gt;&gt;&gt; # Purity = min(|0.8|, |0.9|, |0.7|) = 0.7</span>
-<a id="__codelineno-0-833" name="__codelineno-0-833"></a><span class="sd">    &gt;&gt;&gt;</span>
-<a id="__codelineno-0-834" name="__codelineno-0-834"></a><span class="sd">    &gt;&gt;&gt; # Multiple LD matrices: same CS in EUR and AFR</span>
-<a id="__codelineno-0-835" name="__codelineno-0-835"></a><span class="sd">    &gt;&gt;&gt; # EUR: |R| values = [0.8, 0.9, 0.7]</span>
-<a id="__codelineno-0-836" name="__codelineno-0-836"></a><span class="sd">    &gt;&gt;&gt; # AFR: |R| values = [0.6, 0.85, 0.75]</span>
-<a id="__codelineno-0-837" name="__codelineno-0-837"></a><span class="sd">    &gt;&gt;&gt; # Meta |R| = max([0.8, 0.9, 0.7], [0.6, 0.85, 0.75]) = [0.8, 0.9, 0.75]</span>
-<a id="__codelineno-0-838" name="__codelineno-0-838"></a><span class="sd">    &gt;&gt;&gt; # Purity = min([0.8, 0.9, 0.75]) = 0.75</span>
-<a id="__codelineno-0-839" name="__codelineno-0-839"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-840" name="__codelineno-0-840"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">credtools.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColName</span>
-<a id="__codelineno-0-841" name="__codelineno-0-841"></a>
-<a id="__codelineno-0-842" name="__codelineno-0-842"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs_snp_ids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-843" name="__codelineno-0-843"></a>        <span class="k">return</span> <span class="mf">1.0</span>
-<a id="__codelineno-0-844" name="__codelineno-0-844"></a>
-<a id="__codelineno-0-845" name="__codelineno-0-845"></a>    <span class="c1"># Handle single LD matrix vs list of LD matrices</span>
-<a id="__codelineno-0-846" name="__codelineno-0-846"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ld</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-<a id="__codelineno-0-847" name="__codelineno-0-847"></a>        <span class="n">ld_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">ld</span><span class="p">]</span>
-<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-849" name="__codelineno-0-849"></a>        <span class="n">ld_list</span> <span class="o">=</span> <span class="n">ld</span>
-<a id="__codelineno-0-850" name="__codelineno-0-850"></a>
-<a id="__codelineno-0-851" name="__codelineno-0-851"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-852" name="__codelineno-0-852"></a>        <span class="k">return</span> <span class="kc">None</span>
-<a id="__codelineno-0-853" name="__codelineno-0-853"></a>
-<a id="__codelineno-0-854" name="__codelineno-0-854"></a>    <span class="c1"># Create union of all CS SNPs across all LD matrices (MultiSuSiE approach)</span>
-<a id="__codelineno-0-855" name="__codelineno-0-855"></a>    <span class="c1"># This ensures all submatrices have the same dimensions</span>
-<a id="__codelineno-0-856" name="__codelineno-0-856"></a>    <span class="n">union_snps</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">cs_snp_ids</span><span class="p">:</span>
-<a id="__codelineno-0-858" name="__codelineno-0-858"></a>        <span class="c1"># Check if SNP appears in at least one LD matrix</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a>        <span class="k">for</span> <span class="n">ld_matrix</span> <span class="ow">in</span> <span class="n">ld_list</span><span class="p">:</span>
-<a id="__codelineno-0-860" name="__codelineno-0-860"></a>            <span class="n">snpid_to_idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">snpid</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ld_matrix</span><span class="o">.</span><span class="n">map</span><span class="p">[</span><span class="n">ColName</span><span class="o">.</span><span class="n">SNPID</span><span class="p">])}</span>
-<a id="__codelineno-0-861" name="__codelineno-0-861"></a>            <span class="k">if</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">snpid_to_idx</span><span class="p">:</span>
-<a id="__codelineno-0-862" name="__codelineno-0-862"></a>                <span class="n">union_snps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">snpid</span><span class="p">)</span>
-<a id="__codelineno-0-863" name="__codelineno-0-863"></a>                <span class="k">break</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a>
-<a id="__codelineno-0-865" name="__codelineno-0-865"></a>    <span class="c1"># Remove duplicates while preserving order</span>
-<a id="__codelineno-0-866" name="__codelineno-0-866"></a>    <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-<a id="__codelineno-0-867" name="__codelineno-0-867"></a>    <span class="n">union_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">union_snps</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">x</span> <span class="ow">in</span> <span class="n">seen</span> <span class="ow">or</span> <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">))]</span>
+<span class="normal"><a href="#__codelineno-0-924">924</a></span>
+<span class="normal"><a href="#__codelineno-0-925">925</a></span>
+<span class="normal"><a href="#__codelineno-0-926">926</a></span>
+<span class="normal"><a href="#__codelineno-0-927">927</a></span>
+<span class="normal"><a href="#__codelineno-0-928">928</a></span>
+<span class="normal"><a href="#__codelineno-0-929">929</a></span>
+<span class="normal"><a href="#__codelineno-0-930">930</a></span>
+<span class="normal"><a href="#__codelineno-0-931">931</a></span>
+<span class="normal"><a href="#__codelineno-0-932">932</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-797" name="__codelineno-0-797"></a><span class="k">def</span><span class="w"> </span><span class="nf">calculate_cs_purity</span><span class="p">(</span>
+<a id="__codelineno-0-798" name="__codelineno-0-798"></a>    <span class="n">ld</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;LDMatrix&quot;</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;LDMatrix&quot;</span><span class="p">]],</span>
+<a id="__codelineno-0-799" name="__codelineno-0-799"></a>    <span class="n">cs_snp_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">    Calculate purity for a single credible set.</span>
+<a id="__codelineno-0-803" name="__codelineno-0-803"></a>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">    Purity is defined as the minimum absolute LD R value between all pairs of</span>
+<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">    SNPs in the credible set.</span>
+<a id="__codelineno-0-806" name="__codelineno-0-806"></a>
+<a id="__codelineno-0-807" name="__codelineno-0-807"></a><span class="sd">    For multiple LD matrices (multi-ancestry case), purity is calculated as:</span>
+<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">    1. Extract CS submatrix from each LD matrix</span>
+<a id="__codelineno-0-809" name="__codelineno-0-809"></a><span class="sd">    2. Take element-wise maximum of absolute values across all matrices</span>
+<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">    3. Return the minimum value from the resulting meta-LD matrix</span>
+<a id="__codelineno-0-811" name="__codelineno-0-811"></a>
+<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">    This approach (similar to MultiSuSiE) ensures the credible set has high</span>
+<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">    purity across all populations.</span>
+<a id="__codelineno-0-814" name="__codelineno-0-814"></a>
+<a id="__codelineno-0-815" name="__codelineno-0-815"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-817" name="__codelineno-0-817"></a><span class="sd">    ld : LDMatrix or List[LDMatrix]</span>
+<a id="__codelineno-0-818" name="__codelineno-0-818"></a><span class="sd">        LDMatrix object(s) containing both r matrix and map with SNPIDs.</span>
+<a id="__codelineno-0-819" name="__codelineno-0-819"></a><span class="sd">        If a list is provided, meta-purity across all matrices is calculated.</span>
+<a id="__codelineno-0-820" name="__codelineno-0-820"></a><span class="sd">    cs_snp_ids : List[str]</span>
+<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">        List of SNPID strings in the credible set.</span>
+<a id="__codelineno-0-822" name="__codelineno-0-822"></a>
+<a id="__codelineno-0-823" name="__codelineno-0-823"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-824" name="__codelineno-0-824"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-825" name="__codelineno-0-825"></a><span class="sd">    Optional[float]</span>
+<a id="__codelineno-0-826" name="__codelineno-0-826"></a><span class="sd">        - If CS has only 1 SNP, returns 1.0</span>
+<a id="__codelineno-0-827" name="__codelineno-0-827"></a><span class="sd">        - If CS has multiple SNPs, returns min(|R|) for all SNP pairs</span>
+<a id="__codelineno-0-828" name="__codelineno-0-828"></a><span class="sd">        - For multiple LD matrices, returns min of element-wise max across matrices</span>
+<a id="__codelineno-0-829" name="__codelineno-0-829"></a><span class="sd">        - If unable to calculate (e.g., SNPs not in LD matrix), returns None</span>
+<a id="__codelineno-0-830" name="__codelineno-0-830"></a>
+<a id="__codelineno-0-831" name="__codelineno-0-831"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-833" name="__codelineno-0-833"></a><span class="sd">    &gt;&gt;&gt; # Single LD matrix: CS with 3 SNPs having LD R values: 0.8, 0.9, 0.7</span>
+<a id="__codelineno-0-834" name="__codelineno-0-834"></a><span class="sd">    &gt;&gt;&gt; # Purity = min(|0.8|, |0.9|, |0.7|) = 0.7</span>
+<a id="__codelineno-0-835" name="__codelineno-0-835"></a><span class="sd">    &gt;&gt;&gt;</span>
+<a id="__codelineno-0-836" name="__codelineno-0-836"></a><span class="sd">    &gt;&gt;&gt; # Multiple LD matrices: same CS in EUR and AFR</span>
+<a id="__codelineno-0-837" name="__codelineno-0-837"></a><span class="sd">    &gt;&gt;&gt; # EUR: |R| values = [0.8, 0.9, 0.7]</span>
+<a id="__codelineno-0-838" name="__codelineno-0-838"></a><span class="sd">    &gt;&gt;&gt; # AFR: |R| values = [0.6, 0.85, 0.75]</span>
+<a id="__codelineno-0-839" name="__codelineno-0-839"></a><span class="sd">    &gt;&gt;&gt; # Meta |R| = max([0.8, 0.9, 0.7], [0.6, 0.85, 0.75]) = [0.8, 0.9, 0.75]</span>
+<a id="__codelineno-0-840" name="__codelineno-0-840"></a><span class="sd">    &gt;&gt;&gt; # Purity = min([0.8, 0.9, 0.75]) = 0.75</span>
+<a id="__codelineno-0-841" name="__codelineno-0-841"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">credtools.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColName</span>
+<a id="__codelineno-0-843" name="__codelineno-0-843"></a>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs_snp_ids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a>        <span class="k">return</span> <span class="mf">1.0</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a>    <span class="c1"># Handle single LD matrix vs list of LD matrices</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ld</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a>        <span class="n">ld_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">ld</span><span class="p">]</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a>        <span class="n">ld_list</span> <span class="o">=</span> <span class="n">ld</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ld_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>        <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a>    <span class="c1"># Create union of all CS SNPs across all LD matrices (MultiSuSiE approach)</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="c1"># This ensures all submatrices have the same dimensions</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a>    <span class="n">union_snps</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">cs_snp_ids</span><span class="p">:</span>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a>        <span class="c1"># Check if SNP appears in at least one LD matrix</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a>        <span class="k">for</span> <span class="n">ld_matrix</span> <span class="ow">in</span> <span class="n">ld_list</span><span class="p">:</span>
+<a id="__codelineno-0-862" name="__codelineno-0-862"></a>            <span class="n">snpid_to_idx</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a>                <span class="n">snpid</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ld_matrix</span><span class="o">.</span><span class="n">map</span><span class="p">[</span><span class="n">ColName</span><span class="o">.</span><span class="n">SNPID</span><span class="p">])</span>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a>            <span class="p">}</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a>            <span class="k">if</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">snpid_to_idx</span><span class="p">:</span>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a>                <span class="n">union_snps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">snpid</span><span class="p">)</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a>                <span class="k">break</span>
 <a id="__codelineno-0-868" name="__codelineno-0-868"></a>
-<a id="__codelineno-0-869" name="__codelineno-0-869"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">union_snps</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a>        <span class="c1"># Not enough SNPs found in any LD matrix</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a>        <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a>    <span class="c1"># Remove duplicates while preserving order</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a>    <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a>    <span class="n">union_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">union_snps</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">x</span> <span class="ow">in</span> <span class="n">seen</span> <span class="ow">or</span> <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">))]</span>
 <a id="__codelineno-0-872" name="__codelineno-0-872"></a>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a>    <span class="c1"># Create mapping from SNP ID to index in union set</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a>    <span class="n">variant_to_index</span> <span class="o">=</span> <span class="p">{</span><span class="n">snpid</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">union_snps</span><span class="p">)}</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a>    <span class="n">n_union</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">union_snps</span><span class="p">)</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">union_snps</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a>        <span class="c1"># Not enough SNPs found in any LD matrix</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a>        <span class="k">return</span> <span class="kc">None</span>
 <a id="__codelineno-0-876" name="__codelineno-0-876"></a>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a>    <span class="c1"># Extract and expand CS submatrices from all LD matrices</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a>    <span class="n">cs_submatrices</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a>    <span class="k">for</span> <span class="n">ld_matrix</span> <span class="ow">in</span> <span class="n">ld_list</span><span class="p">:</span>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a>        <span class="c1"># Create SNPID to index mapping for this LD matrix</span>
-<a id="__codelineno-0-881" name="__codelineno-0-881"></a>        <span class="n">snpid_to_idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">snpid</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ld_matrix</span><span class="o">.</span><span class="n">map</span><span class="p">[</span><span class="n">ColName</span><span class="o">.</span><span class="n">SNPID</span><span class="p">])}</span>
-<a id="__codelineno-0-882" name="__codelineno-0-882"></a>
-<a id="__codelineno-0-883" name="__codelineno-0-883"></a>        <span class="c1"># Initialize expanded LD matrix with zeros</span>
-<a id="__codelineno-0-884" name="__codelineno-0-884"></a>        <span class="n">expand_ld</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_union</span><span class="p">,</span> <span class="n">n_union</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<a id="__codelineno-0-885" name="__codelineno-0-885"></a>
-<a id="__codelineno-0-886" name="__codelineno-0-886"></a>        <span class="c1"># Find SNPs that exist in both union and this LD matrix</span>
-<a id="__codelineno-0-887" name="__codelineno-0-887"></a>        <span class="n">present_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">snpid</span> <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">union_snps</span> <span class="k">if</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">snpid_to_idx</span><span class="p">]</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a>    <span class="c1"># Create mapping from SNP ID to index in union set</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a>    <span class="n">variant_to_index</span> <span class="o">=</span> <span class="p">{</span><span class="n">snpid</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">union_snps</span><span class="p">)}</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a>    <span class="n">n_union</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">union_snps</span><span class="p">)</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a>    <span class="c1"># Extract and expand CS submatrices from all LD matrices</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a>    <span class="n">cs_submatrices</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a>    <span class="k">for</span> <span class="n">ld_matrix</span> <span class="ow">in</span> <span class="n">ld_list</span><span class="p">:</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a>        <span class="c1"># Create SNPID to index mapping for this LD matrix</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a>        <span class="n">snpid_to_idx</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a>            <span class="n">snpid</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ld_matrix</span><span class="o">.</span><span class="n">map</span><span class="p">[</span><span class="n">ColName</span><span class="o">.</span><span class="n">SNPID</span><span class="p">])</span>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a>        <span class="p">}</span>
 <a id="__codelineno-0-888" name="__codelineno-0-888"></a>
-<a id="__codelineno-0-889" name="__codelineno-0-889"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">present_snps</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-0-890" name="__codelineno-0-890"></a>            <span class="c1"># Get indices in this LD matrix</span>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a>            <span class="n">ld_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">snpid_to_idx</span><span class="p">[</span><span class="n">snpid</span><span class="p">]</span> <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">present_snps</span><span class="p">])</span>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a>            <span class="c1"># Get indices in union set</span>
-<a id="__codelineno-0-893" name="__codelineno-0-893"></a>            <span class="n">union_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">variant_to_index</span><span class="p">[</span><span class="n">snpid</span><span class="p">]</span> <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">present_snps</span><span class="p">])</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a>        <span class="c1"># Initialize expanded LD matrix with zeros</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a>        <span class="n">expand_ld</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_union</span><span class="p">,</span> <span class="n">n_union</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a>        <span class="c1"># Find SNPs that exist in both union and this LD matrix</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a>        <span class="n">present_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">snpid</span> <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">union_snps</span> <span class="k">if</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">snpid_to_idx</span><span class="p">]</span>
 <a id="__codelineno-0-894" name="__codelineno-0-894"></a>
-<a id="__codelineno-0-895" name="__codelineno-0-895"></a>            <span class="c1"># Extract submatrix for present SNPs from this LD matrix</span>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a>            <span class="n">ld_submatrix</span> <span class="o">=</span> <span class="n">ld_matrix</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ld_indices</span><span class="p">,</span> <span class="n">ld_indices</span><span class="p">)]</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a>            <span class="c1"># Place LD values at correct positions in expanded matrix using meshgrid</span>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a>            <span class="n">idx_i</span><span class="p">,</span> <span class="n">idx_j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">union_indices</span><span class="p">,</span> <span class="n">union_indices</span><span class="p">)</span>
-<a id="__codelineno-0-900" name="__codelineno-0-900"></a>            <span class="n">expand_ld</span><span class="p">[</span><span class="n">idx_i</span><span class="p">,</span> <span class="n">idx_j</span><span class="p">]</span> <span class="o">=</span> <span class="n">ld_submatrix</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<a id="__codelineno-0-901" name="__codelineno-0-901"></a>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a>        <span class="c1"># Set diagonal to 1 (for both present and missing SNPs)</span>
-<a id="__codelineno-0-903" name="__codelineno-0-903"></a>        <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">expand_ld</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<a id="__codelineno-0-904" name="__codelineno-0-904"></a>
-<a id="__codelineno-0-905" name="__codelineno-0-905"></a>        <span class="n">cs_submatrices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expand_ld</span><span class="p">)</span>
-<a id="__codelineno-0-906" name="__codelineno-0-906"></a>
-<a id="__codelineno-0-907" name="__codelineno-0-907"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs_submatrices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-908" name="__codelineno-0-908"></a>        <span class="c1"># No valid submatrices found</span>
-<a id="__codelineno-0-909" name="__codelineno-0-909"></a>        <span class="k">return</span> <span class="kc">None</span>
-<a id="__codelineno-0-910" name="__codelineno-0-910"></a>
-<a id="__codelineno-0-911" name="__codelineno-0-911"></a>    <span class="c1"># Calculate meta-purity across all LD matrices</span>
-<a id="__codelineno-0-912" name="__codelineno-0-912"></a>    <span class="c1"># Take element-wise maximum of absolute values (MultiSuSiE approach)</span>
-<a id="__codelineno-0-913" name="__codelineno-0-913"></a>    <span class="n">abs_meta_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cs_submatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-<a id="__codelineno-0-914" name="__codelineno-0-914"></a>    <span class="k">for</span> <span class="n">submatrix</span> <span class="ow">in</span> <span class="n">cs_submatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-<a id="__codelineno-0-915" name="__codelineno-0-915"></a>        <span class="n">abs_meta_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">abs_meta_R</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">submatrix</span><span class="p">))</span>
-<a id="__codelineno-0-916" name="__codelineno-0-916"></a>
-<a id="__codelineno-0-917" name="__codelineno-0-917"></a>    <span class="c1"># Get upper triangle (excluding diagonal) and find minimum</span>
-<a id="__codelineno-0-918" name="__codelineno-0-918"></a>    <span class="n">upper_tri_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu_indices_from</span><span class="p">(</span><span class="n">abs_meta_R</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-919" name="__codelineno-0-919"></a>    <span class="n">r_values</span> <span class="o">=</span> <span class="n">abs_meta_R</span><span class="p">[</span><span class="n">upper_tri_indices</span><span class="p">]</span>
-<a id="__codelineno-0-920" name="__codelineno-0-920"></a>
-<a id="__codelineno-0-921" name="__codelineno-0-921"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-922" name="__codelineno-0-922"></a>        <span class="k">return</span> <span class="kc">None</span>
-<a id="__codelineno-0-923" name="__codelineno-0-923"></a>
-<a id="__codelineno-0-924" name="__codelineno-0-924"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">r_values</span><span class="p">))</span>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">present_snps</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a>            <span class="c1"># Get indices in this LD matrix</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a>            <span class="n">ld_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">snpid_to_idx</span><span class="p">[</span><span class="n">snpid</span><span class="p">]</span> <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">present_snps</span><span class="p">])</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>            <span class="c1"># Get indices in union set</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a>            <span class="n">union_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a>                <span class="p">[</span><span class="n">variant_to_index</span><span class="p">[</span><span class="n">snpid</span><span class="p">]</span> <span class="k">for</span> <span class="n">snpid</span> <span class="ow">in</span> <span class="n">present_snps</span><span class="p">]</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a>            <span class="p">)</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a>            <span class="c1"># Extract submatrix for present SNPs from this LD matrix</span>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a>            <span class="n">ld_submatrix</span> <span class="o">=</span> <span class="n">ld_matrix</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ld_indices</span><span class="p">,</span> <span class="n">ld_indices</span><span class="p">)]</span>
+<a id="__codelineno-0-905" name="__codelineno-0-905"></a>
+<a id="__codelineno-0-906" name="__codelineno-0-906"></a>            <span class="c1"># Place LD values at correct positions in expanded matrix using meshgrid</span>
+<a id="__codelineno-0-907" name="__codelineno-0-907"></a>            <span class="n">idx_i</span><span class="p">,</span> <span class="n">idx_j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">union_indices</span><span class="p">,</span> <span class="n">union_indices</span><span class="p">)</span>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a>            <span class="n">expand_ld</span><span class="p">[</span><span class="n">idx_i</span><span class="p">,</span> <span class="n">idx_j</span><span class="p">]</span> <span class="o">=</span> <span class="n">ld_submatrix</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-0-909" name="__codelineno-0-909"></a>
+<a id="__codelineno-0-910" name="__codelineno-0-910"></a>        <span class="c1"># Set diagonal to 1 (for both present and missing SNPs)</span>
+<a id="__codelineno-0-911" name="__codelineno-0-911"></a>        <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">expand_ld</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-0-912" name="__codelineno-0-912"></a>
+<a id="__codelineno-0-913" name="__codelineno-0-913"></a>        <span class="n">cs_submatrices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expand_ld</span><span class="p">)</span>
+<a id="__codelineno-0-914" name="__codelineno-0-914"></a>
+<a id="__codelineno-0-915" name="__codelineno-0-915"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs_submatrices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-916" name="__codelineno-0-916"></a>        <span class="c1"># No valid submatrices found</span>
+<a id="__codelineno-0-917" name="__codelineno-0-917"></a>        <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-0-918" name="__codelineno-0-918"></a>
+<a id="__codelineno-0-919" name="__codelineno-0-919"></a>    <span class="c1"># Calculate meta-purity across all LD matrices</span>
+<a id="__codelineno-0-920" name="__codelineno-0-920"></a>    <span class="c1"># Take element-wise maximum of absolute values (MultiSuSiE approach)</span>
+<a id="__codelineno-0-921" name="__codelineno-0-921"></a>    <span class="n">abs_meta_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cs_submatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-0-922" name="__codelineno-0-922"></a>    <span class="k">for</span> <span class="n">submatrix</span> <span class="ow">in</span> <span class="n">cs_submatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+<a id="__codelineno-0-923" name="__codelineno-0-923"></a>        <span class="n">abs_meta_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">abs_meta_R</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">submatrix</span><span class="p">))</span>
+<a id="__codelineno-0-924" name="__codelineno-0-924"></a>
+<a id="__codelineno-0-925" name="__codelineno-0-925"></a>    <span class="c1"># Get upper triangle (excluding diagonal) and find minimum</span>
+<a id="__codelineno-0-926" name="__codelineno-0-926"></a>    <span class="n">upper_tri_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu_indices_from</span><span class="p">(</span><span class="n">abs_meta_R</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-927" name="__codelineno-0-927"></a>    <span class="n">r_values</span> <span class="o">=</span> <span class="n">abs_meta_R</span><span class="p">[</span><span class="n">upper_tri_indices</span><span class="p">]</span>
+<a id="__codelineno-0-928" name="__codelineno-0-928"></a>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-930" name="__codelineno-0-930"></a>        <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-0-931" name="__codelineno-0-931"></a>
+<a id="__codelineno-0-932" name="__codelineno-0-932"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">r_values</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4885,9 +4897,7 @@ clusters = cluster_cs(sets)</p>
 
             <details class="quote">
               <summary>Source code in <code>credtools/credibleset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-722">722</a></span>
-<span class="normal"><a href="#__codelineno-0-723">723</a></span>
-<span class="normal"><a href="#__codelineno-0-724">724</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-724">724</a></span>
 <span class="normal"><a href="#__codelineno-0-725">725</a></span>
 <span class="normal"><a href="#__codelineno-0-726">726</a></span>
 <span class="normal"><a href="#__codelineno-0-727">727</a></span>
@@ -4955,77 +4965,79 @@ clusters = cluster_cs(sets)</p>
 <span class="normal"><a href="#__codelineno-0-789">789</a></span>
 <span class="normal"><a href="#__codelineno-0-790">790</a></span>
 <span class="normal"><a href="#__codelineno-0-791">791</a></span>
-<span class="normal"><a href="#__codelineno-0-792">792</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="k">def</span><span class="w"> </span><span class="nf">cluster_cs</span><span class="p">(</span>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="n">dict_sets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">    Cluster dictionaries from different sets based on continuous Jaccard similarity.</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a><span class="sd">    dict_sets : List[List[Dict[str, float]]]</span>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a><span class="sd">        List of m sets, where each set contains dictionaries with PIP values.</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">    threshold : float, optional</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">        Clustering threshold, by default 0.9.</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a>
-<a id="__codelineno-0-735" name="__codelineno-0-735"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-736" name="__codelineno-0-736"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-737" name="__codelineno-0-737"></a><span class="sd">    List[List[str]]</span>
-<a id="__codelineno-0-738" name="__codelineno-0-738"></a><span class="sd">        List of merged clusters, where each cluster contains</span>
-<a id="__codelineno-0-739" name="__codelineno-0-739"></a><span class="sd">        a list of unique SNP IDs from the dictionaries in that cluster.</span>
-<a id="__codelineno-0-740" name="__codelineno-0-740"></a>
-<a id="__codelineno-0-741" name="__codelineno-0-741"></a><span class="sd">    Raises</span>
-<a id="__codelineno-0-742" name="__codelineno-0-742"></a><span class="sd">    ------</span>
-<a id="__codelineno-0-743" name="__codelineno-0-743"></a><span class="sd">    ValueError</span>
-<a id="__codelineno-0-744" name="__codelineno-0-744"></a><span class="sd">        If less than two sets of dictionaries are provided or if any set is empty.</span>
-<a id="__codelineno-0-745" name="__codelineno-0-745"></a>
-<a id="__codelineno-0-746" name="__codelineno-0-746"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-747" name="__codelineno-0-747"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-748" name="__codelineno-0-748"></a><span class="sd">    &gt;&gt;&gt; sets = [</span>
-<a id="__codelineno-0-749" name="__codelineno-0-749"></a><span class="sd">    ...     [{&#39;a&#39;: 0.8, &#39;b&#39;: 0.5}],</span>
-<a id="__codelineno-0-750" name="__codelineno-0-750"></a><span class="sd">    ...     [{&#39;b&#39;: 0.6, &#39;c&#39;: 0.3}]</span>
-<a id="__codelineno-0-751" name="__codelineno-0-751"></a><span class="sd">    ... ]</span>
-<a id="__codelineno-0-752" name="__codelineno-0-752"></a><span class="sd">    &gt;&gt;&gt; clusters = cluster_cs(sets)</span>
-<a id="__codelineno-0-753" name="__codelineno-0-753"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-754" name="__codelineno-0-754"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dict_sets</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-0-755" name="__codelineno-0-755"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;At least two sets of dictionaries are required&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-756" name="__codelineno-0-756"></a>
-<a id="__codelineno-0-757" name="__codelineno-0-757"></a>    <span class="c1"># Validate input</span>
-<a id="__codelineno-0-758" name="__codelineno-0-758"></a>    <span class="k">for</span> <span class="n">dict_set</span> <span class="ow">in</span> <span class="n">dict_sets</span><span class="p">:</span>
-<a id="__codelineno-0-759" name="__codelineno-0-759"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_set</span><span class="p">:</span>
-<a id="__codelineno-0-760" name="__codelineno-0-760"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Empty dictionary sets are not allowed&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-761" name="__codelineno-0-761"></a>
-<a id="__codelineno-0-762" name="__codelineno-0-762"></a>    <span class="c1"># Create similarity matrix</span>
-<a id="__codelineno-0-763" name="__codelineno-0-763"></a>    <span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">all_dicts</span> <span class="o">=</span> <span class="n">create_similarity_matrix</span><span class="p">(</span><span class="n">dict_sets</span><span class="p">)</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>
-<a id="__codelineno-0-765" name="__codelineno-0-765"></a>    <span class="c1"># Convert similarity to distance (1 - similarity)</span>
-<a id="__codelineno-0-766" name="__codelineno-0-766"></a>    <span class="n">distance_matrix</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">similarity_matrix</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a>
-<a id="__codelineno-0-768" name="__codelineno-0-768"></a>    <span class="c1"># Perform hierarchical clustering</span>
-<a id="__codelineno-0-769" name="__codelineno-0-769"></a>    <span class="n">condensed_dist</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">triu_indices</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">distance_matrix</span><span class="p">),</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
-<a id="__codelineno-0-770" name="__codelineno-0-770"></a>
-<a id="__codelineno-0-771" name="__codelineno-0-771"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">condensed_dist</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-772" name="__codelineno-0-772"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No valid distances found for clustering&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-773" name="__codelineno-0-773"></a>        <span class="k">return</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_dicts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()))]</span>
-<a id="__codelineno-0-774" name="__codelineno-0-774"></a>
-<a id="__codelineno-0-775" name="__codelineno-0-775"></a>    <span class="n">linkage_matrix</span> <span class="o">=</span> <span class="n">linkage</span><span class="p">(</span><span class="n">condensed_dist</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;average&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-792">792</a></span>
+<span class="normal"><a href="#__codelineno-0-793">793</a></span>
+<span class="normal"><a href="#__codelineno-0-794">794</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-724" name="__codelineno-0-724"></a><span class="k">def</span><span class="w"> </span><span class="nf">cluster_cs</span><span class="p">(</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>    <span class="n">dict_sets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-728" name="__codelineno-0-728"></a><span class="sd">    Cluster dictionaries from different sets based on continuous Jaccard similarity.</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">    dict_sets : List[List[Dict[str, float]]]</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">        List of m sets, where each set contains dictionaries with PIP values.</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">    threshold : float, optional</span>
+<a id="__codelineno-0-735" name="__codelineno-0-735"></a><span class="sd">        Clustering threshold, by default 0.9.</span>
+<a id="__codelineno-0-736" name="__codelineno-0-736"></a>
+<a id="__codelineno-0-737" name="__codelineno-0-737"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-738" name="__codelineno-0-738"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-739" name="__codelineno-0-739"></a><span class="sd">    List[List[str]]</span>
+<a id="__codelineno-0-740" name="__codelineno-0-740"></a><span class="sd">        List of merged clusters, where each cluster contains</span>
+<a id="__codelineno-0-741" name="__codelineno-0-741"></a><span class="sd">        a list of unique SNP IDs from the dictionaries in that cluster.</span>
+<a id="__codelineno-0-742" name="__codelineno-0-742"></a>
+<a id="__codelineno-0-743" name="__codelineno-0-743"></a><span class="sd">    Raises</span>
+<a id="__codelineno-0-744" name="__codelineno-0-744"></a><span class="sd">    ------</span>
+<a id="__codelineno-0-745" name="__codelineno-0-745"></a><span class="sd">    ValueError</span>
+<a id="__codelineno-0-746" name="__codelineno-0-746"></a><span class="sd">        If less than two sets of dictionaries are provided or if any set is empty.</span>
+<a id="__codelineno-0-747" name="__codelineno-0-747"></a>
+<a id="__codelineno-0-748" name="__codelineno-0-748"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-749" name="__codelineno-0-749"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-750" name="__codelineno-0-750"></a><span class="sd">    &gt;&gt;&gt; sets = [</span>
+<a id="__codelineno-0-751" name="__codelineno-0-751"></a><span class="sd">    ...     [{&#39;a&#39;: 0.8, &#39;b&#39;: 0.5}],</span>
+<a id="__codelineno-0-752" name="__codelineno-0-752"></a><span class="sd">    ...     [{&#39;b&#39;: 0.6, &#39;c&#39;: 0.3}]</span>
+<a id="__codelineno-0-753" name="__codelineno-0-753"></a><span class="sd">    ... ]</span>
+<a id="__codelineno-0-754" name="__codelineno-0-754"></a><span class="sd">    &gt;&gt;&gt; clusters = cluster_cs(sets)</span>
+<a id="__codelineno-0-755" name="__codelineno-0-755"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-756" name="__codelineno-0-756"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dict_sets</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-0-757" name="__codelineno-0-757"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;At least two sets of dictionaries are required&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-758" name="__codelineno-0-758"></a>
+<a id="__codelineno-0-759" name="__codelineno-0-759"></a>    <span class="c1"># Validate input</span>
+<a id="__codelineno-0-760" name="__codelineno-0-760"></a>    <span class="k">for</span> <span class="n">dict_set</span> <span class="ow">in</span> <span class="n">dict_sets</span><span class="p">:</span>
+<a id="__codelineno-0-761" name="__codelineno-0-761"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_set</span><span class="p">:</span>
+<a id="__codelineno-0-762" name="__codelineno-0-762"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Empty dictionary sets are not allowed&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-763" name="__codelineno-0-763"></a>
+<a id="__codelineno-0-764" name="__codelineno-0-764"></a>    <span class="c1"># Create similarity matrix</span>
+<a id="__codelineno-0-765" name="__codelineno-0-765"></a>    <span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">all_dicts</span> <span class="o">=</span> <span class="n">create_similarity_matrix</span><span class="p">(</span><span class="n">dict_sets</span><span class="p">)</span>
+<a id="__codelineno-0-766" name="__codelineno-0-766"></a>
+<a id="__codelineno-0-767" name="__codelineno-0-767"></a>    <span class="c1"># Convert similarity to distance (1 - similarity)</span>
+<a id="__codelineno-0-768" name="__codelineno-0-768"></a>    <span class="n">distance_matrix</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">similarity_matrix</span>
+<a id="__codelineno-0-769" name="__codelineno-0-769"></a>
+<a id="__codelineno-0-770" name="__codelineno-0-770"></a>    <span class="c1"># Perform hierarchical clustering</span>
+<a id="__codelineno-0-771" name="__codelineno-0-771"></a>    <span class="n">condensed_dist</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">triu_indices</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">distance_matrix</span><span class="p">),</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
+<a id="__codelineno-0-772" name="__codelineno-0-772"></a>
+<a id="__codelineno-0-773" name="__codelineno-0-773"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">condensed_dist</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-774" name="__codelineno-0-774"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No valid distances found for clustering&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-775" name="__codelineno-0-775"></a>        <span class="k">return</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_dicts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()))]</span>
 <a id="__codelineno-0-776" name="__codelineno-0-776"></a>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a>    <span class="c1"># Cut the dendrogram at the specified threshold</span>
-<a id="__codelineno-0-778" name="__codelineno-0-778"></a>    <span class="n">clusters</span> <span class="o">=</span> <span class="n">fcluster</span><span class="p">(</span><span class="n">linkage_matrix</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="s2">&quot;distance&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-779" name="__codelineno-0-779"></a>
-<a id="__codelineno-0-780" name="__codelineno-0-780"></a>    <span class="c1"># Group dictionaries by cluster and merge them</span>
-<a id="__codelineno-0-781" name="__codelineno-0-781"></a>    <span class="n">cluster_groups</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-782" name="__codelineno-0-782"></a>    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cluster_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">clusters</span><span class="p">):</span>
-<a id="__codelineno-0-783" name="__codelineno-0-783"></a>        <span class="k">if</span> <span class="n">cluster_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cluster_groups</span><span class="p">:</span>
-<a id="__codelineno-0-784" name="__codelineno-0-784"></a>            <span class="n">cluster_groups</span><span class="p">[</span><span class="n">cluster_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-785" name="__codelineno-0-785"></a>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a>            <span class="c1"># Merge dictionaries within cluster by merging keys (no PIP values) and removing duplicates</span>
-<a id="__codelineno-0-787" name="__codelineno-0-787"></a>            <span class="n">current_dict</span> <span class="o">=</span> <span class="n">all_dicts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-<a id="__codelineno-0-788" name="__codelineno-0-788"></a>            <span class="n">cluster_groups</span><span class="p">[</span><span class="n">cluster_id</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">current_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-<a id="__codelineno-0-789" name="__codelineno-0-789"></a>
-<a id="__codelineno-0-790" name="__codelineno-0-790"></a>    <span class="k">return</span> <span class="p">[</span>
-<a id="__codelineno-0-791" name="__codelineno-0-791"></a>        <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">cluster_groups</span><span class="p">[</span><span class="n">cluster_id</span><span class="p">]))</span> <span class="k">for</span> <span class="n">cluster_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">cluster_groups</span><span class="p">)</span>
-<a id="__codelineno-0-792" name="__codelineno-0-792"></a>    <span class="p">]</span>
+<a id="__codelineno-0-777" name="__codelineno-0-777"></a>    <span class="n">linkage_matrix</span> <span class="o">=</span> <span class="n">linkage</span><span class="p">(</span><span class="n">condensed_dist</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;average&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-778" name="__codelineno-0-778"></a>
+<a id="__codelineno-0-779" name="__codelineno-0-779"></a>    <span class="c1"># Cut the dendrogram at the specified threshold</span>
+<a id="__codelineno-0-780" name="__codelineno-0-780"></a>    <span class="n">clusters</span> <span class="o">=</span> <span class="n">fcluster</span><span class="p">(</span><span class="n">linkage_matrix</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="s2">&quot;distance&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-781" name="__codelineno-0-781"></a>
+<a id="__codelineno-0-782" name="__codelineno-0-782"></a>    <span class="c1"># Group dictionaries by cluster and merge them</span>
+<a id="__codelineno-0-783" name="__codelineno-0-783"></a>    <span class="n">cluster_groups</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-784" name="__codelineno-0-784"></a>    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cluster_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">clusters</span><span class="p">):</span>
+<a id="__codelineno-0-785" name="__codelineno-0-785"></a>        <span class="k">if</span> <span class="n">cluster_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cluster_groups</span><span class="p">:</span>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a>            <span class="n">cluster_groups</span><span class="p">[</span><span class="n">cluster_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-787" name="__codelineno-0-787"></a>
+<a id="__codelineno-0-788" name="__codelineno-0-788"></a>            <span class="c1"># Merge dictionaries within cluster by merging keys (no PIP values) and removing duplicates</span>
+<a id="__codelineno-0-789" name="__codelineno-0-789"></a>            <span class="n">current_dict</span> <span class="o">=</span> <span class="n">all_dicts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+<a id="__codelineno-0-790" name="__codelineno-0-790"></a>            <span class="n">cluster_groups</span><span class="p">[</span><span class="n">cluster_id</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">current_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<a id="__codelineno-0-791" name="__codelineno-0-791"></a>
+<a id="__codelineno-0-792" name="__codelineno-0-792"></a>    <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-0-793" name="__codelineno-0-793"></a>        <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">cluster_groups</span><span class="p">[</span><span class="n">cluster_id</span><span class="p">]))</span> <span class="k">for</span> <span class="n">cluster_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">cluster_groups</span><span class="p">)</span>
+<a id="__codelineno-0-794" name="__codelineno-0-794"></a>    <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5231,7 +5243,9 @@ min_purity : float, optional
 <span class="normal"><a href="#__codelineno-0-605">605</a></span>
 <span class="normal"><a href="#__codelineno-0-606">606</a></span>
 <span class="normal"><a href="#__codelineno-0-607">607</a></span>
-<span class="normal"><a href="#__codelineno-0-608">608</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="k">def</span><span class="w"> </span><span class="nf">combine_creds</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-608">608</a></span>
+<span class="normal"><a href="#__codelineno-0-609">609</a></span>
+<span class="normal"><a href="#__codelineno-0-610">610</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="k">def</span><span class="w"> </span><span class="nf">combine_creds</span><span class="p">(</span>
 <a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="n">creds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">CredibleSet</span><span class="p">],</span>
 <a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="n">combine_cred</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;union&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="n">combine_pip</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;max&quot;</span><span class="p">,</span>
@@ -5352,28 +5366,30 @@ min_purity : float, optional
 <a id="__codelineno-0-584" name="__codelineno-0-584"></a>                <span class="n">purity</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">purity_val</span><span class="p">)</span>
 <a id="__codelineno-0-585" name="__codelineno-0-585"></a>            <span class="k">else</span><span class="p">:</span>
 <a id="__codelineno-0-586" name="__codelineno-0-586"></a>                <span class="n">purity</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculated purity for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">purity</span><span class="p">)</span><span class="si">}</span><span class="s2"> merged credible sets: </span><span class="si">{</span><span class="n">purity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a>    <span class="n">merged</span> <span class="o">=</span> <span class="n">CredibleSet</span><span class="p">(</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a>        <span class="n">tool</span><span class="o">=</span><span class="n">creds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tool</span><span class="p">,</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a>        <span class="n">n_cs</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">merged_snps</span><span class="p">),</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a>        <span class="n">coverage</span><span class="o">=</span><span class="n">creds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coverage</span><span class="p">,</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="n">lead_snps</span><span class="o">=</span><span class="p">[</span>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a>            <span class="nb">str</span><span class="p">(</span><span class="n">merged_pips</span><span class="p">[</span><span class="n">merged_pips</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">snp</span><span class="p">)]</span><span class="o">.</span><span class="n">idxmax</span><span class="p">())</span>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a>            <span class="k">for</span> <span class="n">snp</span> <span class="ow">in</span> <span class="n">merged_snps</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a>        <span class="p">],</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a>        <span class="n">snps</span><span class="o">=</span><span class="n">merged_snps</span><span class="p">,</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a>        <span class="n">cs_sizes</span><span class="o">=</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">merged_snps</span><span class="p">],</span>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a>        <span class="n">pips</span><span class="o">=</span><span class="n">merged_pips</span><span class="p">,</span>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a>        <span class="n">parameters</span><span class="o">=</span><span class="n">paras</span><span class="p">,</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a>        <span class="n">purity</span><span class="o">=</span><span class="n">purity</span><span class="p">,</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a>    <span class="p">)</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="c1"># Apply purity filtering if requested</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a>    <span class="k">if</span> <span class="n">min_purity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a>        <span class="n">merged</span> <span class="o">=</span> <span class="n">filter_credset_by_purity</span><span class="p">(</span><span class="n">merged</span><span class="p">,</span> <span class="n">min_purity</span><span class="o">=</span><span class="n">min_purity</span><span class="p">)</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="k">return</span> <span class="n">merged</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a>            <span class="sa">f</span><span class="s2">&quot;Calculated purity for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">purity</span><span class="p">)</span><span class="si">}</span><span class="s2"> merged credible sets: </span><span class="si">{</span><span class="n">purity</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a>        <span class="p">)</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>    <span class="n">merged</span> <span class="o">=</span> <span class="n">CredibleSet</span><span class="p">(</span>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a>        <span class="n">tool</span><span class="o">=</span><span class="n">creds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tool</span><span class="p">,</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="n">n_cs</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">merged_snps</span><span class="p">),</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a>        <span class="n">coverage</span><span class="o">=</span><span class="n">creds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coverage</span><span class="p">,</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a>        <span class="n">lead_snps</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a>            <span class="nb">str</span><span class="p">(</span><span class="n">merged_pips</span><span class="p">[</span><span class="n">merged_pips</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">snp</span><span class="p">)]</span><span class="o">.</span><span class="n">idxmax</span><span class="p">())</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a>            <span class="k">for</span> <span class="n">snp</span> <span class="ow">in</span> <span class="n">merged_snps</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a>        <span class="p">],</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a>        <span class="n">snps</span><span class="o">=</span><span class="n">merged_snps</span><span class="p">,</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a>        <span class="n">cs_sizes</span><span class="o">=</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">merged_snps</span><span class="p">],</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a>        <span class="n">pips</span><span class="o">=</span><span class="n">merged_pips</span><span class="p">,</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a>        <span class="n">parameters</span><span class="o">=</span><span class="n">paras</span><span class="p">,</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a>        <span class="n">purity</span><span class="o">=</span><span class="n">purity</span><span class="p">,</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="p">)</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="c1"># Apply purity filtering if requested</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a>    <span class="k">if</span> <span class="n">min_purity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a>        <span class="n">merged</span> <span class="o">=</span> <span class="n">filter_credset_by_purity</span><span class="p">(</span><span class="n">merged</span><span class="p">,</span> <span class="n">min_purity</span><span class="o">=</span><span class="n">min_purity</span><span class="p">)</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>    <span class="k">return</span> <span class="n">merged</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5540,9 +5556,7 @@ continuous_jaccard(d1, d2)
 
             <details class="quote">
               <summary>Source code in <code>credtools/credibleset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-611">611</a></span>
-<span class="normal"><a href="#__codelineno-0-612">612</a></span>
-<span class="normal"><a href="#__codelineno-0-613">613</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-613">613</a></span>
 <span class="normal"><a href="#__codelineno-0-614">614</a></span>
 <span class="normal"><a href="#__codelineno-0-615">615</a></span>
 <span class="normal"><a href="#__codelineno-0-616">616</a></span>
@@ -5591,58 +5605,60 @@ continuous_jaccard(d1, d2)
 <span class="normal"><a href="#__codelineno-0-659">659</a></span>
 <span class="normal"><a href="#__codelineno-0-660">660</a></span>
 <span class="normal"><a href="#__codelineno-0-661">661</a></span>
-<span class="normal"><a href="#__codelineno-0-662">662</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="k">def</span><span class="w"> </span><span class="nf">continuous_jaccard</span><span class="p">(</span><span class="n">dict1</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">dict2</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">    Calculate modified Jaccard similarity for continuous values (PIP values).</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">    Formula: ∑min(xi,yi)/∑max(xi,yi) where xi, yi are PIP values or 0 if missing</span>
+<span class="normal"><a href="#__codelineno-0-662">662</a></span>
+<span class="normal"><a href="#__codelineno-0-663">663</a></span>
+<span class="normal"><a href="#__codelineno-0-664">664</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="k">def</span><span class="w"> </span><span class="nf">continuous_jaccard</span><span class="p">(</span><span class="n">dict1</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">dict2</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">    Calculate modified Jaccard similarity for continuous values (PIP values).</span>
 <a id="__codelineno-0-616" name="__codelineno-0-616"></a>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">    Citation: Yuan, K. et al. (2024) Nature Genetics https://doi.org/10.1038/s41588-024-01870-z.</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">    Formula: ∑min(xi,yi)/∑max(xi,yi) where xi, yi are PIP values or 0 if missing</span>
 <a id="__codelineno-0-618" name="__codelineno-0-618"></a>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">    dict1 : Dict[str, float]</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">        First dictionary with keys and PIP values (0-1).</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">    dict2 : Dict[str, float]</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">        Second dictionary with keys and PIP values (0-1).</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">    float</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">        Modified Jaccard similarity index between 0 and 1.</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">    Raises</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">    ------</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">    ValueError</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">        If any values are not between 0 and 1.</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">    &gt;&gt;&gt; d1 = {&#39;a&#39;: 0.8, &#39;b&#39;: 0.5}</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">    &gt;&gt;&gt; d2 = {&#39;b&#39;: 0.6, &#39;c&#39;: 0.3}</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">    &gt;&gt;&gt; continuous_jaccard(d1, d2)</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">    0.5</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="c1"># Validate input values</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="p">[</span><span class="n">dict1</span><span class="p">,</span> <span class="n">dict2</span><span class="p">]:</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="n">invalid_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">)]</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>        <span class="k">if</span> <span class="n">invalid_values</span><span class="p">:</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All values must be between 0 and 1&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="c1"># Get all keys</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">all_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">dict1</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dict2</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="c1"># Calculate sum of minimums and maximums</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">sum_min</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="n">sum_max</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">all_keys</span><span class="p">:</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="n">val1</span> <span class="o">=</span> <span class="n">dict1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="n">val2</span> <span class="o">=</span> <span class="n">dict2</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="n">sum_min</span> <span class="o">+=</span> <span class="nb">min</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">)</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="n">sum_max</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">)</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="k">return</span> <span class="n">sum_min</span> <span class="o">/</span> <span class="n">sum_max</span> <span class="k">if</span> <span class="n">sum_max</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">    Citation: Yuan, K. et al. (2024) Nature Genetics https://doi.org/10.1038/s41588-024-01870-z.</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">    dict1 : Dict[str, float]</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">        First dictionary with keys and PIP values (0-1).</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">    dict2 : Dict[str, float]</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">        Second dictionary with keys and PIP values (0-1).</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">    float</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">        Modified Jaccard similarity index between 0 and 1.</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">    Raises</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">    ------</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">    ValueError</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        If any values are not between 0 and 1.</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">    &gt;&gt;&gt; d1 = {&#39;a&#39;: 0.8, &#39;b&#39;: 0.5}</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">    &gt;&gt;&gt; d2 = {&#39;b&#39;: 0.6, &#39;c&#39;: 0.3}</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">    &gt;&gt;&gt; continuous_jaccard(d1, d2)</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">    0.5</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="c1"># Validate input values</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="p">[</span><span class="n">dict1</span><span class="p">,</span> <span class="n">dict2</span><span class="p">]:</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="n">invalid_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">)]</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>        <span class="k">if</span> <span class="n">invalid_values</span><span class="p">:</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All values must be between 0 and 1&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="c1"># Get all keys</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">all_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">dict1</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dict2</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="c1"># Calculate sum of minimums and maximums</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="n">sum_min</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="n">sum_max</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">all_keys</span><span class="p">:</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="n">val1</span> <span class="o">=</span> <span class="n">dict1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="n">val2</span> <span class="o">=</span> <span class="n">dict2</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>        <span class="n">sum_min</span> <span class="o">+=</span> <span class="nb">min</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">)</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>        <span class="n">sum_max</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">)</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="k">return</span> <span class="n">sum_min</span> <span class="o">/</span> <span class="n">sum_max</span> <span class="k">if</span> <span class="n">sum_max</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5682,9 +5698,7 @@ matrix, dicts = create_similarity_matrix(sets)</p>
 
             <details class="quote">
               <summary>Source code in <code>credtools/credibleset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-665">665</a></span>
-<span class="normal"><a href="#__codelineno-0-666">666</a></span>
-<span class="normal"><a href="#__codelineno-0-667">667</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-667">667</a></span>
 <span class="normal"><a href="#__codelineno-0-668">668</a></span>
 <span class="normal"><a href="#__codelineno-0-669">669</a></span>
 <span class="normal"><a href="#__codelineno-0-670">670</a></span>
@@ -5736,61 +5750,63 @@ matrix, dicts = create_similarity_matrix(sets)</p>
 <span class="normal"><a href="#__codelineno-0-716">716</a></span>
 <span class="normal"><a href="#__codelineno-0-717">717</a></span>
 <span class="normal"><a href="#__codelineno-0-718">718</a></span>
-<span class="normal"><a href="#__codelineno-0-719">719</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-665" name="__codelineno-0-665"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_similarity_matrix</span><span class="p">(</span>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="n">dict_sets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]:</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="sd">    Create a similarity matrix for all pairs of dictionaries across different sets.</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">    dict_sets : List[List[Dict[str, float]]]</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">        List of m sets, where each set contains dictionaries with PIP values.</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">    Tuple[np.ndarray, List[Dict[str, float]]]</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">        A tuple containing:</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">        - Similarity matrix (n_dicts x n_dicts)</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">        - Flattened list of dictionaries</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">    &gt;&gt;&gt; sets = [[{&#39;a&#39;: 0.8, &#39;b&#39;: 0.5}], [{&#39;b&#39;: 0.6, &#39;c&#39;: 0.3}]]</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">    &gt;&gt;&gt; matrix, dicts = create_similarity_matrix(sets)</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a>    <span class="c1"># Flatten all dictionaries while keeping track of their set membership</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>    <span class="n">all_dicts</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a>    <span class="k">for</span> <span class="n">dict_set</span> <span class="ow">in</span> <span class="n">dict_sets</span><span class="p">:</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a>        <span class="n">all_dicts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">dict_set</span><span class="p">)</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>    <span class="n">total_dicts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_dicts</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-719">719</a></span>
+<span class="normal"><a href="#__codelineno-0-720">720</a></span>
+<span class="normal"><a href="#__codelineno-0-721">721</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-667" name="__codelineno-0-667"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_similarity_matrix</span><span class="p">(</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>    <span class="n">dict_sets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]:</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">    Create a similarity matrix for all pairs of dictionaries across different sets.</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">    dict_sets : List[List[Dict[str, float]]]</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">        List of m sets, where each set contains dictionaries with PIP values.</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">    Tuple[np.ndarray, List[Dict[str, float]]]</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">        A tuple containing:</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">        - Similarity matrix (n_dicts x n_dicts)</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">        - Flattened list of dictionaries</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">    &gt;&gt;&gt; sets = [[{&#39;a&#39;: 0.8, &#39;b&#39;: 0.5}], [{&#39;b&#39;: 0.6, &#39;c&#39;: 0.3}]]</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">    &gt;&gt;&gt; matrix, dicts = create_similarity_matrix(sets)</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>    <span class="c1"># Flatten all dictionaries while keeping track of their set membership</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>    <span class="n">all_dicts</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>    <span class="k">for</span> <span class="n">dict_set</span> <span class="ow">in</span> <span class="n">dict_sets</span><span class="p">:</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>        <span class="n">all_dicts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">dict_set</span><span class="p">)</span>
 <a id="__codelineno-0-694" name="__codelineno-0-694"></a>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a>    <span class="c1"># Create similarity matrix</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a>    <span class="n">similarity_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">total_dicts</span><span class="p">,</span> <span class="n">total_dicts</span><span class="p">))</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a>    <span class="c1"># Calculate set membership ranges</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>    <span class="n">set_ranges</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a>    <span class="n">current_idx</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a>    <span class="k">for</span> <span class="n">dict_set</span> <span class="ow">in</span> <span class="n">dict_sets</span><span class="p">:</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a>        <span class="n">set_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">current_idx</span><span class="p">,</span> <span class="n">current_idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">dict_set</span><span class="p">)))</span>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a>        <span class="n">current_idx</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dict_set</span><span class="p">)</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>    <span class="c1"># Fill similarity matrix</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">total_dicts</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="c1"># Check if dictionaries are from the same set</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>        <span class="n">same_set</span> <span class="o">=</span> <span class="kc">False</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">set_ranges</span><span class="p">:</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>            <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">end</span> <span class="ow">and</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">:</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>                <span class="n">same_set</span> <span class="o">=</span> <span class="kc">True</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>                <span class="k">break</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">same_set</span><span class="p">:</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>            <span class="n">similarity</span> <span class="o">=</span> <span class="n">continuous_jaccard</span><span class="p">(</span><span class="n">all_dicts</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">all_dicts</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a>            <span class="n">similarity_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">similarity</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a>            <span class="n">similarity_matrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">similarity</span>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a>    <span class="k">return</span> <span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">all_dicts</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>    <span class="n">total_dicts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_dicts</span><span class="p">)</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>    <span class="c1"># Create similarity matrix</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>    <span class="n">similarity_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">total_dicts</span><span class="p">,</span> <span class="n">total_dicts</span><span class="p">))</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a>    <span class="c1"># Calculate set membership ranges</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a>    <span class="n">set_ranges</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a>    <span class="n">current_idx</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>    <span class="k">for</span> <span class="n">dict_set</span> <span class="ow">in</span> <span class="n">dict_sets</span><span class="p">:</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>        <span class="n">set_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">current_idx</span><span class="p">,</span> <span class="n">current_idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">dict_set</span><span class="p">)))</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>        <span class="n">current_idx</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dict_set</span><span class="p">)</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>    <span class="c1"># Fill similarity matrix</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">total_dicts</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>        <span class="c1"># Check if dictionaries are from the same set</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="n">same_set</span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">set_ranges</span><span class="p">:</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a>            <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">end</span> <span class="ow">and</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">:</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a>                <span class="n">same_set</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>                <span class="k">break</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">same_set</span><span class="p">:</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a>            <span class="n">similarity</span> <span class="o">=</span> <span class="n">continuous_jaccard</span><span class="p">(</span><span class="n">all_dicts</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">all_dicts</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>            <span class="n">similarity_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">similarity</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a>            <span class="n">similarity_matrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">similarity</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a>    <span class="k">return</span> <span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">all_dicts</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5848,15 +5864,7 @@ assert same_cs.n_cs == credset.n_cs</p>
 
             <details class="quote">
               <summary>Source code in <code>credtools/credibleset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-927"> 927</a></span>
-<span class="normal"><a href="#__codelineno-0-928"> 928</a></span>
-<span class="normal"><a href="#__codelineno-0-929"> 929</a></span>
-<span class="normal"><a href="#__codelineno-0-930"> 930</a></span>
-<span class="normal"><a href="#__codelineno-0-931"> 931</a></span>
-<span class="normal"><a href="#__codelineno-0-932"> 932</a></span>
-<span class="normal"><a href="#__codelineno-0-933"> 933</a></span>
-<span class="normal"><a href="#__codelineno-0-934"> 934</a></span>
-<span class="normal"><a href="#__codelineno-0-935"> 935</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-935"> 935</a></span>
 <span class="normal"><a href="#__codelineno-0-936"> 936</a></span>
 <span class="normal"><a href="#__codelineno-0-937"> 937</a></span>
 <span class="normal"><a href="#__codelineno-0-938"> 938</a></span>
@@ -5953,112 +5961,120 @@ assert same_cs.n_cs == credset.n_cs</p>
 <span class="normal"><a href="#__codelineno-0-1029">1029</a></span>
 <span class="normal"><a href="#__codelineno-0-1030">1030</a></span>
 <span class="normal"><a href="#__codelineno-0-1031">1031</a></span>
-<span class="normal"><a href="#__codelineno-0-1032">1032</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="k">def</span><span class="w"> </span><span class="nf">filter_credset_by_purity</span><span class="p">(</span>
-<a id="__codelineno-0-928" name="__codelineno-0-928"></a>    <span class="n">credset</span><span class="p">:</span> <span class="s2">&quot;CredibleSet&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a>    <span class="n">min_purity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CredibleSet&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="sd">    Filter credible sets by purity threshold.</span>
-<a id="__codelineno-0-933" name="__codelineno-0-933"></a>
-<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">    Removes credible sets that do not meet the minimum purity requirement.</span>
-<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">    Purity is defined as the minimum absolute LD R value between all pairs</span>
-<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">    of SNPs in the credible set.</span>
-<a id="__codelineno-0-937" name="__codelineno-0-937"></a>
-<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">    credset : CredibleSet</span>
-<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">        CredibleSet object containing credible sets and their purity values.</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">    min_purity : float, optional</span>
-<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">        Minimum purity threshold for filtering, by default 0.0.</span>
-<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">        Credible sets with purity &lt; min_purity will be removed.</span>
-<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">        Set to 0.0 (default) for no filtering.</span>
-<a id="__codelineno-0-946" name="__codelineno-0-946"></a>
-<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">    CredibleSet</span>
-<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">        New CredibleSet object with only credible sets meeting purity threshold.</span>
-<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">        If no credible sets pass filtering, returns empty CredibleSet (n_cs=0).</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a>
-<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">    Notes</span>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">    -----</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">    - If credset.purity is None or empty, no filtering is applied (returns original credset)</span>
-<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">    - If min_purity &lt;= 0, no filtering is applied (returns original credset)</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">    - Filtered credible sets maintain their original ordering</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">    - PIPs are preserved for all variants (not filtered)</span>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a>
-<a id="__codelineno-0-960" name="__codelineno-0-960"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">    &gt;&gt;&gt; # Filter credible sets to keep only high-purity sets (purity &gt;= 0.5)</span>
-<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="sd">    &gt;&gt;&gt; filtered_cs = filter_credset_by_purity(credset, min_purity=0.5)</span>
-<a id="__codelineno-0-964" name="__codelineno-0-964"></a><span class="sd">    &gt;&gt;&gt; print(f&quot;Original: {credset.n_cs} CS, Filtered: {filtered_cs.n_cs} CS&quot;)</span>
-<a id="__codelineno-0-965" name="__codelineno-0-965"></a><span class="sd">    Original: 5 CS, Filtered: 3 CS</span>
-<a id="__codelineno-0-966" name="__codelineno-0-966"></a>
-<a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="sd">    &gt;&gt;&gt; # No filtering (default)</span>
-<a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">    &gt;&gt;&gt; same_cs = filter_credset_by_purity(credset, min_purity=0.0)</span>
-<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">    &gt;&gt;&gt; assert same_cs.n_cs == credset.n_cs</span>
-<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a>    <span class="c1"># No filtering if min_purity &lt;= 0</span>
-<a id="__codelineno-0-972" name="__codelineno-0-972"></a>    <span class="k">if</span> <span class="n">min_purity</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-973" name="__codelineno-0-973"></a>        <span class="k">return</span> <span class="n">credset</span>
+<span class="normal"><a href="#__codelineno-0-1032">1032</a></span>
+<span class="normal"><a href="#__codelineno-0-1033">1033</a></span>
+<span class="normal"><a href="#__codelineno-0-1034">1034</a></span>
+<span class="normal"><a href="#__codelineno-0-1035">1035</a></span>
+<span class="normal"><a href="#__codelineno-0-1036">1036</a></span>
+<span class="normal"><a href="#__codelineno-0-1037">1037</a></span>
+<span class="normal"><a href="#__codelineno-0-1038">1038</a></span>
+<span class="normal"><a href="#__codelineno-0-1039">1039</a></span>
+<span class="normal"><a href="#__codelineno-0-1040">1040</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="k">def</span><span class="w"> </span><span class="nf">filter_credset_by_purity</span><span class="p">(</span>
+<a id="__codelineno-0-936" name="__codelineno-0-936"></a>    <span class="n">credset</span><span class="p">:</span> <span class="s2">&quot;CredibleSet&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-937" name="__codelineno-0-937"></a>    <span class="n">min_purity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CredibleSet&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">    Filter credible sets by purity threshold.</span>
+<a id="__codelineno-0-941" name="__codelineno-0-941"></a>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">    Removes credible sets that do not meet the minimum purity requirement.</span>
+<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">    Purity is defined as the minimum absolute LD R value between all pairs</span>
+<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">    of SNPs in the credible set.</span>
+<a id="__codelineno-0-945" name="__codelineno-0-945"></a>
+<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">    credset : CredibleSet</span>
+<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">        CredibleSet object containing credible sets and their purity values.</span>
+<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">    min_purity : float, optional</span>
+<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">        Minimum purity threshold for filtering, by default 0.0.</span>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">        Credible sets with purity &lt; min_purity will be removed.</span>
+<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">        Set to 0.0 (default) for no filtering.</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">    CredibleSet</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">        New CredibleSet object with only credible sets meeting purity threshold.</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">        If no credible sets pass filtering, returns empty CredibleSet (n_cs=0).</span>
+<a id="__codelineno-0-960" name="__codelineno-0-960"></a>
+<a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">    Notes</span>
+<a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">    -----</span>
+<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="sd">    - If credset.purity is None or empty, no filtering is applied (returns original credset)</span>
+<a id="__codelineno-0-964" name="__codelineno-0-964"></a><span class="sd">    - If min_purity &lt;= 0, no filtering is applied (returns original credset)</span>
+<a id="__codelineno-0-965" name="__codelineno-0-965"></a><span class="sd">    - Filtered credible sets maintain their original ordering</span>
+<a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="sd">    - PIPs are preserved for all variants (not filtered)</span>
+<a id="__codelineno-0-967" name="__codelineno-0-967"></a>
+<a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">    &gt;&gt;&gt; # Filter credible sets to keep only high-purity sets (purity &gt;= 0.5)</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">    &gt;&gt;&gt; filtered_cs = filter_credset_by_purity(credset, min_purity=0.5)</span>
+<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">    &gt;&gt;&gt; print(f&quot;Original: {credset.n_cs} CS, Filtered: {filtered_cs.n_cs} CS&quot;)</span>
+<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">    Original: 5 CS, Filtered: 3 CS</span>
 <a id="__codelineno-0-974" name="__codelineno-0-974"></a>
-<a id="__codelineno-0-975" name="__codelineno-0-975"></a>    <span class="c1"># No filtering if purity values are not available</span>
-<a id="__codelineno-0-976" name="__codelineno-0-976"></a>    <span class="k">if</span> <span class="n">credset</span><span class="o">.</span><span class="n">purity</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">credset</span><span class="o">.</span><span class="n">purity</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-977" name="__codelineno-0-977"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-<a id="__codelineno-0-978" name="__codelineno-0-978"></a>            <span class="s2">&quot;Purity values not available for filtering. &quot;</span>
-<a id="__codelineno-0-979" name="__codelineno-0-979"></a>            <span class="s2">&quot;Returning original credible set without filtering.&quot;</span>
-<a id="__codelineno-0-980" name="__codelineno-0-980"></a>        <span class="p">)</span>
+<a id="__codelineno-0-975" name="__codelineno-0-975"></a><span class="sd">    &gt;&gt;&gt; # No filtering (default)</span>
+<a id="__codelineno-0-976" name="__codelineno-0-976"></a><span class="sd">    &gt;&gt;&gt; same_cs = filter_credset_by_purity(credset, min_purity=0.0)</span>
+<a id="__codelineno-0-977" name="__codelineno-0-977"></a><span class="sd">    &gt;&gt;&gt; assert same_cs.n_cs == credset.n_cs</span>
+<a id="__codelineno-0-978" name="__codelineno-0-978"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-979" name="__codelineno-0-979"></a>    <span class="c1"># No filtering if min_purity &lt;= 0</span>
+<a id="__codelineno-0-980" name="__codelineno-0-980"></a>    <span class="k">if</span> <span class="n">min_purity</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
 <a id="__codelineno-0-981" name="__codelineno-0-981"></a>        <span class="k">return</span> <span class="n">credset</span>
 <a id="__codelineno-0-982" name="__codelineno-0-982"></a>
-<a id="__codelineno-0-983" name="__codelineno-0-983"></a>    <span class="c1"># No credible sets to filter</span>
-<a id="__codelineno-0-984" name="__codelineno-0-984"></a>    <span class="k">if</span> <span class="n">credset</span><span class="o">.</span><span class="n">n_cs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-985" name="__codelineno-0-985"></a>        <span class="k">return</span> <span class="n">credset</span>
-<a id="__codelineno-0-986" name="__codelineno-0-986"></a>
-<a id="__codelineno-0-987" name="__codelineno-0-987"></a>    <span class="c1"># Filter credible sets by purity threshold</span>
-<a id="__codelineno-0-988" name="__codelineno-0-988"></a>    <span class="n">keep_indices</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">purity_val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">credset</span><span class="o">.</span><span class="n">purity</span><span class="p">):</span>
-<a id="__codelineno-0-990" name="__codelineno-0-990"></a>        <span class="k">if</span> <span class="n">purity_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">purity_val</span> <span class="o">&gt;=</span> <span class="n">min_purity</span><span class="p">:</span>
-<a id="__codelineno-0-991" name="__codelineno-0-991"></a>            <span class="n">keep_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a>
-<a id="__codelineno-0-993" name="__codelineno-0-993"></a>    <span class="c1"># If no credible sets pass filtering, return empty CredibleSet</span>
-<a id="__codelineno-0-994" name="__codelineno-0-994"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-995" name="__codelineno-0-995"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-<a id="__codelineno-0-996" name="__codelineno-0-996"></a>            <span class="sa">f</span><span class="s2">&quot;No credible sets passed purity filtering (min_purity=</span><span class="si">{</span><span class="n">min_purity</span><span class="si">}</span><span class="s2">). &quot;</span>
-<a id="__codelineno-0-997" name="__codelineno-0-997"></a>            <span class="sa">f</span><span class="s2">&quot;All </span><span class="si">{</span><span class="n">credset</span><span class="o">.</span><span class="n">n_cs</span><span class="si">}</span><span class="s2"> credible sets were filtered out.&quot;</span>
-<a id="__codelineno-0-998" name="__codelineno-0-998"></a>        <span class="p">)</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a>        <span class="k">return</span> <span class="n">CredibleSet</span><span class="p">(</span>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>            <span class="n">tool</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">tool</span><span class="p">,</span>
-<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>            <span class="n">n_cs</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>            <span class="n">coverage</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">coverage</span><span class="p">,</span>
-<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>            <span class="n">lead_snps</span><span class="o">=</span><span class="p">[],</span>
-<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>            <span class="n">snps</span><span class="o">=</span><span class="p">[],</span>
-<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>            <span class="n">cs_sizes</span><span class="o">=</span><span class="p">[],</span>
-<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>            <span class="n">pips</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">pips</span><span class="p">,</span>
-<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>            <span class="n">parameters</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
-<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>            <span class="n">purity</span><span class="o">=</span><span class="p">[],</span>
-<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>
-<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>    <span class="c1"># Filter credible sets</span>
-<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>    <span class="n">filtered_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">snps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>    <span class="n">filtered_lead_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">lead_snps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
-<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>    <span class="n">filtered_cs_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">cs_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
-<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="n">filtered_purity</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">purity</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
-<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>
-<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>        <span class="sa">f</span><span class="s2">&quot;Filtered credible sets by purity &gt;= </span><span class="si">{</span><span class="n">min_purity</span><span class="si">}</span><span class="s2">: &quot;</span>
-<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">credset</span><span class="o">.</span><span class="n">n_cs</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> credible sets&quot;</span>
-<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>    <span class="p">)</span>
-<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>
-<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>    <span class="k">return</span> <span class="n">CredibleSet</span><span class="p">(</span>
-<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>        <span class="n">tool</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">tool</span><span class="p">,</span>
-<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>        <span class="n">n_cs</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">),</span>
-<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>        <span class="n">coverage</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">coverage</span><span class="p">,</span>
-<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>        <span class="n">lead_snps</span><span class="o">=</span><span class="n">filtered_lead_snps</span><span class="p">,</span>
-<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>        <span class="n">snps</span><span class="o">=</span><span class="n">filtered_snps</span><span class="p">,</span>
-<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="n">cs_sizes</span><span class="o">=</span><span class="n">filtered_cs_sizes</span><span class="p">,</span>
-<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>        <span class="n">pips</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">pips</span><span class="p">,</span>  <span class="c1"># Keep all PIPs (not filtered)</span>
-<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>        <span class="n">parameters</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
-<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>        <span class="n">purity</span><span class="o">=</span><span class="n">filtered_purity</span><span class="p">,</span>
-<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>    <span class="p">)</span>
+<a id="__codelineno-0-983" name="__codelineno-0-983"></a>    <span class="c1"># No filtering if purity values are not available</span>
+<a id="__codelineno-0-984" name="__codelineno-0-984"></a>    <span class="k">if</span> <span class="n">credset</span><span class="o">.</span><span class="n">purity</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">credset</span><span class="o">.</span><span class="n">purity</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-985" name="__codelineno-0-985"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+<a id="__codelineno-0-986" name="__codelineno-0-986"></a>            <span class="s2">&quot;Purity values not available for filtering. &quot;</span>
+<a id="__codelineno-0-987" name="__codelineno-0-987"></a>            <span class="s2">&quot;Returning original credible set without filtering.&quot;</span>
+<a id="__codelineno-0-988" name="__codelineno-0-988"></a>        <span class="p">)</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a>        <span class="k">return</span> <span class="n">credset</span>
+<a id="__codelineno-0-990" name="__codelineno-0-990"></a>
+<a id="__codelineno-0-991" name="__codelineno-0-991"></a>    <span class="c1"># No credible sets to filter</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a>    <span class="k">if</span> <span class="n">credset</span><span class="o">.</span><span class="n">n_cs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-993" name="__codelineno-0-993"></a>        <span class="k">return</span> <span class="n">credset</span>
+<a id="__codelineno-0-994" name="__codelineno-0-994"></a>
+<a id="__codelineno-0-995" name="__codelineno-0-995"></a>    <span class="c1"># Filter credible sets by purity threshold</span>
+<a id="__codelineno-0-996" name="__codelineno-0-996"></a>    <span class="n">keep_indices</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-997" name="__codelineno-0-997"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">purity_val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">credset</span><span class="o">.</span><span class="n">purity</span><span class="p">):</span>
+<a id="__codelineno-0-998" name="__codelineno-0-998"></a>        <span class="k">if</span> <span class="n">purity_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">purity_val</span> <span class="o">&gt;=</span> <span class="n">min_purity</span><span class="p">:</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a>            <span class="n">keep_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>
+<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>    <span class="c1"># If no credible sets pass filtering, return empty CredibleSet</span>
+<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>            <span class="sa">f</span><span class="s2">&quot;No credible sets passed purity filtering (min_purity=</span><span class="si">{</span><span class="n">min_purity</span><span class="si">}</span><span class="s2">). &quot;</span>
+<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>            <span class="sa">f</span><span class="s2">&quot;All </span><span class="si">{</span><span class="n">credset</span><span class="o">.</span><span class="n">n_cs</span><span class="si">}</span><span class="s2"> credible sets were filtered out.&quot;</span>
+<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>        <span class="k">return</span> <span class="n">CredibleSet</span><span class="p">(</span>
+<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>            <span class="n">tool</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">tool</span><span class="p">,</span>
+<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>            <span class="n">n_cs</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>            <span class="n">coverage</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">coverage</span><span class="p">,</span>
+<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>            <span class="n">lead_snps</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>            <span class="n">snps</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>            <span class="n">cs_sizes</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>            <span class="n">pips</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">pips</span><span class="p">,</span>
+<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>            <span class="n">parameters</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>            <span class="n">purity</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>
+<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>    <span class="c1"># Filter credible sets</span>
+<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>    <span class="n">filtered_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">snps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
+<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>    <span class="n">filtered_lead_snps</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">lead_snps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
+<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>    <span class="n">filtered_cs_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">cs_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
+<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>    <span class="n">filtered_purity</span> <span class="o">=</span> <span class="p">[</span><span class="n">credset</span><span class="o">.</span><span class="n">purity</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_indices</span><span class="p">]</span>
+<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>
+<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>        <span class="sa">f</span><span class="s2">&quot;Filtered credible sets by purity &gt;= </span><span class="si">{</span><span class="n">min_purity</span><span class="si">}</span><span class="s2">: &quot;</span>
+<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">credset</span><span class="o">.</span><span class="n">n_cs</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> credible sets&quot;</span>
+<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>    <span class="p">)</span>
+<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>
+<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>    <span class="k">return</span> <span class="n">CredibleSet</span><span class="p">(</span>
+<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>        <span class="n">tool</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">tool</span><span class="p">,</span>
+<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>        <span class="n">n_cs</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">),</span>
+<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>        <span class="n">coverage</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">coverage</span><span class="p">,</span>
+<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>        <span class="n">lead_snps</span><span class="o">=</span><span class="n">filtered_lead_snps</span><span class="p">,</span>
+<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>        <span class="n">snps</span><span class="o">=</span><span class="n">filtered_snps</span><span class="p">,</span>
+<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>        <span class="n">cs_sizes</span><span class="o">=</span><span class="n">filtered_cs_sizes</span><span class="p">,</span>
+<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>        <span class="n">pips</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">pips</span><span class="p">,</span>  <span class="c1"># Keep all PIPs (not filtered)</span>
+<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>        <span class="n">parameters</span><span class="o">=</span><span class="n">credset</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>        <span class="n">purity</span><span class="o">=</span><span class="n">filtered_purity</span><span class="p">,</span>
+<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6094,15 +6110,7 @@ locus_set : LocusSet
 
             <details class="quote">
               <summary>Source code in <code>credtools/credibleset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1035">1035</a></span>
-<span class="normal"><a href="#__codelineno-0-1036">1036</a></span>
-<span class="normal"><a href="#__codelineno-0-1037">1037</a></span>
-<span class="normal"><a href="#__codelineno-0-1038">1038</a></span>
-<span class="normal"><a href="#__codelineno-0-1039">1039</a></span>
-<span class="normal"><a href="#__codelineno-0-1040">1040</a></span>
-<span class="normal"><a href="#__codelineno-0-1041">1041</a></span>
-<span class="normal"><a href="#__codelineno-0-1042">1042</a></span>
-<span class="normal"><a href="#__codelineno-0-1043">1043</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1043">1043</a></span>
 <span class="normal"><a href="#__codelineno-0-1044">1044</a></span>
 <span class="normal"><a href="#__codelineno-0-1045">1045</a></span>
 <span class="normal"><a href="#__codelineno-0-1046">1046</a></span>
@@ -6151,64 +6159,76 @@ locus_set : LocusSet
 <span class="normal"><a href="#__codelineno-0-1089">1089</a></span>
 <span class="normal"><a href="#__codelineno-0-1090">1090</a></span>
 <span class="normal"><a href="#__codelineno-0-1091">1091</a></span>
-<span class="normal"><a href="#__codelineno-0-1092">1092</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1035" name="__codelineno-0-1035"></a><span class="k">def</span><span class="w"> </span><span class="nf">generate_cs_summary</span><span class="p">(</span>
-<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>    <span class="n">causal_variants</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>    <span class="n">locus_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>    <span class="n">locus_set</span><span class="p">:</span> <span class="s2">&quot;LocusSet&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
-<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a><span class="sd">    Generate credible set summary from causal variants.</span>
-<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a>
-<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a><span class="sd">    Creates one summary row per credible set, including lead SNP, size,</span>
-<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a><span class="sd">    PIP thresholds, and purity metrics.</span>
-<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>
-<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="sd">    causal_variants : pd.DataFrame</span>
-<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="sd">        DataFrame of causal variants (rows where CRED != 0), must have</span>
-<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a><span class="sd">        columns: CRED, PIP, SNPID.</span>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    locus_id : str</span>
-<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a><span class="sd">        Locus identifier string.</span>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">    locus_set : LocusSet</span>
-<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">        LocusSet object for LD-based purity calculation.</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>
-<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a><span class="sd">    List[Dict]</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">        List of summary dictionaries, one per credible set.</span>
-<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>    <span class="k">if</span> <span class="n">causal_variants</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>        <span class="k">return</span> <span class="p">[]</span>
+<span class="normal"><a href="#__codelineno-0-1092">1092</a></span>
+<span class="normal"><a href="#__codelineno-0-1093">1093</a></span>
+<span class="normal"><a href="#__codelineno-0-1094">1094</a></span>
+<span class="normal"><a href="#__codelineno-0-1095">1095</a></span>
+<span class="normal"><a href="#__codelineno-0-1096">1096</a></span>
+<span class="normal"><a href="#__codelineno-0-1097">1097</a></span>
+<span class="normal"><a href="#__codelineno-0-1098">1098</a></span>
+<span class="normal"><a href="#__codelineno-0-1099">1099</a></span>
+<span class="normal"><a href="#__codelineno-0-1100">1100</a></span>
+<span class="normal"><a href="#__codelineno-0-1101">1101</a></span>
+<span class="normal"><a href="#__codelineno-0-1102">1102</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1043" name="__codelineno-0-1043"></a><span class="k">def</span><span class="w"> </span><span class="nf">generate_cs_summary</span><span class="p">(</span>
+<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>    <span class="n">causal_variants</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>    <span class="n">locus_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>    <span class="n">locus_set</span><span class="p">:</span> <span class="s2">&quot;LocusSet&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="sd">    Generate credible set summary from causal variants.</span>
+<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    Creates one summary row per credible set, including lead SNP, size,</span>
+<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a><span class="sd">    PIP thresholds, and purity metrics.</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>
+<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">    causal_variants : pd.DataFrame</span>
+<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a><span class="sd">        DataFrame of causal variants (rows where CRED != 0), must have</span>
+<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a><span class="sd">        columns: CRED, PIP, SNPID.</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">    locus_id : str</span>
+<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a><span class="sd">        Locus identifier string.</span>
+<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a><span class="sd">    locus_set : LocusSet</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">        LocusSet object for LD-based purity calculation.</span>
 <a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>
-<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>    <span class="n">cs_summary_list</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>    <span class="k">for</span> <span class="n">cs_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">causal_variants</span><span class="p">[</span><span class="s2">&quot;CRED&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()):</span>
-<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>        <span class="n">cs_snps</span> <span class="o">=</span> <span class="n">causal_variants</span><span class="p">[</span><span class="n">causal_variants</span><span class="p">[</span><span class="s2">&quot;CRED&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">cs_id</span><span class="p">]</span>
-<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>        <span class="n">lead_snp_idx</span> <span class="o">=</span> <span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span>
-<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>        <span class="n">lead_snp</span> <span class="o">=</span> <span class="n">cs_snps</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">lead_snp_idx</span><span class="p">,</span> <span class="s2">&quot;SNPID&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>        <span class="n">cs_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs_snps</span><span class="p">)</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>        <span class="n">pip_01</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>        <span class="n">pip_05</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-<a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>        <span class="n">pip_09</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.9</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-<a id="__codelineno-0-1073" name="__codelineno-0-1073"></a>
-<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a>        <span class="c1"># Calculate purity if LD is available</span>
-<a id="__codelineno-0-1075" name="__codelineno-0-1075"></a>        <span class="n">purity</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-1076" name="__codelineno-0-1076"></a>        <span class="n">ld_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">locus</span><span class="o">.</span><span class="n">ld</span> <span class="k">for</span> <span class="n">locus</span> <span class="ow">in</span> <span class="n">locus_set</span><span class="o">.</span><span class="n">loci</span> <span class="k">if</span> <span class="n">locus</span><span class="o">.</span><span class="n">ld</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
-<a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ld_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-1078" name="__codelineno-0-1078"></a>            <span class="n">cs_snp_ids</span> <span class="o">=</span> <span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;SNPID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-<a id="__codelineno-0-1079" name="__codelineno-0-1079"></a>            <span class="n">purity</span> <span class="o">=</span> <span class="n">calculate_cs_purity</span><span class="p">(</span><span class="n">ld_list</span><span class="p">,</span> <span class="n">cs_snp_ids</span><span class="p">)</span>
-<a id="__codelineno-0-1080" name="__codelineno-0-1080"></a>
-<a id="__codelineno-0-1081" name="__codelineno-0-1081"></a>        <span class="n">cs_summary_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-<a id="__codelineno-0-1082" name="__codelineno-0-1082"></a>            <span class="s2">&quot;locus_id&quot;</span><span class="p">:</span> <span class="n">locus_id</span><span class="p">,</span>
-<a id="__codelineno-0-1083" name="__codelineno-0-1083"></a>            <span class="s2">&quot;cs_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">cs_id</span><span class="p">),</span>
-<a id="__codelineno-0-1084" name="__codelineno-0-1084"></a>            <span class="s2">&quot;lead_snp&quot;</span><span class="p">:</span> <span class="n">lead_snp</span><span class="p">,</span>
-<a id="__codelineno-0-1085" name="__codelineno-0-1085"></a>            <span class="s2">&quot;cs_size&quot;</span><span class="p">:</span> <span class="n">cs_size</span><span class="p">,</span>
-<a id="__codelineno-0-1086" name="__codelineno-0-1086"></a>            <span class="s2">&quot;pip_01&quot;</span><span class="p">:</span> <span class="n">pip_01</span><span class="p">,</span>
-<a id="__codelineno-0-1087" name="__codelineno-0-1087"></a>            <span class="s2">&quot;pip_05&quot;</span><span class="p">:</span> <span class="n">pip_05</span><span class="p">,</span>
-<a id="__codelineno-0-1088" name="__codelineno-0-1088"></a>            <span class="s2">&quot;pip_09&quot;</span><span class="p">:</span> <span class="n">pip_09</span><span class="p">,</span>
-<a id="__codelineno-0-1089" name="__codelineno-0-1089"></a>            <span class="s2">&quot;purity&quot;</span><span class="p">:</span> <span class="n">purity</span><span class="p">,</span>
-<a id="__codelineno-0-1090" name="__codelineno-0-1090"></a>        <span class="p">})</span>
-<a id="__codelineno-0-1091" name="__codelineno-0-1091"></a>
-<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a>    <span class="k">return</span> <span class="n">cs_summary_list</span>
+<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a><span class="sd">    List[Dict]</span>
+<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a><span class="sd">        List of summary dictionaries, one per credible set.</span>
+<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>    <span class="k">if</span> <span class="n">causal_variants</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>        <span class="k">return</span> <span class="p">[]</span>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>
+<a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>    <span class="n">cs_summary_list</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-1073" name="__codelineno-0-1073"></a>    <span class="k">for</span> <span class="n">cs_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">causal_variants</span><span class="p">[</span><span class="s2">&quot;CRED&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()):</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a>        <span class="n">cs_snps</span> <span class="o">=</span> <span class="n">causal_variants</span><span class="p">[</span><span class="n">causal_variants</span><span class="p">[</span><span class="s2">&quot;CRED&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">cs_id</span><span class="p">]</span>
+<a id="__codelineno-0-1075" name="__codelineno-0-1075"></a>        <span class="n">lead_snp_idx</span> <span class="o">=</span> <span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span>
+<a id="__codelineno-0-1076" name="__codelineno-0-1076"></a>        <span class="n">lead_snp</span> <span class="o">=</span> <span class="n">cs_snps</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">lead_snp_idx</span><span class="p">,</span> <span class="s2">&quot;SNPID&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>        <span class="n">cs_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs_snps</span><span class="p">)</span>
+<a id="__codelineno-0-1078" name="__codelineno-0-1078"></a>        <span class="n">pip_01</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+<a id="__codelineno-0-1079" name="__codelineno-0-1079"></a>        <span class="n">pip_05</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+<a id="__codelineno-0-1080" name="__codelineno-0-1080"></a>        <span class="n">pip_09</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;PIP&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.9</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+<a id="__codelineno-0-1081" name="__codelineno-0-1081"></a>
+<a id="__codelineno-0-1082" name="__codelineno-0-1082"></a>        <span class="c1"># Calculate purity if LD is available</span>
+<a id="__codelineno-0-1083" name="__codelineno-0-1083"></a>        <span class="n">purity</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-1084" name="__codelineno-0-1084"></a>        <span class="n">ld_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">locus</span><span class="o">.</span><span class="n">ld</span> <span class="k">for</span> <span class="n">locus</span> <span class="ow">in</span> <span class="n">locus_set</span><span class="o">.</span><span class="n">loci</span> <span class="k">if</span> <span class="n">locus</span><span class="o">.</span><span class="n">ld</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+<a id="__codelineno-0-1085" name="__codelineno-0-1085"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ld_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-1086" name="__codelineno-0-1086"></a>            <span class="n">cs_snp_ids</span> <span class="o">=</span> <span class="n">cs_snps</span><span class="p">[</span><span class="s2">&quot;SNPID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<a id="__codelineno-0-1087" name="__codelineno-0-1087"></a>            <span class="n">purity</span> <span class="o">=</span> <span class="n">calculate_cs_purity</span><span class="p">(</span><span class="n">ld_list</span><span class="p">,</span> <span class="n">cs_snp_ids</span><span class="p">)</span>
+<a id="__codelineno-0-1088" name="__codelineno-0-1088"></a>
+<a id="__codelineno-0-1089" name="__codelineno-0-1089"></a>        <span class="n">cs_summary_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+<a id="__codelineno-0-1090" name="__codelineno-0-1090"></a>            <span class="p">{</span>
+<a id="__codelineno-0-1091" name="__codelineno-0-1091"></a>                <span class="s2">&quot;locus_id&quot;</span><span class="p">:</span> <span class="n">locus_id</span><span class="p">,</span>
+<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a>                <span class="s2">&quot;cs_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">cs_id</span><span class="p">),</span>
+<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a>                <span class="s2">&quot;lead_snp&quot;</span><span class="p">:</span> <span class="n">lead_snp</span><span class="p">,</span>
+<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a>                <span class="s2">&quot;cs_size&quot;</span><span class="p">:</span> <span class="n">cs_size</span><span class="p">,</span>
+<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a>                <span class="s2">&quot;pip_01&quot;</span><span class="p">:</span> <span class="n">pip_01</span><span class="p">,</span>
+<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a>                <span class="s2">&quot;pip_05&quot;</span><span class="p">:</span> <span class="n">pip_05</span><span class="p">,</span>
+<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a>                <span class="s2">&quot;pip_09&quot;</span><span class="p">:</span> <span class="n">pip_09</span><span class="p">,</span>
+<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a>                <span class="s2">&quot;purity&quot;</span><span class="p">:</span> <span class="n">purity</span><span class="p">,</span>
+<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a>            <span class="p">}</span>
+<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a>
+<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a>    <span class="k">return</span> <span class="n">cs_summary_list</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
