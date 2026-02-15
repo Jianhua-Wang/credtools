@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.8] (2026-02-15)
+
+### Fixed
+- Replace hardcoded `exampledata/testout/` paths in `test_plot.py` with pytest fixtures, fixing CI test failures when those files are not git-tracked
+
 ## [0.3.7] (2026-02-13)
 
 ### Fixed
