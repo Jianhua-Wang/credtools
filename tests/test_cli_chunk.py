@@ -178,8 +178,16 @@ class TestUpdateChunkInfoWithPrepared:
         """Only matching rows are updated; others stay unchanged."""
         chunk_df = self._make_chunk_info(
             [
-                {"locus_id": "chr1_1_500", "ancestry": "EUR", "sumstats_file": "/old/eur.gz"},
-                {"locus_id": "chr2_1_500", "ancestry": "ASN", "sumstats_file": "/old/asn.gz"},
+                {
+                    "locus_id": "chr1_1_500",
+                    "ancestry": "EUR",
+                    "sumstats_file": "/old/eur.gz",
+                },
+                {
+                    "locus_id": "chr2_1_500",
+                    "ancestry": "ASN",
+                    "sumstats_file": "/old/asn.gz",
+                },
             ]
         )
         prepared_df = self._make_prepared(
@@ -211,8 +219,16 @@ class TestUpdateChunkInfoWithPrepared:
         """Each ancestry is matched independently by (locus_id, popu) key."""
         chunk_df = self._make_chunk_info(
             [
-                {"locus_id": "chr1_1_500", "ancestry": "EUR", "sumstats_file": "/old/eur.gz"},
-                {"locus_id": "chr1_1_500", "ancestry": "ASN", "sumstats_file": "/old/asn.gz"},
+                {
+                    "locus_id": "chr1_1_500",
+                    "ancestry": "EUR",
+                    "sumstats_file": "/old/eur.gz",
+                },
+                {
+                    "locus_id": "chr1_1_500",
+                    "ancestry": "ASN",
+                    "sumstats_file": "/old/asn.gz",
+                },
             ]
         )
         prepared_df = self._make_prepared(
@@ -242,12 +258,21 @@ class TestCreateUpdatedChunkInfo:
         """
         config_df = pd.DataFrame(
             [
-                {"popu": "EUR", "cohort": "UKB", "sample_size": 10000, "path": "/old/eur.gz", "ld_ref": "/ld/eur"},
+                {
+                    "popu": "EUR",
+                    "cohort": "UKB",
+                    "sample_size": 10000,
+                    "path": "/old/eur.gz",
+                    "ld_ref": "/ld/eur",
+                },
             ]
         )
         chunk_info_df = pd.DataFrame(
             [
-                {"ancestry": "EUR_UKB", "sumstats_file": "/chunks/EUR_UKB.chr1_1_500.sumstats.gz"},
+                {
+                    "ancestry": "EUR_UKB",
+                    "sumstats_file": "/chunks/EUR_UKB.chr1_1_500.sumstats.gz",
+                },
             ]
         )
         out_path = str(tmp_path / "updated.txt")
@@ -260,7 +285,15 @@ class TestCreateUpdatedChunkInfo:
     def test_output_file_created(self, tmp_path):
         """Output file should be created on disk."""
         config_df = pd.DataFrame(
-            [{"popu": "EUR", "cohort": "EUR", "sample_size": 10000, "path": "/old", "ld_ref": "/ld"}]
+            [
+                {
+                    "popu": "EUR",
+                    "cohort": "EUR",
+                    "sample_size": 10000,
+                    "path": "/old",
+                    "ld_ref": "/ld",
+                }
+            ]
         )
         chunk_info_df = pd.DataFrame(
             [{"ancestry": "EUR", "sumstats_file": "/chunks/file.gz"}]
@@ -273,12 +306,21 @@ class TestCreateUpdatedChunkInfo:
         """Identifier = {popu}_{cohort} must match ancestry in chunk_info."""
         config_df = pd.DataFrame(
             [
-                {"popu": "EUR", "cohort": "UKB", "sample_size": 10000, "path": "/old", "ld_ref": "/ld"},
+                {
+                    "popu": "EUR",
+                    "cohort": "UKB",
+                    "sample_size": 10000,
+                    "path": "/old",
+                    "ld_ref": "/ld",
+                },
             ]
         )
         chunk_info_df = pd.DataFrame(
             [
-                {"ancestry": "EUR_UKB", "sumstats_file": "/chunks/EUR_UKB.chr1.sumstats.gz"},
+                {
+                    "ancestry": "EUR_UKB",
+                    "sumstats_file": "/chunks/EUR_UKB.chr1.sumstats.gz",
+                },
             ]
         )
         out_path = str(tmp_path / "updated.txt")
@@ -289,7 +331,15 @@ class TestCreateUpdatedChunkInfo:
     def test_returns_output_path(self, tmp_path):
         """Function should return the output_path string."""
         config_df = pd.DataFrame(
-            [{"popu": "EUR", "cohort": "EUR", "sample_size": 10000, "path": "/old", "ld_ref": "/ld"}]
+            [
+                {
+                    "popu": "EUR",
+                    "cohort": "EUR",
+                    "sample_size": 10000,
+                    "path": "/old",
+                    "ld_ref": "/ld",
+                }
+            ]
         )
         chunk_info_df = pd.DataFrame(
             [{"ancestry": "EUR", "sumstats_file": "/chunks/file.gz"}]

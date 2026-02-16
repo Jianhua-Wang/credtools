@@ -56,7 +56,15 @@ class TestIdentifyIndependentSnpsByDistance:
 
     def test_lead_snp_is_most_significant(self):
         """The lead SNP of a locus should be the one with the smallest P."""
-        rows = [{"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"s{i}", "P": 1e-8 - i * 1e-10} for i in range(15)]
+        rows = [
+            {
+                "CHR": 1,
+                "BP": 100_000 + i * 1000,
+                "SNPID": f"s{i}",
+                "P": 1e-8 - i * 1e-10,
+            }
+            for i in range(15)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 500_000, 5e-8, False, 1
@@ -71,7 +79,10 @@ class TestIdentifyIndependentSnpsByDistance:
             {"CHR": 1, "BP": 120_000, "SNPID": "s2", "P": 1e-9},
         ]
         # pad with non-significant SNPs to pass min_variants
-        rows += [{"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"ns{i}", "P": 0.5} for i in range(20)]
+        rows += [
+            {"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"ns{i}", "P": 0.5}
+            for i in range(20)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 500_000, 5e-8, False, 1
@@ -87,7 +98,12 @@ class TestIdentifyIndependentSnpsByDistance:
         # add enough variants around each lead
         for bp_base in [100_000, 1_000_000]:
             rows += [
-                {"CHR": 1, "BP": bp_base + i * 1000, "SNPID": f"ns{bp_base}_{i}", "P": 0.5}
+                {
+                    "CHR": 1,
+                    "BP": bp_base + i * 1000,
+                    "SNPID": f"ns{bp_base}_{i}",
+                    "P": 0.5,
+                }
                 for i in range(1, 15)
             ]
         df = self._make_df(rows)
@@ -99,7 +115,10 @@ class TestIdentifyIndependentSnpsByDistance:
     def test_boundary_start_end(self):
         """Verify start = max(1, bp - d/2) and end = bp + d/2."""
         rows = [{"CHR": 1, "BP": 500_000, "SNPID": "s1", "P": 1e-10}]
-        rows += [{"CHR": 1, "BP": 500_000 + i * 100, "SNPID": f"ns{i}", "P": 0.5} for i in range(20)]
+        rows += [
+            {"CHR": 1, "BP": 500_000 + i * 100, "SNPID": f"ns{i}", "P": 0.5}
+            for i in range(20)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 400_000, 5e-8, False, 1
@@ -111,7 +130,10 @@ class TestIdentifyIndependentSnpsByDistance:
     def test_start_not_less_than_one(self):
         """When lead_bp is very small, start should be clamped to 1."""
         rows = [{"CHR": 1, "BP": 100, "SNPID": "s1", "P": 1e-10}]
-        rows += [{"CHR": 1, "BP": 100 + i * 10, "SNPID": f"ns{i}", "P": 0.5} for i in range(20)]
+        rows += [
+            {"CHR": 1, "BP": 100 + i * 10, "SNPID": f"ns{i}", "P": 0.5}
+            for i in range(20)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 500_000, 5e-8, False, 1
@@ -124,7 +146,10 @@ class TestIdentifyIndependentSnpsByDistance:
             {"CHR": 1, "BP": 100_000, "SNPID": "s1", "P": 0.01},
             {"CHR": 1, "BP": 110_000, "SNPID": "s2", "P": 0.1},
         ]
-        rows += [{"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"ns{i}", "P": 0.5} for i in range(20)]
+        rows += [
+            {"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"ns{i}", "P": 0.5}
+            for i in range(20)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 500_000, 5e-8, True, 1
@@ -134,7 +159,10 @@ class TestIdentifyIndependentSnpsByDistance:
 
     def test_no_sig_use_most_sig_false(self):
         """No significant SNPs + use_most_sig=False → empty list."""
-        rows = [{"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"s{i}", "P": 0.5} for i in range(20)]
+        rows = [
+            {"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"s{i}", "P": 0.5}
+            for i in range(20)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 500_000, 5e-8, False, 1
@@ -158,7 +186,10 @@ class TestIdentifyIndependentSnpsByDistance:
         rows = []
         for c in [1, 5]:
             rows.append({"CHR": c, "BP": 100_000, "SNPID": f"s{c}", "P": 1e-10})
-            rows += [{"CHR": c, "BP": 100_000 + i * 1000, "SNPID": f"ns{c}_{i}", "P": 0.5} for i in range(1, 15)]
+            rows += [
+                {"CHR": c, "BP": 100_000 + i * 1000, "SNPID": f"ns{c}_{i}", "P": 0.5}
+                for i in range(1, 15)
+            ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 500_000, 5e-8, False, 1
@@ -178,7 +209,10 @@ class TestIdentifyIndependentSnpsByDistance:
     def test_ancestry_name_preserved(self):
         """The ancestry string should appear in every returned dict."""
         rows = [{"CHR": 1, "BP": 100_000, "SNPID": "s1", "P": 1e-10}]
-        rows += [{"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"ns{i}", "P": 0.5} for i in range(20)]
+        rows += [
+            {"CHR": 1, "BP": 100_000 + i * 1000, "SNPID": f"ns{i}", "P": 0.5}
+            for i in range(20)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "myAnc", 500_000, 5e-8, False, 1
@@ -188,7 +222,10 @@ class TestIdentifyIndependentSnpsByDistance:
     def test_n_variants_count_accurate(self):
         """n_variants should equal the number of SNPs inside [start, end]."""
         rows = [{"CHR": 1, "BP": 500_000, "SNPID": "lead", "P": 1e-10}]
-        rows += [{"CHR": 1, "BP": 500_000 + i * 100, "SNPID": f"ns{i}", "P": 0.5} for i in range(1, 20)]
+        rows += [
+            {"CHR": 1, "BP": 500_000 + i * 100, "SNPID": f"ns{i}", "P": 0.5}
+            for i in range(1, 20)
+        ]
         df = self._make_df(rows)
         result = _identify_independent_snps_by_distance(
             df, "EUR", 400_000, 5e-8, False, 1
@@ -214,8 +251,26 @@ class TestMergeOverlappingLoci:
         """Loci on different chromosomes should not be merged."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 500, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-10, "ancestry": "EUR", "n_variants": 10},
-                {"chr": 2, "start": 100, "end": 500, "lead_snp": "s2", "lead_bp": 300, "lead_p": 1e-9, "ancestry": "ASN", "n_variants": 10},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 500,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-10,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
+                {
+                    "chr": 2,
+                    "start": 100,
+                    "end": 500,
+                    "lead_snp": "s2",
+                    "lead_bp": 300,
+                    "lead_p": 1e-9,
+                    "ancestry": "ASN",
+                    "n_variants": 10,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -225,8 +280,26 @@ class TestMergeOverlappingLoci:
         """Non-overlapping loci on the same chromosome are not merged."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 500, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-10, "ancestry": "EUR", "n_variants": 10},
-                {"chr": 1, "start": 600, "end": 900, "lead_snp": "s2", "lead_bp": 700, "lead_p": 1e-9, "ancestry": "ASN", "n_variants": 10},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 500,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-10,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
+                {
+                    "chr": 1,
+                    "start": 600,
+                    "end": 900,
+                    "lead_snp": "s2",
+                    "lead_bp": 700,
+                    "lead_p": 1e-9,
+                    "ancestry": "ASN",
+                    "n_variants": 10,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -236,8 +309,26 @@ class TestMergeOverlappingLoci:
         """Overlapping loci → merged start = min, end = max."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 600, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-10, "ancestry": "EUR", "n_variants": 10},
-                {"chr": 1, "start": 400, "end": 900, "lead_snp": "s2", "lead_bp": 700, "lead_p": 1e-9, "ancestry": "ASN", "n_variants": 15},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 600,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-10,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
+                {
+                    "chr": 1,
+                    "start": 400,
+                    "end": 900,
+                    "lead_snp": "s2",
+                    "lead_bp": 700,
+                    "lead_p": 1e-9,
+                    "ancestry": "ASN",
+                    "n_variants": 15,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -249,8 +340,26 @@ class TestMergeOverlappingLoci:
         """After merging, lead_snp should come from the most significant locus."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 600, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-8, "ancestry": "EUR", "n_variants": 10},
-                {"chr": 1, "start": 400, "end": 900, "lead_snp": "s2", "lead_bp": 700, "lead_p": 1e-12, "ancestry": "ASN", "n_variants": 15},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 600,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-8,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
+                {
+                    "chr": 1,
+                    "start": 400,
+                    "end": 900,
+                    "lead_snp": "s2",
+                    "lead_bp": 700,
+                    "lead_p": 1e-12,
+                    "ancestry": "ASN",
+                    "n_variants": 15,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -261,8 +370,26 @@ class TestMergeOverlappingLoci:
         """Merged ancestry is a comma-separated sorted string."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 600, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-10, "ancestry": "EUR", "n_variants": 10},
-                {"chr": 1, "start": 400, "end": 900, "lead_snp": "s2", "lead_bp": 700, "lead_p": 1e-9, "ancestry": "ASN", "n_variants": 15},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 600,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-10,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
+                {
+                    "chr": 1,
+                    "start": 400,
+                    "end": 900,
+                    "lead_snp": "s2",
+                    "lead_bp": 700,
+                    "lead_p": 1e-9,
+                    "ancestry": "ASN",
+                    "n_variants": 15,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -272,8 +399,26 @@ class TestMergeOverlappingLoci:
         """After merging, n_variants = max of constituents."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 600, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-10, "ancestry": "EUR", "n_variants": 10},
-                {"chr": 1, "start": 400, "end": 900, "lead_snp": "s2", "lead_bp": 700, "lead_p": 1e-9, "ancestry": "ASN", "n_variants": 25},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 600,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-10,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
+                {
+                    "chr": 1,
+                    "start": 400,
+                    "end": 900,
+                    "lead_snp": "s2",
+                    "lead_bp": 700,
+                    "lead_p": 1e-9,
+                    "ancestry": "ASN",
+                    "n_variants": 25,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -283,9 +428,36 @@ class TestMergeOverlappingLoci:
         """Three overlapping loci on the same chromosome merge into one."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 500, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-10, "ancestry": "EUR", "n_variants": 10},
-                {"chr": 1, "start": 400, "end": 800, "lead_snp": "s2", "lead_bp": 600, "lead_p": 1e-9, "ancestry": "ASN", "n_variants": 15},
-                {"chr": 1, "start": 700, "end": 1100, "lead_snp": "s3", "lead_bp": 900, "lead_p": 1e-8, "ancestry": "AFR", "n_variants": 20},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 500,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-10,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
+                {
+                    "chr": 1,
+                    "start": 400,
+                    "end": 800,
+                    "lead_snp": "s2",
+                    "lead_bp": 600,
+                    "lead_p": 1e-9,
+                    "ancestry": "ASN",
+                    "n_variants": 15,
+                },
+                {
+                    "chr": 1,
+                    "start": 700,
+                    "end": 1100,
+                    "lead_snp": "s3",
+                    "lead_bp": 900,
+                    "lead_p": 1e-8,
+                    "ancestry": "AFR",
+                    "n_variants": 20,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -301,7 +473,16 @@ class TestMergeOverlappingLoci:
         """Single locus input → returned unchanged."""
         df = self._make_loci_df(
             [
-                {"chr": 1, "start": 100, "end": 500, "lead_snp": "s1", "lead_bp": 300, "lead_p": 1e-10, "ancestry": "EUR", "n_variants": 10},
+                {
+                    "chr": 1,
+                    "start": 100,
+                    "end": 500,
+                    "lead_snp": "s1",
+                    "lead_bp": 300,
+                    "lead_p": 1e-10,
+                    "ancestry": "EUR",
+                    "n_variants": 10,
+                },
             ]
         )
         result = _merge_overlapping_loci(df)
@@ -310,7 +491,16 @@ class TestMergeOverlappingLoci:
     def test_empty_dataframe(self):
         """Empty DataFrame → empty DataFrame."""
         df = pd.DataFrame(
-            columns=["chr", "start", "end", "lead_snp", "lead_bp", "lead_p", "ancestry", "n_variants"]
+            columns=[
+                "chr",
+                "start",
+                "end",
+                "lead_snp",
+                "lead_bp",
+                "lead_p",
+                "ancestry",
+                "n_variants",
+            ]
         )
         result = _merge_overlapping_loci(df)
         assert len(result) == 0
@@ -436,9 +626,7 @@ class TestIdentifyIndependentLoci:
         """Output directory is created if it doesn't exist."""
         out_dir = str(tmp_path / "new" / "nested" / "dir")
         assert not os.path.exists(out_dir)
-        identify_independent_loci(
-            {"EUR": munged_sumstats_gz_file}, out_dir
-        )
+        identify_independent_loci({"EUR": munged_sumstats_gz_file}, out_dir)
         assert os.path.isdir(out_dir)
 
 
@@ -450,7 +638,9 @@ class TestIdentifyIndependentLoci:
 class TestChunkSumstats:
     """Tests for chunk_sumstats function."""
 
-    def test_basic_single_ancestry(self, tmp_path, sample_loci_df, munged_sumstats_gz_file):
+    def test_basic_single_ancestry(
+        self, tmp_path, sample_loci_df, munged_sumstats_gz_file
+    ):
         """Basic chunking with one ancestry."""
         out_dir = str(tmp_path / "chunks")
         result = chunk_sumstats(
@@ -461,7 +651,9 @@ class TestChunkSumstats:
         assert isinstance(result, pd.DataFrame)
         assert len(result) > 0
 
-    def test_chunk_file_contains_only_region_variants(self, tmp_path, sample_loci_df, munged_sumstats_gz_file):
+    def test_chunk_file_contains_only_region_variants(
+        self, tmp_path, sample_loci_df, munged_sumstats_gz_file
+    ):
         """Each chunk file should only contain variants within [start, end]."""
         out_dir = str(tmp_path / "chunks")
         result = chunk_sumstats(
@@ -487,7 +679,9 @@ class TestChunkSumstats:
         for _, row in result.iterrows():
             assert row["sumstats_file"].endswith(".gz")
 
-    def test_uncompressed_output(self, tmp_path, sample_loci_df, munged_sumstats_gz_file):
+    def test_uncompressed_output(
+        self, tmp_path, sample_loci_df, munged_sumstats_gz_file
+    ):
         """compress=False → files do NOT end with .gz."""
         out_dir = str(tmp_path / "chunks")
         result = chunk_sumstats(
@@ -530,10 +724,20 @@ class TestChunkSumstats:
             {"EUR": munged_sumstats_gz_file},
             out_dir,
         )
-        expected_cols = {"locus_id", "ancestry", "chr", "start", "end", "n_variants", "sumstats_file"}
+        expected_cols = {
+            "locus_id",
+            "ancestry",
+            "chr",
+            "start",
+            "end",
+            "n_variants",
+            "sumstats_file",
+        }
         assert expected_cols.issubset(set(result.columns))
 
-    def test_chunk_info_file_created(self, tmp_path, sample_loci_df, munged_sumstats_gz_file):
+    def test_chunk_info_file_created(
+        self, tmp_path, sample_loci_df, munged_sumstats_gz_file
+    ):
         """chunk_info.txt should be written to output_dir."""
         out_dir = str(tmp_path / "chunks")
         chunk_sumstats(sample_loci_df, {"EUR": munged_sumstats_gz_file}, out_dir)
@@ -584,14 +788,26 @@ class TestChunkSumstats:
     def test_empty_loci_df(self, tmp_path, munged_sumstats_gz_file):
         """Empty loci_df → empty result and chunk_info.txt still created."""
         loci_df = pd.DataFrame(
-            columns=["chr", "start", "end", "lead_snp", "lead_bp", "lead_p", "ancestry", "n_variants", "locus_id"]
+            columns=[
+                "chr",
+                "start",
+                "end",
+                "lead_snp",
+                "lead_bp",
+                "lead_p",
+                "ancestry",
+                "n_variants",
+                "locus_id",
+            ]
         )
         out_dir = str(tmp_path / "chunks")
         result = chunk_sumstats(loci_df, {"EUR": munged_sumstats_gz_file}, out_dir)
         assert len(result) == 0
         assert os.path.exists(os.path.join(out_dir, "chunk_info.txt"))
 
-    def test_file_naming_format(self, tmp_path, sample_loci_df, munged_sumstats_gz_file):
+    def test_file_naming_format(
+        self, tmp_path, sample_loci_df, munged_sumstats_gz_file
+    ):
         """Output files should follow {ancestry}.{locus_id}.sumstats.gz naming."""
         out_dir = str(tmp_path / "chunks")
         result = chunk_sumstats(
@@ -616,14 +832,27 @@ class TestCreateLociListForCredtools:
     def test_return_columns(self, tmp_path, sample_chunk_info_df):
         """Returned DataFrame has expected columns."""
         out_file = str(tmp_path / "loci_list.txt")
-        result = create_loci_list_for_credtools(sample_chunk_info_df, output_file=out_file)
-        expected = {"locus_id", "chr", "start", "end", "popu", "cohort", "sample_size", "prefix"}
+        result = create_loci_list_for_credtools(
+            sample_chunk_info_df, output_file=out_file
+        )
+        expected = {
+            "locus_id",
+            "chr",
+            "start",
+            "end",
+            "popu",
+            "cohort",
+            "sample_size",
+            "prefix",
+        }
         assert expected.issubset(set(result.columns))
 
     def test_prefix_derived_from_sumstats_file(self, tmp_path, sample_chunk_info_df):
-        """prefix is sumstats_file with .sumstats.gz stripped."""
+        """Prefix is sumstats_file with .sumstats.gz stripped."""
         out_file = str(tmp_path / "loci_list.txt")
-        result = create_loci_list_for_credtools(sample_chunk_info_df, output_file=out_file)
+        result = create_loci_list_for_credtools(
+            sample_chunk_info_df, output_file=out_file
+        )
         for _, row in result.iterrows():
             assert ".sumstats" not in row["prefix"]
             assert not row["prefix"].endswith(".gz")
@@ -635,9 +864,11 @@ class TestCreateLociListForCredtools:
         assert os.path.exists(out_file)
 
     def test_popu_cohort_equal_ancestry(self, tmp_path, sample_chunk_info_df):
-        """popu and cohort should both equal the ancestry."""
+        """Popu and cohort should both equal the ancestry."""
         out_file = str(tmp_path / "loci_list.txt")
-        result = create_loci_list_for_credtools(sample_chunk_info_df, output_file=out_file)
+        result = create_loci_list_for_credtools(
+            sample_chunk_info_df, output_file=out_file
+        )
         for _, row in result.iterrows():
             assert row["popu"] == "EUR"
             assert row["cohort"] == "EUR"
@@ -645,7 +876,9 @@ class TestCreateLociListForCredtools:
     def test_sample_size_placeholder(self, tmp_path, sample_chunk_info_df):
         """sample_size should be 50000 (placeholder)."""
         out_file = str(tmp_path / "loci_list.txt")
-        result = create_loci_list_for_credtools(sample_chunk_info_df, output_file=out_file)
+        result = create_loci_list_for_credtools(
+            sample_chunk_info_df, output_file=out_file
+        )
         assert (result["sample_size"] == 50000).all()
 
     def test_without_ld_info(self, tmp_path, sample_chunk_info_df):
@@ -660,7 +893,11 @@ class TestCreateLociListForCredtools:
         """When ld_info_df is provided, matching rows get extra columns."""
         ld_info = pd.DataFrame(
             [
-                {"locus_id": "chr1_1_350000", "ancestry": "EUR", "ld_file": "/path/to/ld"},
+                {
+                    "locus_id": "chr1_1_350000",
+                    "ancestry": "EUR",
+                    "ld_file": "/path/to/ld",
+                },
             ]
         )
         out_file = str(tmp_path / "loci_list.txt")
@@ -674,7 +911,15 @@ class TestCreateLociListForCredtools:
     def test_empty_input(self, tmp_path):
         """Empty chunk_info_df → empty output."""
         empty_df = pd.DataFrame(
-            columns=["locus_id", "ancestry", "chr", "start", "end", "n_variants", "sumstats_file"]
+            columns=[
+                "locus_id",
+                "ancestry",
+                "chr",
+                "start",
+                "end",
+                "n_variants",
+                "sumstats_file",
+            ]
         )
         out_file = str(tmp_path / "loci_list.txt")
         result = create_loci_list_for_credtools(empty_df, output_file=out_file)
