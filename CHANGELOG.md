@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.9] (2026-02-15)
+
+### Added
+- Comprehensive unit tests for chunk command: 74 tests across 9 test classes covering `credtools.preprocessing.chunk` (100% coverage) and CLI chunk helper functions (`_load_custom_chunks`, `_update_chunk_info_with_prepared`, `create_updated_chunk_info`, `parse_population_config_file`)
+
 ## [0.3.8] (2026-02-15)
 
 ### Fixed
