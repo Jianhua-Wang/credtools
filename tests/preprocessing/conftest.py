@@ -91,3 +91,149 @@ def sample_config_file(tmp_path, sample_config_dict):
     with open(filepath, "w") as f:
         json.dump(sample_config_dict, f, indent=2)
     return str(filepath)
+
+
+# ---------- chunk-related fixtures ----------
+
+
+def _make_munged_df(chr_list, n_per_chr, sig_indices=None, base_p=0.5):
+    """Helper to build a munged-style DataFrame.
+
+    Parameters
+    ----------
+    chr_list : list[int]
+        Chromosomes to include.
+    n_per_chr : int
+        Number of SNPs per chromosome.
+    sig_indices : dict[int, list[int]] | None
+        Mapping of chr -> list of intra-chr indices that should be genome-wide
+        significant (P = 1e-9).  If *None*, the first SNP of each chr is
+        significant.
+    base_p : float
+        Default (non-significant) p-value.
+    """
+    rows = []
+    if sig_indices is None:
+        sig_indices = {c: [0] for c in chr_list}
+    for c in chr_list:
+        for j in range(n_per_chr):
+            bp = 100_000 + j * 10_000
+            p = 1e-9 if j in sig_indices.get(c, []) else base_p
+            rows.append(
+                {
+                    "CHR": c,
+                    "BP": bp,
+                    "SNPID": f"{c}-{bp}-A-G",
+                    "EA": "A",
+                    "NEA": "G",
+                    "EAF": 0.3,
+                    "BETA": 0.1,
+                    "SE": 0.05,
+                    "P": p,
+                    "N": 10000,
+                    "RSID": f"rs{c}_{j}",
+                    "MAF": 0.3,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+@pytest.fixture
+def munged_sumstats_df():
+    """Munged DataFrame: 3 chromosomes × 20 SNPs, first SNP per chr significant."""
+    return _make_munged_df([1, 2, 3], 20)
+
+
+@pytest.fixture
+def munged_sumstats_no_sig_df():
+    """Munged DataFrame where all P > 5e-8 (no genome-wide significant SNPs)."""
+    return _make_munged_df([1, 2], 10, sig_indices={}, base_p=0.1)
+
+
+@pytest.fixture
+def munged_sumstats_gz_file(tmp_path, munged_sumstats_df):
+    """Write munged_sumstats_df to a gzip TSV file."""
+    filepath = tmp_path / "EUR.munged.txt.gz"
+    munged_sumstats_df.to_csv(filepath, sep="\t", index=False, compression="gzip")
+    return str(filepath)
+
+
+@pytest.fixture
+def two_ancestry_gz_files(tmp_path):
+    """EUR + ASN gzip files with partially overlapping loci.
+
+    EUR chr1 significant at index 0 (BP=100000), chr2 significant at index 0.
+    ASN chr1 significant at index 0 (same region → overlap), chr3 significant at index 0.
+    """
+    eur_df = _make_munged_df([1, 2], 20, sig_indices={1: [0], 2: [0]})
+    asn_df = _make_munged_df([1, 3], 20, sig_indices={1: [0], 3: [0]})
+
+    eur_path = tmp_path / "EUR.munged.txt.gz"
+    asn_path = tmp_path / "ASN.munged.txt.gz"
+
+    eur_df.to_csv(eur_path, sep="\t", index=False, compression="gzip")
+    asn_df.to_csv(asn_path, sep="\t", index=False, compression="gzip")
+
+    return {"EUR": str(eur_path), "ASN": str(asn_path)}
+
+
+@pytest.fixture
+def sample_loci_df():
+    """Simulated output of identify_independent_loci."""
+    return pd.DataFrame(
+        [
+            {
+                "chr": 1,
+                "start": 1,
+                "end": 350000,
+                "lead_snp": "1-100000-A-G",
+                "lead_bp": 100000,
+                "lead_p": 1e-9,
+                "ancestry": "EUR",
+                "n_variants": 20,
+                "locus_id": "chr1_1_350000",
+            },
+            {
+                "chr": 2,
+                "start": 1,
+                "end": 350000,
+                "lead_snp": "2-100000-A-G",
+                "lead_bp": 100000,
+                "lead_p": 1e-9,
+                "ancestry": "EUR",
+                "n_variants": 20,
+                "locus_id": "chr2_1_350000",
+            },
+        ]
+    )
+
+
+@pytest.fixture
+def sample_chunk_info_df(tmp_path):
+    """Simulated output of chunk_sumstats."""
+    return pd.DataFrame(
+        [
+            {
+                "locus_id": "chr1_1_350000",
+                "ancestry": "EUR",
+                "chr": 1,
+                "start": 1,
+                "end": 350000,
+                "n_variants": 20,
+                "sumstats_file": str(
+                    tmp_path / "chunks" / "EUR.chr1_1_350000.sumstats.gz"
+                ),
+            },
+            {
+                "locus_id": "chr2_1_350000",
+                "ancestry": "EUR",
+                "chr": 2,
+                "start": 1,
+                "end": 350000,
+                "n_variants": 20,
+                "sumstats_file": str(
+                    tmp_path / "chunks" / "EUR.chr2_1_350000.sumstats.gz"
+                ),
+            },
+        ]
+    )
