@@ -47,17 +47,13 @@ uv pip install credtools
 ```bash
 # Complete workflow: from whole-genome data to fine-mapping results
 # Step 1: Standardize summary statistics
-credtools munge raw_gwas_eur.txt,raw_gwas_asn.txt output/munged/
+credtools munge population_config.txt output/munged/
 
-# Step 2: Identify independent loci and chunk data
-credtools chunk output/munged/*.munged.txt.gz output/chunks/
+# Step 2: Identify loci, chunk data, and extract LD matrices
+credtools chunk output/munged/sumstat_info_updated.txt output/chunks/
 
-# Step 3: Prepare LD matrices and final inputs
-credtools prepare output/chunks/chunk_info.txt genotype_config.json output/prepared/
-
-# Step 4: Run fine-mapping pipeline
-credtools pipeline output/prepared/final_loci_list.txt output/results/
-
+# Step 3: Run fine-mapping pipeline
+credtools pipeline output/chunks/loci_list.txt output/results/
 ```
 
 ## Preprocessing Workflow
@@ -74,22 +70,14 @@ credtools now supports starting from whole-genome summary statistics and genotyp
 - **Output**: Standardized `.munged.txt.gz` files
 
 ### Step 2: Chunk Loci (`credtools chunk`)
-- **Purpose**: Identify independent loci and create regional chunks for fine-mapping
+- **Purpose**: Identify independent loci, create regional chunks, and extract LD matrices
 - **Features**:
   - Distance-based independent SNP identification
   - Cross-ancestry loci coordination
   - Configurable significance thresholds
-- **Input**: Munged summary statistics files
-- **Output**: Locus-specific chunked files and metadata
-
-### Step 3: Prepare Inputs (`credtools prepare`)
-- **Purpose**: Generate LD matrices and final fine-mapping input files
-- **Features**:
-  - LD matrix computation from genotype data
-  - Variant intersection and quality control
-  - Multi-threaded processing
-- **Input**: Chunked files + genotype data configuration
-- **Output**: credtools-ready input files (`.sumstats.gz`, `.ld.npz`, `.ldmap.gz`)
+  - Automatic LD matrix extraction when `ld_ref` is provided in population config
+- **Input**: Munged summary statistics files (or population config with `ld_ref`)
+- **Output**: Locus-specific chunked files, LD matrices, and credtools-ready input files
 
 ### Multi-Ancestry Support
 - **Consistent loci definition**: Union approach across ancestries

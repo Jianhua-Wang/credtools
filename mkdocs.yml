@@ -10,7 +10,6 @@ nav:
   - Commands:
     - Munge: munge.md
     - Chunk: chunk.md
-    - Prepare: prepare.md
     - Meta-analysis: meta.md
     - Quality Control: qc.md
     - Fine-mapping: finemap.md

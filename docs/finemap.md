@@ -272,10 +272,9 @@ Fine-mapping is typically the final analysis step:
 
 ```bash
 # Complete workflow ending with fine-mapping
-credtools munge ancestry_files.json munged/
-credtools chunk munged/ chunked/
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
-credtools meta prepared/final_loci_list.txt meta/
+credtools munge population_config.txt munged/
+credtools chunk munged/sumstat_info_updated.txt chunked/
+credtools meta chunked/loci_list.txt meta/
 credtools qc meta/meta_all/loci_list.txt qc/
 credtools finemap qc/passed_loci.txt finemap_results/ \
   --tool susie --max-causal 3

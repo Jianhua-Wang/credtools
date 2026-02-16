@@ -163,23 +163,19 @@ When processing multiple ancestries:
 ```mermaid
 graph LR
     A[Raw GWAS files] -->|credtools munge| B[Munged files]
-    B -->|credtools chunk| C[Locus-specific files]
-    C -->|credtools prepare| D[LD matrices + inputs]
-    D -->|credtools finemap| E[Credible sets]
+    B -->|credtools chunk| C[Locus-specific files + LD matrices]
+    C -->|credtools finemap| D[Credible sets]
 ```
 
 ```bash
 # Step 1: Munge summary statistics
 credtools munge population_config.txt munged/
 
-# Step 2: Identify loci and create chunks
-credtools chunk "munged/EUR_UKBB.munged.txt.gz,munged/AFR_AAGC.munged.txt.gz" chunks/
+# Step 2: Identify loci, chunk data, and extract LD matrices
+credtools chunk munged/sumstat_info_updated.txt chunks/
 
-# Step 3: Prepare LD matrices
-credtools prepare chunks/loci_list.txt genotype_config.json prepared/
-
-# Step 4: Run fine-mapping
-credtools finemap prepared/final_loci_list.txt results/
+# Step 3: Run fine-mapping
+credtools finemap chunks/loci_list.txt results/
 ```
 
 !!! info

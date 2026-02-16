@@ -200,14 +200,14 @@ Quality control should be performed after data preparation or meta-analysis:
 
 ```bash
 # Standard workflow with QC
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
-credtools meta prepared/final_loci_list.txt meta/ --meta-method meta_all
+credtools chunk munged/sumstat_info_updated.txt chunked/
+credtools meta chunked/loci_list.txt meta/ --meta-method meta_all
 credtools qc meta/meta_all/loci_list.txt qc/ --threads 8
 credtools finemap qc/passed_loci_list.txt finemap_results/
 
 # Alternative: QC before meta-analysis
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
-credtools qc prepared/final_loci_list.txt qc_pre_meta/
+credtools chunk munged/sumstat_info_updated.txt chunked/
+credtools qc chunked/loci_list.txt qc_pre_meta/
 credtools meta qc_pre_meta/passed_loci_list.txt meta/
 credtools finemap meta/meta_all/loci_list.txt finemap_results/
 ```

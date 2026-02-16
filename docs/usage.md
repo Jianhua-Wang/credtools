@@ -4,7 +4,7 @@ credtools provides a comprehensive suite of commands for multi-ancestry fine-map
 
 ## Command Summary
 
-credtools includes 7 main subcommands that can be used individually or as part of integrated workflows:
+credtools includes 6 main subcommands that can be used individually or as part of integrated workflows:
 
 ### Data Preparation Commands
 
@@ -25,15 +25,6 @@ credtools chunk munged_files.json chunked_output/
 ```
 
 **Use for:** Defining independent loci, creating analysis-ready chunks, handling genome-wide data.
-
-#### [prepare](prepare.md) - LD Matrix Preparation
-Extracts LD matrices from reference panels and creates final fine-mapping inputs.
-
-```bash
-credtools prepare chunk_info.txt genotype_config.json prepared_output/
-```
-
-**Use for:** Matching summary stats with LD data, handling multi-ancestry reference panels, optimizing for fine-mapping.
 
 ### Analysis Commands
 
@@ -83,79 +74,54 @@ credtools pipeline prepared_loci.txt results/ --tool multisusie```
 # 1. Standardize summary statistics
 credtools munge gwas_eur.txt munged/
 
-# 2. Identify loci and chunk data
-credtools chunk munged/gwas_eur.munged.txt.gz chunked/
+# 2. Identify loci, chunk data, and extract LD matrices
+#    (include ld_ref column in population config for automatic LD extraction)
+credtools chunk population_config.txt chunked/
 
-# 3. Prepare LD matrices
-echo '{"EUR": "/path/to/eur_reference"}' > genotype_config.json
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
-
-# 4. Run fine-mapping
-credtools finemap prepared/final_loci_list.txt results/ --tool susie
-
-# 5. Results are saved in results/ directory
+# 3. Run fine-mapping
+credtools finemap chunked/loci_list.txt results/ --tool susie
 ```
 
 ### Multi-Ancestry Analysis
 
 ```bash
-# 1. Prepare multi-ancestry file mapping
-echo '{
-  "EUR": "gwas_eur.txt",
-  "ASN": "gwas_asn.txt", 
-  "AFR": "gwas_afr.txt"
-}' > ancestry_files.json
+# 1. Munge all ancestries
+credtools munge population_config.txt munged/
 
-# 2. Munge all ancestries
-credtools munge ancestry_files.json munged/
+# 2. Identify shared loci, chunk data, and extract LD matrices
+#    (population config with ld_ref column handles everything)
+credtools chunk munged/sumstat_info_updated.txt chunked/ --merge-overlapping
 
-# 3. Identify shared loci
-credtools chunk munged/ chunked/ --merge-overlapping
-
-# 4. Prepare multi-ancestry LD matrices
-echo '{
-  "EUR": "/path/to/eur_reference",
-  "ASN": "/path/to/asn_reference",
-  "AFR": "/path/to/afr_reference"
-}' > genotype_config.json
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
-
-# 5. Run complete pipeline with meta-analysis
-credtools pipeline prepared/final_loci_list.txt results/ \
+# 3. Run complete pipeline with meta-analysis
+credtools pipeline chunked/loci_list.txt results/ \
   --meta-method meta_all --tool multisusie
-
-# 6. Results are saved in results/ directory
 ```
 
 ### Quality-Focused Workflow
 
 ```bash
 # Standard preparation steps
-credtools munge ancestry_files.json munged/
-credtools chunk munged/ chunked/
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
+credtools munge population_config.txt munged/
+credtools chunk munged/sumstat_info_updated.txt chunked/
 
 # Meta-analysis with quality control
-credtools meta prepared/final_loci_list.txt meta/
+credtools meta chunked/loci_list.txt meta/
 credtools qc meta/meta_all/loci_list.txt qc/
 
 # Fine-mapping only on QC-passed loci
 credtools finemap qc/passed_loci_list.txt finemap/
-
-# Results are saved in finemap/ directory
 ```
 
 ### Comparative Analysis Workflow
 
 ```bash
 # Prepare data once
-credtools munge ancestry_files.json munged/
-credtools chunk munged/ chunked/
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
+credtools munge population_config.txt munged/
+credtools chunk munged/sumstat_info_updated.txt chunked/
 
 # Compare different meta-analysis strategies
 for method in meta_all meta_by_population no_meta; do
-  credtools pipeline prepared/final_loci_list.txt results_${method}/ \
+  credtools pipeline chunked/loci_list.txt results_${method}/ \
     --meta-method $method --tool susie
 done
 
@@ -178,7 +144,7 @@ done
 → Use `chunk` to identify independent loci
 
 **Need LD information?**
-→ Use `prepare` to extract LD matrices from reference panels
+→ Include `ld_ref` in your population config and `chunk` will extract LD matrices automatically
 
 **Multiple ancestries or studies?**
 → Use `meta` to combine evidence appropriately
@@ -269,7 +235,6 @@ credtools --help
 Each command has comprehensive documentation:
 - [munge](munge.md) - Summary statistics munging
 - [chunk](chunk.md) - Loci identification and chunking  
-- [prepare](prepare.md) - LD matrix preparation
 - [meta](meta.md) - Meta-analysis
 - [qc](qc.md) - Quality control
 - [finemap](finemap.md) - Fine-mapping analysis

@@ -150,14 +150,14 @@ credtools meta prepared/final_loci_list.txt meta_results/ \
 
 ## Integration with Workflow
 
-Meta-analysis fits into the credtools workflow after preparation:
+Meta-analysis fits into the credtools workflow after chunking:
 
 ```bash
-# 1. Prepare LD matrices and inputs
-credtools prepare chunked/chunk_info.txt genotype_config.json prepared/
+# 1. Identify loci, chunk data, and extract LD matrices
+credtools chunk munged/sumstat_info_updated.txt chunked/
 
 # 2. Perform meta-analysis
-credtools meta prepared/final_loci_list.txt meta/ --meta-method meta_all
+credtools meta chunked/loci_list.txt meta/ --meta-method meta_all
 
 # 3. Run quality control (optional)
 credtools qc meta/meta_all/loci_list.txt qc_results/
