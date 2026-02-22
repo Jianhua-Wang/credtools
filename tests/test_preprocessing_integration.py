@@ -641,12 +641,12 @@ class TestChunkDirect:
         """Variants in chunk files are within [start, end] range (spot-check first 3)."""
         for _, row in chunk_result.head(3).iterrows():
             df = pd.read_csv(row["sumstats_file"], sep="\t", compression="gzip")
-            assert (df["BP"] >= row["start"]).all(), (
-                f"Variant below start in {row['sumstats_file']}"
-            )
-            assert (df["BP"] <= row["end"]).all(), (
-                f"Variant above end in {row['sumstats_file']}"
-            )
+            assert (
+                df["BP"] >= row["start"]
+            ).all(), f"Variant below start in {row['sumstats_file']}"
+            assert (
+                df["BP"] <= row["end"]
+            ).all(), f"Variant above end in {row['sumstats_file']}"
 
     # ── create_loci_list + pipeline tests (2) ──
 

@@ -7,14 +7,25 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
-                           SpinnerColumn, TextColumn, TimeRemainingColumn)
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 from scipy import stats
 
 from credtools.constants import ColName
 from credtools.ldmatrix import LDMatrix
-from credtools.locus import (Locus, LocusSet, check_loci_info,
-                             intersect_sumstat_ld, load_locus_set)
+from credtools.locus import (
+    Locus,
+    LocusSet,
+    check_loci_info,
+    intersect_sumstat_ld,
+    load_locus_set,
+)
 from credtools.sumstats import munge
 
 logger = logging.getLogger("META")
@@ -363,8 +374,7 @@ def compute_heterogeneity(locus_set: LocusSet) -> Dict[str, pd.DataFrame]:
         - 'cochran_q': heterogeneity test (if multiple cohorts)
         - 'snp_missingness': missingness analysis (if multiple cohorts)
     """
-    from credtools.qc import (cochran_q, ld_4th_moment, ld_decay,
-                              snp_missingness)
+    from credtools.qc import cochran_q, ld_4th_moment, ld_decay, snp_missingness
 
     het_metrics: Dict[str, pd.DataFrame] = {}
     het_metrics["ld_4th_moment"] = ld_4th_moment(locus_set)

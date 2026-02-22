@@ -12,15 +12,24 @@ import numpy as np
 import pandas as pd
 
 from credtools.cojo import conditional_selection
-from credtools.credibleset import (CredibleSet, combine_creds,
-                                   filter_credset_by_purity)
+from credtools.credibleset import CredibleSet, combine_creds, filter_credset_by_purity
 from credtools.locus import LocusSet, load_locus_set
-from credtools.meta import (compute_heterogeneity, heterogeneity_summary, meta,
-                            save_heterogeneity)
+from credtools.meta import (
+    compute_heterogeneity,
+    heterogeneity_summary,
+    meta,
+    save_heterogeneity,
+)
 from credtools.qc import locus_qc
-from credtools.wrappers import (run_abf, run_abf_cojo, run_finemap,
-                                run_multisusie, run_rsparsepro, run_susie,
-                                run_susiex)
+from credtools.wrappers import (
+    run_abf,
+    run_abf_cojo,
+    run_finemap,
+    run_multisusie,
+    run_rsparsepro,
+    run_susie,
+    run_susiex,
+)
 
 logger = logging.getLogger("CREDTOOLS")
 

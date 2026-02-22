@@ -253,8 +253,11 @@ class TestSaveHeterogeneitySummary:
 
     def test_saves_summary_file(self, tmp_path, multi_cohort_locus_set):
         """Save with summary should create heterogeneity.txt.gz."""
-        from credtools.meta import (compute_heterogeneity,
-                                    heterogeneity_summary, save_heterogeneity)
+        from credtools.meta import (
+            compute_heterogeneity,
+            heterogeneity_summary,
+            save_heterogeneity,
+        )
 
         het = compute_heterogeneity(multi_cohort_locus_set)
         summary = heterogeneity_summary(het, multi_cohort_locus_set)
@@ -283,9 +286,12 @@ class TestMetaLocusIntegration:
 
     def test_meta_locus_outputs_heterogeneity(self, tmp_path, multi_cohort_locus_set):
         """Compute and save heterogeneity simulating the meta_locus flow."""
-        from credtools.meta import (compute_heterogeneity,
-                                    heterogeneity_summary, meta,
-                                    save_heterogeneity)
+        from credtools.meta import (
+            compute_heterogeneity,
+            heterogeneity_summary,
+            meta,
+            save_heterogeneity,
+        )
 
         # Compute heterogeneity BEFORE meta
         het = compute_heterogeneity(multi_cohort_locus_set)

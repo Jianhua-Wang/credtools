@@ -10,8 +10,14 @@ from typing import Any, Dict, List, Optional, Tuple
 # import matplotlib.pyplot as plt  # Not used in this module
 import numpy as np
 import pandas as pd
-from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
-                           SpinnerColumn, TextColumn, TimeRemainingColumn)
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 from scipy import stats
 from scipy.optimize import curve_fit, minimize_scalar
 
@@ -58,8 +64,13 @@ except ImportError:
 
 from credtools.constants import ColName
 from credtools.ldmatrix import LDMatrix
-from credtools.locus import (Locus, LocusSet, check_loci_info,
-                             intersect_sumstat_ld, load_locus_set)
+from credtools.locus import (
+    Locus,
+    LocusSet,
+    check_loci_info,
+    intersect_sumstat_ld,
+    load_locus_set,
+)
 
 logger = logging.getLogger("QC")
 
