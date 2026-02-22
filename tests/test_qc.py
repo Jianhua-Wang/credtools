@@ -402,7 +402,7 @@ class TestSnpMissingness:
         assert set(result.values.flatten()).issubset({0, 0.0, 1, 1.0})
 
     def test_shared_snps_all_one(self, multi_cohort_locus_set):
-        """SNPs shared across all cohorts should have value 1 in every column."""
+        """Verify SNPs shared across all cohorts have value 1 in every column."""
         from credtools.qc import snp_missingness
 
         result = snp_missingness(multi_cohort_locus_set)
