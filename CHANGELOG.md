@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.10] (2026-02-21)
+
+### Added
+- Heterogeneity summary file (`heterogeneity.txt.gz`) with per-cohort aggregated metrics: `ld_4th_moment_mean`, `ld_decay_rate`, `missing_rate`, `cochran_q_median`, `i_squared_median`, `n_het_snps`
+- New `heterogeneity_summary()` function in meta module
+- Global heterogeneity summary across all loci in `meta_loci()` CLI flow
+- Chunk integration tests with exampledata
+
+### Changed
+- Moved heterogeneity computation from QC to meta module (computed before meta-analysis to capture pre-merge metrics)
+- `meta_locus()` now returns heterogeneity summary alongside results
+- `save_heterogeneity()` accepts optional summary parameter
+- `pipeline()` saves heterogeneity summary alongside detail files
+
+### Removed
+- `docs/prepare.md` and all references to `credtools prepare`
+
 ## [0.3.9] (2026-02-15)
 
 ### Added
