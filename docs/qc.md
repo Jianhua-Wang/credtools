@@ -1,292 +1,313 @@
 # Quality Control
 
-The `credtools qc` command performs comprehensive quality control checks on summary statistics and LD matrices to ensure data integrity and suitability for fine-mapping analysis. This step helps identify and resolve potential issues before running computationally intensive fine-mapping.
+The `credtools qc` command performs per-locus quality control on summary statistics and LD matrices to detect outlier SNPs, allele mismatches, and LD inconsistencies before fine-mapping.
 
 ## Overview
 
-Quality control in credtools validates the consistency and quality of your fine-mapping inputs. The QC process:
+Quality control in credtools validates the consistency between z-scores and LD matrices using statistical methods derived from the SuSiE RSS framework. The QC process:
 
-- **Validates summary statistics** for missing values, outliers, and format consistency
-- **Checks LD matrix integrity** including positive definiteness and reasonable correlation values
-- **Verifies variant matching** between summary statistics and LD matrices
-- **Identifies allele mismatches** and strand orientation issues
-- **Reports data quality metrics** for each locus and ancestry
-- **Flags problematic loci** that may cause fine-mapping failures
-- **Provides recommendations** for resolving common issues
+- **Estimates the lambda-s parameter** to quantify the consistency between z-scores and the LD matrix
+- **Detects LD mismatch outliers** via Kriging RSS conditional expectation analysis
+- **Identifies outlier SNPs** using the Dentist-S test statistic
+- **Compares allele frequencies** between summary statistics and the LD reference panel
+- **Optionally removes outliers** and re-runs QC on cleaned data
+- **Generates per-locus and global summaries** for downstream review
 
-## When to Use
+!!! note "Why run QC?"
+    Fine-mapping methods assume consistency between z-scores and the LD matrix. Violations (strand flips, allele coding errors, population mismatch, imputation artefacts) can produce spurious credible sets. Running QC catches these issues before they propagate.
 
-Use `credtools qc` when you have:
+## Quick Start
 
-- Prepared fine-mapping inputs that need validation before analysis
-- Concerns about data quality or consistency across ancestries
-- New datasets or reference panels that haven't been validated
-- Previous fine-mapping runs that failed due to data issues
-- Need to generate quality reports for publication or sharing
+=== "Basic QC"
 
-## Basic Usage
+    ```bash
+    credtools qc meta/meta_all/loci_list.txt qc_output/
+    ```
 
-### Standard QC Check
+=== "Multi-threaded"
 
-```bash
-credtools qc prepared/final_loci_list.txt qc_output/
+    ```bash
+    credtools qc meta/meta_all/loci_list.txt qc_output/ --threads 8
+    ```
+
+=== "With Outlier Removal"
+
+    ```bash
+    credtools qc meta/meta_all/loci_list.txt qc_output/ \
+      --threads 8 \
+      --remove-outlier
+    ```
+
+### Try It with Test Data
+
+credtools ships with example locus files (`exampledata/`) that you can use to test QC directly via the Python API:
+
+```python
+from credtools.sumstats import load_sumstats
+from credtools.ldmatrix import load_ld
+from credtools.locus import Locus, LocusSet
+from credtools.qc import locus_qc, locus_qc_summary
+
+# Load two cohorts from exampledata
+cohorts = [
+    ("EUR", "UKB", "exampledata/EUR_loci1"),
+    ("AFR", "MVP", "exampledata/AFR_loci1"),
+]
+loci = []
+for popu, cohort, prefix in cohorts:
+    ss = load_sumstats(f"{prefix}.sumstats", if_sort_alleles=True)
+    ld = load_ld(f"{prefix}.ld.gz", f"{prefix}.ldmap", if_sort_alleles=True)
+    lo = Locus(popu, cohort, 10000, ss,
+               int(ss["BP"].min()), int(ss["BP"].max()), ld=ld)
+    loci.append(lo)
+
+ls = LocusSet(loci)
+
+# Run QC
+qc = locus_qc(ls, out_dir="/tmp/qc_example_output")
+summary = locus_qc_summary(qc)
+print(summary[["popu", "cohort", "n_snps", "lambda_s",
+               "n_lambda_s_outlier", "n_dentist_s_outlier"]])
 ```
 
-### Multi-threaded QC
+For the full CLI workflow, run the pipeline first to generate prepared loci:
 
 ```bash
-credtools qc prepared/final_loci_list.txt qc_output/ --threads 8
+credtools munge \
+  "exampledata/test_mock_data/EUR_all_loci.sumstats,exampledata/test_mock_data/AFR_all_loci.sumstats,exampledata/test_mock_data/EAS_all_loci.sumstats" \
+  /tmp/munge_output/ --force
+
+credtools chunk /tmp/munge_output/sumstat_info_updated.txt /tmp/chunk_output/
+
+credtools meta /tmp/chunk_output/loci_list.txt /tmp/meta_output/
+
+# Run QC on meta-analysis results
+credtools qc /tmp/meta_output/meta_all/loci_list.txt /tmp/qc_output/ --threads 2
 ```
 
-### QC After Meta-Analysis
+## Command Reference
 
-```bash
-credtools qc meta/meta_all/loci_list.txt qc_output/
+```
+credtools qc [OPTIONS] INPUTS OUTDIR
 ```
 
-## Command Options
+**Arguments:**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--threads` / `-t` | Number of parallel threads | 1 |
+| Argument | Description |
+|----------|-------------|
+| `INPUTS` | Tab-separated locus list file (e.g. from `credtools meta` or `credtools chunk`) |
+| `OUTDIR` | Output directory for QC results |
 
-## Quality Control Checks
+**Options:**
 
-### Summary Statistics Validation
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--threads` | `-t` | Number of parallel threads | `1` |
+| `--remove-outlier` | | Remove outliers and re-run QC on cleaned data | `False` |
+| `--logLR-threshold` | | Log-likelihood ratio threshold for LD mismatch detection | `2.0` |
+| `--z-threshold` | | Z-score threshold for LD mismatch and marginal SNP detection | `2.0` |
+| `--z-std-diff-threshold` | | Standardised z-difference threshold for marginal SNP outlier detection | `3.0` |
+| `--r-threshold` | | Correlation threshold with lead SNP for marginal SNP detection | `0.8` |
+| `--dentist-pvalue-threshold` | | −log10 p-value threshold for Dentist-S outlier detection | `4.0` |
+| `--dentist-r2-threshold` | | r² threshold for Dentist-S outlier detection | `0.6` |
+| `--log-file` | `-l` | Write log output to a file | `None` |
 
-**Format Consistency**
-- Required columns present (CHR, BP, EA, NEA, BETA, SE, P)
-- Appropriate data types and value ranges
-- No missing values in critical columns
+## QC Methods
 
-**Statistical Validity**
-- P-values in valid range (0, 1]
-- Standard errors are positive
-- Effect sizes within reasonable bounds
-- Allele frequencies between 0 and 1 (if present)
+### Kriging RSS (Lambda-s)
 
-**Biological Plausibility**
-- Chromosome and position coordinates valid
-- Alleles are valid DNA bases
-- No duplicate variants within locus
+The Kriging RSS method estimates the parameter **lambda-s** (also called *s*), which quantifies the consistency between observed z-scores and the LD matrix under the SuSiE RSS null model:
 
-### LD Matrix Validation
+$$z \mid R, s \sim \mathcal{N}(0, (1-s)R + sI)$$
 
-**Matrix Properties**
-- Square symmetric matrix
-- Positive definite (all eigenvalues > 0)
-- Diagonal elements equal to 1
-- Off-diagonal correlations in [-1, 1]
+A larger *s* indicates stronger inconsistency. For each SNP, the conditional mean and variance are computed, yielding:
 
-**Variant Matching**
-- All summary statistic variants present in LD matrix
-- Consistent variant ordering
-- Matching allele orientations
+- **z_std_diff**: standardised difference between observed and expected z-score
+- **logLR**: log-likelihood ratio for allele switch detection
 
-**Data Quality**
-- Reasonable correlation structure
-- No excessive missing data
-- Appropriate matrix conditioning
+**Outlier criteria (combined):**
 
-### Cross-Dataset Consistency
+1. **LD Mismatch Indicator**: `logLR > threshold` AND `|z| > threshold`
+2. **Marginal Non-significant SNP**: `|z_std_diff| > threshold` AND `|r_lead| > threshold`
 
-**Multi-Ancestry Checks**
-- Consistent variant sets across populations
-- Similar allele frequencies where expected
-- Reasonable effect size correlations
+### Dentist-S
 
-**Longitudinal Consistency**
-- Variant positions match reference genome
-- Allele definitions consistent with standards
-- No systematic biases across chromosomes
+The [Dentist-S](https://github.com/mkanai/slalom) statistic tests each variant against the lead SNP:
 
-## Expected Output
+$$t_{\text{dentist}} = \frac{(z_j - r_{jk} \cdot z_k)^2}{1 - r_{jk}^2}$$
 
-The QC process creates detailed reports and summaries:
+Under the null, $t_{\text{dentist}} \sim \chi^2(1)$. Outliers are flagged when:
 
-### Quality Control Reports
+- `−log10(p) >= dentist_pvalue_threshold` AND `r² >= dentist_r2_threshold`
+
+### MAF Comparison
+
+When the LD reference panel includes allele frequencies (`AF2` column), credtools compares minor allele frequencies between the summary statistics and the reference. Large discrepancies may indicate population mismatch or allele coding issues.
+
+### Lambda-s Interpretation
+
+| Lambda-s | Interpretation |
+|----------|---------------|
+| < 0.1 | Good consistency between z-scores and LD |
+| 0.1 – 0.3 | Moderate inconsistency — review flagged SNPs |
+| > 0.3 | Strong inconsistency — consider re-imputation or LD panel swap |
+
+### Outlier Detection
+
+The `--remove-outlier` flag triggers automatic outlier removal based on the Kriging RSS and Dentist-S criteria above. After removal, QC is re-run on the cleaned data and both the original and cleaned summaries are saved.
+
+## Output Format
+
+### Directory Structure
 
 ```
 qc_output/
-├── summary_report.txt          # Overall QC summary
-├── locus_reports/              # Individual locus details
-│   ├── locus_1_qc.txt
-│   ├── locus_2_qc.txt
-│   └── ...
-├── failed_loci.txt             # Loci that failed QC
-├── warnings.txt                # Non-critical issues found
-└── qc_metrics.json             # Machine-readable results
+├── qc.txt.gz                           # Global QC summary across all loci
+├── qc_run_summary.log                   # Run metadata (timing, errors)
+├── chr1_1000_50000/                     # Per-locus directory
+│   ├── expected_z.txt.gz               # Kriging RSS results
+│   ├── dentist_s.txt.gz                # Dentist-S results
+│   ├── compare_maf.txt.gz             # MAF comparison
+│   └── qc.txt.gz                       # Locus-level QC summary
+└── cleaned/                             # Only with --remove-outlier
+    ├── qc_cleaned.txt.gz               # Global cleaned QC summary
+    ├── outlier_removal_summary.txt.gz  # Outlier removal statistics
+    ├── cleaned_loci_info.txt.gz        # Loci info for cleaned data
+    └── chr1_1000_50000/                # Per-locus cleaned files
+        ├── EUR_UKB.sumstats.gz
+        ├── EUR_UKB.ld.npz
+        ├── EUR_UKB.ldmap.gz
+        ├── expected_z.txt.gz
+        ├── dentist_s.txt.gz
+        ├── compare_maf.txt.gz
+        └── qc.txt.gz
 ```
 
-### QC Summary Metrics
+### Output Columns
 
-- **Pass/Fail counts** for each check type
-- **Quality scores** for each locus
-- **Recommended actions** for failed loci
-- **Data completeness** statistics
-- **Cross-ancestry comparisons** (if applicable)
+**`expected_z.txt.gz`** — Kriging RSS results
 
-## Understanding QC Results
+| Column | Description |
+|--------|-------------|
+| `SNPID` | SNP identifier |
+| `z` | Transformed z-score |
+| `condmean` | Conditional mean from Kriging |
+| `condvar` | Conditional variance |
+| `z_std_diff` | Standardised difference (z − condmean) / sqrt(condvar) |
+| `logLR` | Log-likelihood ratio for allele switch detection |
+| `lambda_s` | Estimated lambda-s parameter |
+| `cohort` | Cohort identifier (popu_cohort) |
 
-### QC Status Categories
+**`dentist_s.txt.gz`** — Dentist-S results
 
-**PASS**: Locus passes all quality checks and is ready for fine-mapping
-**WARN**: Minor issues detected but locus may still be usable
-**FAIL**: Critical issues that will likely cause fine-mapping failure
+| Column | Description |
+|--------|-------------|
+| `SNPID` | SNP identifier |
+| `t_dentist_s` | Dentist-S test statistic (NaN for lead SNP) |
+| `-log10p_dentist_s` | −log10 p-value |
+| `r2` | r² with lead SNP |
+| `cohort` | Cohort identifier |
 
-### Common Warning Types
+**`compare_maf.txt.gz`** — MAF comparison
 
-- Minor allele frequency differences between populations
-- Slightly high correlation values (> 0.99)
-- Missing optional columns (EAF, INFO scores)
-- Borderline LD matrix conditioning
+| Column | Description |
+|--------|-------------|
+| `SNPID` | SNP identifier |
+| `MAF_sumstats` | MAF from summary statistics |
+| `MAF_ld` | MAF from LD reference panel |
+| `cohort` | Cohort identifier |
 
-### Common Failure Types
+**`qc.txt.gz`** — Per-locus / global summary
 
-- Missing required data columns
-- Non-positive definite LD matrices
-- Severe variant mismatches between datasets
-- Invalid statistical values (negative SE, P-values > 1)
+| Column | Description |
+|--------|-------------|
+| `locus_id` | Locus identifier (global file only) |
+| `popu` | Population |
+| `cohort` | Cohort |
+| `n_snps` | Number of SNPs |
+| `n_1e-5` | SNPs with p < 1e-5 |
+| `n_5e-8` | SNPs with p < 5e-8 |
+| `maf_corr` | Pearson correlation between sumstats and LD MAFs |
+| `lambda_s` | Estimated lambda-s parameter |
+| `n_lambda_s_outlier` | Number of Kriging RSS outliers |
+| `n_dentist_s_outlier` | Number of Dentist-S outliers |
 
-## Examples
+## Integration with Pipeline
 
-### Example 1: Basic QC for Single Ancestry
-
-```bash
-# Run QC on prepared single-ancestry data
-credtools qc prepared/final_loci_list.txt qc_results/
-
-# Review results
-cat qc_results/summary_report.txt
-cat qc_results/failed_loci.txt
+```mermaid
+graph LR
+    A[credtools chunk] -->|loci_list.txt| B[credtools meta]
+    B -->|meta loci_list.txt| C[credtools qc]
+    C -->|qc results| D[credtools finemap]
+    C -->|"--remove-outlier"| E[cleaned data]
+    E --> D
 ```
 
-### Example 2: Multi-Ancestry QC with Parallel Processing
-
 ```bash
-# QC multi-ancestry meta-analysis results
-credtools qc meta/meta_all/loci_list.txt qc_meta/ --threads 12
-
-# Check for ancestry-specific issues
-grep "ancestry" qc_meta/warnings.txt
-```
-
-### Example 3: QC After Filtering
-
-```bash
-# QC after applying custom filters
-credtools qc filtered/loci_list.txt qc_filtered/ --threads 4
-
-# Compare with original QC results
-diff qc_original/summary_report.txt qc_filtered/summary_report.txt
-```
-
-### Example 4: Iterative QC and Fixing
-
-```bash
-# Initial QC
-credtools qc prepared/loci_list.txt qc_initial/
-
-# Fix issues based on QC report
-# ... manual data cleaning steps ...
-
-# Re-run QC to verify fixes
-credtools qc cleaned/loci_list.txt qc_final/
-```
-
-## Integration with Workflow
-
-Quality control should be performed after data preparation or meta-analysis:
-
-```bash
-# Standard workflow with QC
+# Full pipeline
+credtools munge population_config.txt munged/
 credtools chunk munged/sumstat_info_updated.txt chunked/
 credtools meta chunked/loci_list.txt meta/ --meta-method meta_all
 credtools qc meta/meta_all/loci_list.txt qc/ --threads 8
-credtools finemap qc/passed_loci_list.txt finemap_results/
-
-# Alternative: QC before meta-analysis
-credtools chunk munged/sumstat_info_updated.txt chunked/
-credtools qc chunked/loci_list.txt qc_pre_meta/
-credtools meta qc_pre_meta/passed_loci_list.txt meta/
 credtools finemap meta/meta_all/loci_list.txt finemap_results/
+
+# With outlier removal
+credtools qc meta/meta_all/loci_list.txt qc/ --threads 8 --remove-outlier
+credtools finemap qc/cleaned/cleaned_loci_info.txt.gz finemap_results/
 ```
 
-## Resolving Common Issues
-
-### Failed LD Matrix Checks
-
-**Non-positive definite matrices**:
-```bash
-# Usually indicates numerical precision issues
-# Try using higher-quality reference panels
-# Consider increasing minimum allele frequency filters
-```
-
-**Variant mismatches**:
-```bash
-# Check allele flipping and strand orientation
-# Verify reference genome versions match
-# Update variant IDs to consistent format
-```
-
-### Summary Statistics Issues
-
-**Missing critical columns**:
-```bash
-# Re-run munging with proper column mapping
-# Check original GWAS file format
-# Verify required statistics are available
-```
-
-**Invalid statistical values**:
-```bash
-# Check for data corruption during file transfers
-# Verify GWAS analysis pipeline outputs
-# Look for systematic issues in specific regions
-```
-
-### Performance Issues
-
-**Slow QC processing**:
-```bash
-# Increase thread count up to available cores
-# Process subsets of loci in parallel
-# Use faster storage for temporary files
-```
-
-**Memory consumption**:
-```bash
-# Reduce thread count for large LD matrices
-# Process chromosomes separately
-# Consider using high-memory compute nodes
-```
+!!! info "Heterogeneity metrics"
+    Cross-cohort heterogeneity metrics (Cochran-Q, SNP missingness, LD 4th moment, LD decay) are computed **before** meta-analysis by `credtools meta` and saved in each locus's `heterogeneity/` directory. They are no longer part of the `credtools qc` output.
 
 ## Troubleshooting
 
-### Common Error Messages
+??? question "High lambda-s values across many loci"
+    This usually indicates a systematic mismatch between your summary statistics and the LD reference panel. Common causes:
 
-**"LD matrix not positive definite"**: The correlation matrix has numerical issues. Check reference panel quality and consider filtering low-frequency variants.
+    - Different genome builds (e.g. hg19 vs hg38)
+    - LD reference from a different population
+    - Allele flipping not properly handled during munging
 
-**"Variant mismatch between sumstats and LD"**: Summary statistics and LD matrix contain different variants. Verify data preparation steps.
+    Try re-running `credtools munge` with careful column mapping, or use an LD reference that matches your GWAS population.
 
-**"Invalid p-values detected"**: P-values outside valid range [0,1]. Check GWAS analysis pipeline.
+??? question "Too many Dentist-S outliers"
+    Dentist-S flags SNPs whose z-scores are inconsistent with the lead SNP's z-score given their LD. Common causes:
 
-**"Memory allocation failed"**: Insufficient RAM for large matrices. Reduce thread count or use smaller chunks.
+    - Poor imputation quality at the locus
+    - LD reference with insufficient sample size
+    - Multiple independent signals at the locus (expected behaviour)
 
-### Best Practices
+    Consider adjusting `--dentist-pvalue-threshold` (increase to be less strict) or `--dentist-r2-threshold`.
 
-1. **Always run QC**: Never skip quality control, especially with new datasets
-2. **Review all reports**: Check both summary and detailed locus reports
-3. **Fix issues systematically**: Address data quality problems before fine-mapping
-4. **Document QC results**: Keep QC reports for reproducibility and troubleshooting
-5. **Use appropriate resources**: Allocate sufficient compute resources for large studies
+??? question "MAF comparison shows low correlation"
+    A low MAF correlation between summary statistics and LD reference may indicate:
 
-## Tips for Success
+    - Population mismatch between GWAS and reference panel
+    - Different allele frequency definitions (EAF vs MAF)
+    - Allele flipping not resolved during data preparation
 
-1. **Start with QC**: Run quality control early to identify issues before investing in computationally expensive steps
-2. **Use parallel processing**: QC can be parallelized effectively across loci
-3. **Keep detailed logs**: QC reports are valuable for debugging fine-mapping issues
-4. **Iterate as needed**: Re-run QC after fixing issues to ensure problems are resolved
-5. **Compare across ancestries**: Use QC to identify systematic differences between populations
-6. **Plan for failures**: Some loci may fail QC - have strategies for handling incomplete datasets
+??? question "Memory issues with large loci"
+    Large loci (>5000 SNPs) require significant memory for eigendecomposition. Solutions:
+
+    - Reduce thread count to lower peak memory
+    - Chunk large loci into smaller regions
+    - Use `dtype=np.float32` in the API (not available via CLI)
+
+??? question "QC run fails for some loci"
+    Check `qc_run_summary.log` in the output directory for error details. Common causes:
+
+    - Singular LD matrices (all eigenvalues near zero)
+    - Loci with very few SNPs (<5)
+    - Corrupted input files
+
+    Failed loci are logged but do not block processing of other loci.
+
+## Best Practices
+
+!!! tip "Recommendations"
+    1. **Always run QC after meta-analysis** — meta-analysis can introduce or amplify inconsistencies
+    2. **Review lambda-s values** — they provide a quick overall quality indicator per cohort
+    3. **Use `--remove-outlier` cautiously** — inspect outlier removal summaries to ensure genuine outliers (not true signals) are being removed
+    4. **Start with default thresholds** — the defaults are calibrated for typical GWAS data; adjust only after reviewing results
+    5. **Check the run summary log** — `qc_run_summary.log` reports timing, success/failure counts, and error details
+    6. **Use parallel processing** — QC is embarrassingly parallel across loci; use `--threads` matching your available cores
