@@ -601,9 +601,9 @@ class TestChunkDirect:
     def test_chunk_n_variants_positive(self, chunk_result):
         """All chunks have positive n_variants."""
         for _, row in chunk_result.iterrows():
-            assert row["n_variants"] > 0, (
-                f"n_variants should be positive for {row['locus_id']} {row['ancestry']}"
-            )
+            assert (
+                row["n_variants"] > 0
+            ), f"n_variants should be positive for {row['locus_id']} {row['ancestry']}"
 
     def test_chunk_each_locus_has_3_ancestries(self, chunk_result):
         """Each locus has entries for all 3 ancestries."""
