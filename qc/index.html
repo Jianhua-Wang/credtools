@@ -312,8 +312,6 @@
       
         
       
-        
-      
     
     
     
@@ -386,29 +384,6 @@
   
   <span class="md-ellipsis">
     Chunk
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../prepare/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Prepare
     
   </span>
   
@@ -1933,14 +1908,14 @@
 <h2 id="integration-with-workflow">Integration with Workflow<a class="headerlink" href="#integration-with-workflow" title="Permanent link">&para;</a></h2>
 <p>Quality control should be performed after data preparation or meta-analysis:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Standard workflow with QC</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>credtools<span class="w"> </span>meta<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>meta/<span class="w"> </span>--meta-method<span class="w"> </span>meta_all
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/sumstat_info_updated.txt<span class="w"> </span>chunked/
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>credtools<span class="w"> </span>meta<span class="w"> </span>chunked/loci_list.txt<span class="w"> </span>meta/<span class="w"> </span>--meta-method<span class="w"> </span>meta_all
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>credtools<span class="w"> </span>qc<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>qc/<span class="w"> </span>--threads<span class="w"> </span><span class="m">8</span>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc/passed_loci_list.txt<span class="w"> </span>finemap_results/
 <a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
 <a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Alternative: QC before meta-analysis</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>chunked/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>prepared/
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>credtools<span class="w"> </span>qc<span class="w"> </span>prepared/final_loci_list.txt<span class="w"> </span>qc_pre_meta/
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/sumstat_info_updated.txt<span class="w"> </span>chunked/
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>credtools<span class="w"> </span>qc<span class="w"> </span>chunked/loci_list.txt<span class="w"> </span>qc_pre_meta/
 <a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>credtools<span class="w"> </span>meta<span class="w"> </span>qc_pre_meta/passed_loci_list.txt<span class="w"> </span>meta/
 <a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>finemap_results/
 </code></pre></div>

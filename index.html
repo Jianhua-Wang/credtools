@@ -372,15 +372,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-prepare-inputs-credtools-prepare" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 3: Prepare Inputs (credtools prepare)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#multi-ancestry-support" class="md-nav__link">
     <span class="md-ellipsis">
       Multi-Ancestry Support
@@ -476,8 +467,6 @@
       
         
       
-        
-      
     
     
     
@@ -552,29 +541,6 @@
   
   <span class="md-ellipsis">
     Chunk
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="prepare/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Prepare
     
   </span>
   
@@ -1310,15 +1276,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-prepare-inputs-credtools-prepare" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 3: Prepare Inputs (credtools prepare)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#multi-ancestry-support" class="md-nav__link">
     <span class="md-ellipsis">
       Multi-Ancestry Support
@@ -1394,16 +1351,13 @@
 <h3 id="command-line-usage">Command Line Usage<a class="headerlink" href="#command-line-usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Complete workflow: from whole-genome data to fine-mapping results</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Step 1: Standardize summary statistics</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>credtools<span class="w"> </span>munge<span class="w"> </span>raw_gwas_eur.txt,raw_gwas_asn.txt<span class="w"> </span>output/munged/
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>credtools<span class="w"> </span>munge<span class="w"> </span>population_config.txt<span class="w"> </span>output/munged/
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Step 2: Identify independent loci and chunk data</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>output/munged/*.munged.txt.gz<span class="w"> </span>output/chunks/
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Step 2: Identify loci, chunk data, and extract LD matrices</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>output/munged/sumstat_info_updated.txt<span class="w"> </span>output/chunks/
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Step 3: Prepare LD matrices and final inputs</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>credtools<span class="w"> </span>prepare<span class="w"> </span>output/chunks/chunk_info.txt<span class="w"> </span>genotype_config.json<span class="w"> </span>output/prepared/
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># Step 4: Run fine-mapping pipeline</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>output/prepared/final_loci_list.txt<span class="w"> </span>output/results/
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Step 3: Run fine-mapping pipeline</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>output/chunks/loci_list.txt<span class="w"> </span>output/results/
 </code></pre></div>
 <h2 id="preprocessing-workflow">Preprocessing Workflow<a class="headerlink" href="#preprocessing-workflow" title="Permanent link">&para;</a></h2>
 <p>credtools now supports starting from whole-genome summary statistics and genotype data, eliminating the need for manual preprocessing:</p>
@@ -1419,23 +1373,14 @@
 </ul>
 <h3 id="step-2-chunk-loci-credtools-chunk">Step 2: Chunk Loci (<code>credtools chunk</code>)<a class="headerlink" href="#step-2-chunk-loci-credtools-chunk" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Purpose</strong>: Identify independent loci and create regional chunks for fine-mapping</li>
+<li><strong>Purpose</strong>: Identify independent loci, create regional chunks, and extract LD matrices</li>
 <li><strong>Features</strong>:</li>
 <li>Distance-based independent SNP identification</li>
 <li>Cross-ancestry loci coordination</li>
 <li>Configurable significance thresholds</li>
-<li><strong>Input</strong>: Munged summary statistics files</li>
-<li><strong>Output</strong>: Locus-specific chunked files and metadata</li>
-</ul>
-<h3 id="step-3-prepare-inputs-credtools-prepare">Step 3: Prepare Inputs (<code>credtools prepare</code>)<a class="headerlink" href="#step-3-prepare-inputs-credtools-prepare" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Purpose</strong>: Generate LD matrices and final fine-mapping input files</li>
-<li><strong>Features</strong>:</li>
-<li>LD matrix computation from genotype data</li>
-<li>Variant intersection and quality control</li>
-<li>Multi-threaded processing</li>
-<li><strong>Input</strong>: Chunked files + genotype data configuration</li>
-<li><strong>Output</strong>: credtools-ready input files (<code>.sumstats.gz</code>, <code>.ld.npz</code>, <code>.ldmap.gz</code>)</li>
+<li>Automatic LD matrix extraction when <code>ld_ref</code> is provided in population config</li>
+<li><strong>Input</strong>: Munged summary statistics files (or population config with <code>ld_ref</code>)</li>
+<li><strong>Output</strong>: Locus-specific chunked files, LD matrices, and credtools-ready input files</li>
 </ul>
 <h3 id="multi-ancestry-support">Multi-Ancestry Support<a class="headerlink" href="#multi-ancestry-support" title="Permanent link">&para;</a></h3>
 <ul>
