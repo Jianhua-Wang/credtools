@@ -128,6 +128,7 @@ class TestGetEigen:
     """Tests for get_eigen()."""
 
     def test_returns_dict_with_keys(self, single_locus):
+        """Verify get_eigen returns a dict containing eigvals and eigvecs keys."""
         from credtools.qc import get_eigen
 
         result = get_eigen(single_locus.ld.r)
@@ -135,6 +136,7 @@ class TestGetEigen:
         assert "eigvecs" in result
 
     def test_eigvals_shape(self, single_locus):
+        """Verify eigenvalues array has shape equal to the number of SNPs."""
         from credtools.qc import get_eigen
 
         n = single_locus.ld.r.shape[0]
@@ -142,6 +144,7 @@ class TestGetEigen:
         assert result["eigvals"].shape == (n,)
 
     def test_eigvecs_shape(self, single_locus):
+        """Verify eigenvectors matrix has shape (n, n)."""
         from credtools.qc import get_eigen
 
         n = single_locus.ld.r.shape[0]
@@ -149,6 +152,7 @@ class TestGetEigen:
         assert result["eigvecs"].shape == (n, n)
 
     def test_dtype_conversion(self, single_locus):
+        """Verify eigenvalues are cast to the requested dtype."""
         from credtools.qc import get_eigen
 
         result = get_eigen(single_locus.ld.r, dtype=np.float64)
@@ -172,42 +176,49 @@ class TestEstimateSRss:
     """Tests for estimate_s_rss()."""
 
     def test_null_mle_returns_float(self, single_locus):
+        """Verify null-mle method returns a float value."""
         from credtools.qc import estimate_s_rss
 
         s = estimate_s_rss(single_locus, method="null-mle")
         assert isinstance(s, (float, np.floating))
 
     def test_null_mle_s_in_range(self, single_locus):
+        """Verify null-mle estimate is between 0 and 1."""
         from credtools.qc import estimate_s_rss
 
         s = estimate_s_rss(single_locus, method="null-mle")
         assert 0 <= s <= 1
 
     def test_partialmle_returns_numeric(self, single_locus):
+        """Verify null-partialmle method returns a numeric value."""
         from credtools.qc import estimate_s_rss
 
         s = estimate_s_rss(single_locus, method="null-partialmle")
         assert isinstance(s, (int, float, np.integer, np.floating))
 
     def test_pseudomle_returns_float(self, single_locus):
+        """Verify null-pseudomle method returns a float value."""
         from credtools.qc import estimate_s_rss
 
         s = estimate_s_rss(single_locus, method="null-pseudomle")
         assert isinstance(s, (float, np.floating))
 
     def test_pseudomle_s_in_range(self, single_locus):
+        """Verify null-pseudomle estimate is between 0 and 1."""
         from credtools.qc import estimate_s_rss
 
         s = estimate_s_rss(single_locus, method="null-pseudomle")
         assert 0 <= s <= 1
 
     def test_invalid_method_raises(self, single_locus):
+        """Verify an invalid method name raises ValueError."""
         from credtools.qc import estimate_s_rss
 
         with pytest.raises(ValueError, match="not implemented"):
             estimate_s_rss(single_locus, method="invalid-method")
 
     def test_n_le_1_raises(self):
+        """Verify sample size <= 1 raises ValueError."""
         from credtools.qc import estimate_s_rss
 
         lo = _make_locus(sample_size=1)
@@ -223,6 +234,7 @@ class TestEstimateSRss:
         assert s == 0
 
     def test_precomputed_eigens(self, single_locus):
+        """Verify estimate_s_rss works with precomputed eigendecomposition."""
         from credtools.qc import estimate_s_rss, get_eigen
 
         eigens = get_eigen(single_locus.ld.r)
@@ -239,12 +251,14 @@ class TestKrigingRss:
     """Tests for kriging_rss()."""
 
     def test_returns_dataframe(self, single_locus):
+        """Verify kriging_rss returns a pandas DataFrame."""
         from credtools.qc import kriging_rss
 
         result = kriging_rss(single_locus)
         assert isinstance(result, pd.DataFrame)
 
     def test_expected_columns(self, single_locus):
+        """Verify the result contains expected column names."""
         from credtools.qc import kriging_rss
 
         result = kriging_rss(single_locus)
@@ -252,18 +266,21 @@ class TestKrigingRss:
         assert expected_cols.issubset(set(result.columns))
 
     def test_condvar_positive(self, single_locus):
+        """Verify conditional variance values are all positive."""
         from credtools.qc import kriging_rss
 
         result = kriging_rss(single_locus)
         assert (result["condvar"] > 0).all()
 
     def test_auto_estimate_s(self, single_locus):
+        """Verify kriging_rss works when s is auto-estimated (s=None)."""
         from credtools.qc import kriging_rss
 
         result = kriging_rss(single_locus, s=None)
         assert len(result) > 0
 
     def test_n_le_1_raises(self):
+        """Verify sample size <= 1 raises ValueError."""
         from credtools.qc import kriging_rss
 
         lo = _make_locus(sample_size=1)
@@ -271,6 +288,7 @@ class TestKrigingRss:
             kriging_rss(lo)
 
     def test_row_count_matches_snps(self, single_locus):
+        """Verify the number of rows matches the number of intersected SNPs."""
         from credtools.locus import intersect_sumstat_ld
         from credtools.qc import kriging_rss
 
@@ -288,12 +306,14 @@ class TestComputeDentistS:
     """Tests for compute_dentist_s()."""
 
     def test_returns_dataframe(self, single_locus):
+        """Verify compute_dentist_s returns a pandas DataFrame."""
         from credtools.qc import compute_dentist_s
 
         result = compute_dentist_s(single_locus)
         assert isinstance(result, pd.DataFrame)
 
     def test_expected_columns(self, single_locus):
+        """Verify the result contains the expected column set."""
         from credtools.qc import compute_dentist_s
 
         result = compute_dentist_s(single_locus)
@@ -301,12 +321,14 @@ class TestComputeDentistS:
         assert expected_cols == set(result.columns)
 
     def test_lead_snp_t_is_nan(self, single_locus):
+        """Verify the lead SNP has NaN for the DENTIST-S t statistic."""
         from credtools.qc import compute_dentist_s
 
         result = compute_dentist_s(single_locus)
         assert result["t_dentist_s"].isna().sum() == 1
 
     def test_r2_range(self, single_locus):
+        """Verify r-squared values are between 0 and 1."""
         from credtools.qc import compute_dentist_s
 
         result = compute_dentist_s(single_locus)
@@ -323,6 +345,7 @@ class TestCompareMaf:
     """Tests for compare_maf()."""
 
     def test_with_af2_returns_result(self, single_locus_with_af2):
+        """Verify compare_maf returns non-empty result when AF2 column exists."""
         from credtools.qc import compare_maf
 
         result = compare_maf(single_locus_with_af2)
@@ -330,6 +353,7 @@ class TestCompareMaf:
         assert len(result) > 0
 
     def test_without_af2_returns_empty(self, single_locus):
+        """Verify compare_maf returns empty DataFrame when AF2 column is missing."""
         from credtools.qc import compare_maf
 
         result = compare_maf(single_locus)
@@ -337,6 +361,7 @@ class TestCompareMaf:
         assert len(result) == 0
 
     def test_expected_columns(self, single_locus_with_af2):
+        """Verify the result contains MAF_sumstats, MAF_ld, and SNPID columns."""
         from credtools.qc import compare_maf
 
         result = compare_maf(single_locus_with_af2)
@@ -345,6 +370,7 @@ class TestCompareMaf:
         assert ColName.SNPID in result.columns
 
     def test_maf_range(self, single_locus_with_af2):
+        """Verify MAF values from LD reference are between 0 and 0.5."""
         from credtools.qc import compare_maf
 
         result = compare_maf(single_locus_with_af2)
@@ -361,6 +387,7 @@ class TestSnpMissingness:
     """Tests for snp_missingness()."""
 
     def test_column_name_format(self, multi_cohort_locus_set):
+        """Verify column names follow the popu_cohort format."""
         from credtools.qc import snp_missingness
 
         result = snp_missingness(multi_cohort_locus_set)
@@ -368,6 +395,7 @@ class TestSnpMissingness:
             assert "_" in col  # format is "popu_cohort"
 
     def test_values_are_binary(self, multi_cohort_locus_set):
+        """Verify all values in the missingness matrix are 0 or 1."""
         from credtools.qc import snp_missingness
 
         result = snp_missingness(multi_cohort_locus_set)
@@ -382,6 +410,7 @@ class TestSnpMissingness:
         assert (all_present == 1).all().all()
 
     def test_single_locus(self, single_locus_set):
+        """Verify a single-locus set produces one column with all ones."""
         from credtools.qc import snp_missingness
 
         result = snp_missingness(single_locus_set)
@@ -398,6 +427,7 @@ class TestLd4thMoment:
     """Tests for ld_4th_moment()."""
 
     def test_column_name_format(self, multi_cohort_locus_set):
+        """Verify column names follow the popu_cohort format."""
         from credtools.qc import ld_4th_moment
 
         result = ld_4th_moment(multi_cohort_locus_set)
@@ -405,6 +435,7 @@ class TestLd4thMoment:
             assert "_" in col  # format is "popu_cohort"
 
     def test_values_non_negative(self, multi_cohort_locus_set):
+        """Verify LD 4th moment values are non-negative."""
         from credtools.qc import ld_4th_moment
 
         result = ld_4th_moment(multi_cohort_locus_set)
@@ -412,12 +443,14 @@ class TestLd4thMoment:
         assert (result >= -1e-6).all().all()
 
     def test_index_is_snpid(self, multi_cohort_locus_set):
+        """Verify the result index is named SNPID."""
         from credtools.qc import ld_4th_moment
 
         result = ld_4th_moment(multi_cohort_locus_set)
         assert result.index.name == ColName.SNPID
 
     def test_returns_dataframe(self, multi_cohort_locus_set):
+        """Verify ld_4th_moment returns a pandas DataFrame."""
         from credtools.qc import ld_4th_moment
 
         result = ld_4th_moment(multi_cohort_locus_set)
@@ -433,12 +466,14 @@ class TestLdDecay:
     """Tests for ld_decay()."""
 
     def test_returns_dataframe(self, multi_cohort_locus_set):
+        """Verify ld_decay returns a pandas DataFrame."""
         from credtools.qc import ld_decay
 
         result = ld_decay(multi_cohort_locus_set)
         assert isinstance(result, pd.DataFrame)
 
     def test_expected_columns(self, multi_cohort_locus_set):
+        """Verify the result contains expected column names."""
         from credtools.qc import ld_decay
 
         result = ld_decay(multi_cohort_locus_set)
@@ -446,12 +481,14 @@ class TestLdDecay:
         assert expected_cols == set(result.columns)
 
     def test_r2_range(self, multi_cohort_locus_set):
+        """Verify average r-squared values are non-negative."""
         from credtools.qc import ld_decay
 
         result = ld_decay(multi_cohort_locus_set)
         assert (result["r2_avg"] >= 0).all()
 
     def test_multi_cohort_label(self, multi_cohort_locus_set):
+        """Verify each cohort has a distinct label in the result."""
         from credtools.qc import ld_decay
 
         result = ld_decay(multi_cohort_locus_set)
@@ -467,12 +504,14 @@ class TestCochranQ:
     """Tests for cochran_q()."""
 
     def test_returns_dataframe(self, multi_cohort_locus_set):
+        """Verify cochran_q returns a pandas DataFrame."""
         from credtools.qc import cochran_q
 
         result = cochran_q(multi_cohort_locus_set)
         assert isinstance(result, pd.DataFrame)
 
     def test_expected_columns(self, multi_cohort_locus_set):
+        """Verify the result contains Q, Q_pvalue, and I_squared columns."""
         from credtools.qc import cochran_q
 
         result = cochran_q(multi_cohort_locus_set)
@@ -480,6 +519,7 @@ class TestCochranQ:
         assert expected_cols == set(result.columns)
 
     def test_q_pvalue_range(self, multi_cohort_locus_set):
+        """Verify Q p-values are between 0 and 1."""
         from credtools.qc import cochran_q
 
         result = cochran_q(multi_cohort_locus_set)
@@ -487,12 +527,14 @@ class TestCochranQ:
         assert (result["Q_pvalue"] <= 1).all()
 
     def test_i_squared_non_negative(self, multi_cohort_locus_set):
+        """Verify I-squared values are non-negative."""
         from credtools.qc import cochran_q
 
         result = cochran_q(multi_cohort_locus_set)
         assert (result["I_squared"] >= 0).all()
 
     def test_index_is_snpid(self, multi_cohort_locus_set):
+        """Verify the result index is named SNPID."""
         from credtools.qc import cochran_q
 
         result = cochran_q(multi_cohort_locus_set)
@@ -508,6 +550,7 @@ class TestLocusQc:
     """Tests for locus_qc()."""
 
     def test_returns_three_keys(self, single_locus_set):
+        """Verify locus_qc returns a dict with exactly three expected keys."""
         from credtools.qc import locus_qc
 
         result = locus_qc(single_locus_set)
@@ -517,6 +560,7 @@ class TestLocusQc:
         assert len(result) == 3
 
     def test_no_heterogeneity_keys(self, single_locus_set):
+        """Verify single-cohort QC does not include heterogeneity metrics."""
         from credtools.qc import locus_qc
 
         result = locus_qc(single_locus_set)
@@ -526,18 +570,21 @@ class TestLocusQc:
         assert "snp_missingness" not in result
 
     def test_expected_z_has_cohort_column(self, single_locus_set):
+        """Verify expected_z DataFrame contains a cohort column."""
         from credtools.qc import locus_qc
 
         result = locus_qc(single_locus_set)
         assert "cohort" in result["expected_z"].columns
 
     def test_expected_z_has_lambda_s_column(self, single_locus_set):
+        """Verify expected_z DataFrame contains a lambda_s column."""
         from credtools.qc import locus_qc
 
         result = locus_qc(single_locus_set)
         assert "lambda_s" in result["expected_z"].columns
 
     def test_saves_files(self, tmp_path, single_locus_set):
+        """Verify locus_qc saves output files to the specified directory."""
         from credtools.qc import locus_qc
 
         out_dir = str(tmp_path / "qc_out")
@@ -547,6 +594,7 @@ class TestLocusQc:
             assert os.path.exists(os.path.join(out_dir, f"{name}.txt.gz"))
 
     def test_multi_cohort(self, multi_cohort_locus_set):
+        """Verify multi-cohort QC produces results for all cohorts."""
         from credtools.qc import locus_qc
 
         result = locus_qc(multi_cohort_locus_set)
@@ -563,6 +611,7 @@ class TestIdentifyOutliers:
     """Tests for identify_outliers()."""
 
     def test_relaxed_threshold_no_outliers(self, precomputed_qc_metrics):
+        """Verify very relaxed thresholds produce no outliers."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers(
@@ -576,6 +625,7 @@ class TestIdentifyOutliers:
         assert len(outliers) == 0
 
     def test_strict_threshold_finds_outliers(self, precomputed_qc_metrics):
+        """Verify very strict thresholds identify some outliers."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers(
@@ -591,6 +641,7 @@ class TestIdentifyOutliers:
         assert len(outliers) > 0
 
     def test_nonexistent_cohort_returns_empty(self, precomputed_qc_metrics):
+        """Verify a nonexistent cohort name returns an empty list."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers(
@@ -599,12 +650,14 @@ class TestIdentifyOutliers:
         assert outliers == []
 
     def test_empty_metrics_returns_empty(self):
+        """Verify empty QC metrics dict returns an empty list."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers({}, cohort="EUR_UKB")
         assert outliers == []
 
     def test_returns_list_of_strings(self, precomputed_qc_metrics):
+        """Verify outlier SNP IDs are returned as a list of strings."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers(
@@ -629,6 +682,7 @@ class TestRemoveSnpsFromLocus:
     """Tests for remove_snps_from_locus()."""
 
     def test_removes_correct_snps(self, single_locus):
+        """Verify specified SNPs are removed from the locus sumstats."""
         from credtools.qc import remove_snps_from_locus
 
         snps_to_remove = [single_locus.sumstats[ColName.SNPID].iloc[0]]
@@ -636,12 +690,14 @@ class TestRemoveSnpsFromLocus:
         assert snps_to_remove[0] not in result.sumstats[ColName.SNPID].values
 
     def test_empty_list_returns_copy(self, single_locus):
+        """Verify an empty removal list returns a locus with the same SNP count."""
         from credtools.qc import remove_snps_from_locus
 
         result = remove_snps_from_locus(single_locus, [])
         assert len(result.sumstats) == len(single_locus.sumstats)
 
     def test_ld_dimensions_shrink(self, single_locus):
+        """Verify LD matrix dimensions shrink after removing SNPs."""
         from credtools.qc import remove_snps_from_locus
 
         snps_to_remove = [single_locus.sumstats[ColName.SNPID].iloc[0]]
@@ -650,6 +706,7 @@ class TestRemoveSnpsFromLocus:
         assert result.ld.r.shape[1] == single_locus.ld.r.shape[1] - 1
 
     def test_sumstats_dimensions_shrink(self, single_locus):
+        """Verify sumstats row count decreases by the number of removed SNPs."""
         from credtools.qc import remove_snps_from_locus
 
         snps_to_remove = list(single_locus.sumstats[ColName.SNPID].iloc[:3])
@@ -657,6 +714,7 @@ class TestRemoveSnpsFromLocus:
         assert len(result.sumstats) == len(single_locus.sumstats) - 3
 
     def test_metadata_preserved(self, single_locus):
+        """Verify locus metadata is preserved after SNP removal."""
         from credtools.qc import remove_snps_from_locus
 
         result = remove_snps_from_locus(
@@ -676,6 +734,7 @@ class TestSaveCleanedLocus:
     """Tests for save_cleaned_locus()."""
 
     def test_creates_directory(self, tmp_path, single_locus):
+        """Verify save_cleaned_locus creates the output directory."""
         from credtools.qc import save_cleaned_locus
 
         out_dir = str(tmp_path / "nested" / "dir")
@@ -683,6 +742,7 @@ class TestSaveCleanedLocus:
         assert os.path.isdir(out_dir)
 
     def test_saves_sumstats(self, tmp_path, single_locus):
+        """Verify a sumstats file is saved with the correct prefix."""
         from credtools.qc import save_cleaned_locus
 
         out_dir = str(tmp_path / "cleaned")
@@ -690,6 +750,7 @@ class TestSaveCleanedLocus:
         assert os.path.exists(os.path.join(out_dir, "test_prefix.sumstats.gz"))
 
     def test_saves_ld_npz(self, tmp_path, single_locus):
+        """Verify an LD matrix npz file is saved with the correct prefix."""
         from credtools.qc import save_cleaned_locus
 
         out_dir = str(tmp_path / "cleaned")
@@ -697,6 +758,7 @@ class TestSaveCleanedLocus:
         assert os.path.exists(os.path.join(out_dir, "test_prefix.ld.npz"))
 
     def test_saves_ldmap(self, tmp_path, single_locus):
+        """Verify an LD map file is saved with the correct prefix."""
         from credtools.qc import save_cleaned_locus
 
         out_dir = str(tmp_path / "cleaned")
@@ -715,6 +777,7 @@ class TestRemoveOutliersAndRerunQc:
     def test_returns_three_element_tuple(
         self, tmp_path, single_locus_set, precomputed_qc_metrics
     ):
+        """Verify the function returns a tuple of (LocusSet, dict, DataFrame)."""
         from credtools.qc import remove_outliers_and_rerun_qc
 
         cleaned_ls, cleaned_qc, summary = remove_outliers_and_rerun_qc(
@@ -730,6 +793,7 @@ class TestRemoveOutliersAndRerunQc:
     def test_loci_count_unchanged(
         self, tmp_path, single_locus_set, precomputed_qc_metrics
     ):
+        """Verify the number of loci is unchanged after outlier removal."""
         from credtools.qc import remove_outliers_and_rerun_qc
 
         cleaned_ls, _, _ = remove_outliers_and_rerun_qc(
@@ -743,6 +807,7 @@ class TestRemoveOutliersAndRerunQc:
     def test_outlier_summary_columns(
         self, tmp_path, single_locus_set, precomputed_qc_metrics
     ):
+        """Verify the outlier summary DataFrame contains expected columns."""
         from credtools.qc import remove_outliers_and_rerun_qc
 
         _, _, summary = remove_outliers_and_rerun_qc(
@@ -765,6 +830,7 @@ class TestRemoveOutliersAndRerunQc:
     def test_saves_cleaned_files(
         self, tmp_path, single_locus_set, precomputed_qc_metrics
     ):
+        """Verify cleaned locus files are saved to the output directory."""
         from credtools.qc import remove_outliers_and_rerun_qc
 
         remove_outliers_and_rerun_qc(
@@ -786,12 +852,14 @@ class TestLocusQcSummary:
     """Tests for locus_qc_summary()."""
 
     def test_returns_dataframe(self, precomputed_qc_metrics):
+        """Verify locus_qc_summary returns a pandas DataFrame."""
         from credtools.qc import locus_qc_summary
 
         result = locus_qc_summary(precomputed_qc_metrics)
         assert isinstance(result, pd.DataFrame)
 
     def test_expected_columns(self, precomputed_qc_metrics):
+        """Verify the summary contains expected QC metric columns."""
         from credtools.qc import locus_qc_summary
 
         result = locus_qc_summary(precomputed_qc_metrics)
@@ -809,6 +877,7 @@ class TestLocusQcSummary:
         assert expected_cols.issubset(set(result.columns))
 
     def test_row_count_equals_cohort_count(self, precomputed_qc_metrics):
+        """Verify the number of rows equals the number of unique cohorts."""
         from credtools.qc import locus_qc_summary
 
         result = locus_qc_summary(precomputed_qc_metrics)
@@ -816,6 +885,7 @@ class TestLocusQcSummary:
         assert len(result) == n_cohorts
 
     def test_multi_cohort_summary(self, multi_cohort_locus_set):
+        """Verify multi-cohort summary has one row per cohort."""
         from credtools.qc import locus_qc, locus_qc_summary
 
         qc = locus_qc(multi_cohort_locus_set)
@@ -823,6 +893,7 @@ class TestLocusQcSummary:
         assert len(result) == len(multi_cohort_locus_set.loci)
 
     def test_empty_metrics_returns_empty(self):
+        """Verify empty QC metrics dict returns an empty DataFrame."""
         from credtools.qc import locus_qc_summary
 
         result = locus_qc_summary({})
@@ -839,6 +910,7 @@ class TestQcLocusCli:
     """Tests for qc_locus_cli()."""
 
     def test_mock_returns_four_tuple(self, tmp_path, single_locus_set):
+        """Verify qc_locus_cli returns a 4-element tuple with expected types."""
         from credtools.qc import qc_locus_cli
 
         locus_info = pd.DataFrame(
@@ -872,6 +944,7 @@ class TestQcLocusCli:
         assert isinstance(summary, pd.DataFrame)
 
     def test_saves_output_files(self, tmp_path, single_locus_set):
+        """Verify qc_locus_cli saves QC output files to the locus directory."""
         from credtools.qc import qc_locus_cli
 
         locus_info = pd.DataFrame(
@@ -913,6 +986,7 @@ class TestSafeQcLocusCli:
     """Tests for safe_qc_locus_cli()."""
 
     def test_exception_captured(self):
+        """Verify exceptions are captured and returned as the error element."""
         from credtools.qc import safe_qc_locus_cli
 
         locus_info = pd.DataFrame({"locus_id": ["test"]})
@@ -936,6 +1010,7 @@ class TestSafeQcLocusCli:
         assert error is not None  # Should have captured the error
 
     def test_success_has_no_error(self, tmp_path, single_locus_set):
+        """Verify successful execution returns None as the error element."""
         from credtools.qc import safe_qc_locus_cli
 
         locus_info = pd.DataFrame(
@@ -976,12 +1051,14 @@ class TestLociQc:
     """Tests for loci_qc()."""
 
     def test_threads_less_than_1_raises(self):
+        """Verify threads=0 raises ValueError."""
         from credtools.qc import loci_qc
 
         with pytest.raises(ValueError, match="threads must be a positive integer"):
             loci_qc("dummy.txt", "dummy_out", threads=0)
 
     def test_creates_output_dir(self, tmp_path):
+        """Verify loci_qc creates the output directory."""
         from credtools.qc import loci_qc
 
         out_dir = str(tmp_path / "new_qc_output")
