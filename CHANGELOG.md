@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.1] (2026-02-22)
+
+### Fixed
+- **TestChunkDirect CI failures**: Replaced dependency on gitignored `exampledata/testout/` files with on-the-fly munge generation via `munge_sumstats()`, and replaced reference-data comparisons with self-contained assertions
+
 ## [0.4.0] (2026-02-22)
 
 ### Added
