@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] (2026-02-22)
+
+### Added
+- Comprehensive unit tests for meta module (`tests/test_meta.py`): 40 tests covering `meta_sumstats`, `meta_lds`, `meta_all`, `meta_by_population`, `meta`, `meta_locus`, `meta_loci`, and heterogeneity edge cases — achieving 100% coverage for `credtools/meta.py`
+
+### Changed
+- Rewrote `docs/meta.md` to match `munge.md` documentation style: tabbed examples, admonition blocks, collapsible FAQ, mermaid workflow diagram, typed column tables
+- Fixed outdated references in meta docs (`prepared_loci_list.txt` → `chunked/loci_list.txt`, incorrect output structure, wrong file extensions)
+- Added missing `--calculate-lambda-s` and `--log-file` CLI options to meta docs
+- Added Heterogeneity Analysis section documenting per-locus files and summary table columns
+
 ## [0.3.10] (2026-02-21)
 
 ### Added
