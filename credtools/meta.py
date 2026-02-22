@@ -7,25 +7,14 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
+                           SpinnerColumn, TextColumn, TimeRemainingColumn)
 from scipy import stats
 
 from credtools.constants import ColName
 from credtools.ldmatrix import LDMatrix
-from credtools.locus import (
-    Locus,
-    LocusSet,
-    check_loci_info,
-    intersect_sumstat_ld,
-    load_locus_set,
-)
+from credtools.locus import (Locus, LocusSet, check_loci_info,
+                             intersect_sumstat_ld, load_locus_set)
 from credtools.sumstats import munge
 
 logger = logging.getLogger("META")
@@ -357,13 +346,144 @@ def meta(inputs: LocusSet, meta_method: str = "meta_all") -> LocusSet:
         raise ValueError(f"Unsupported meta-analysis method: {meta_method}")
 
 
-def meta_locus(args: Tuple[str, pd.DataFrame, str, str, bool]) -> List[List[Any]]:
-    """
-    Process a single locus for meta-analysis.
+def compute_heterogeneity(locus_set: LocusSet) -> Dict[str, pd.DataFrame]:
+    """Compute heterogeneity metrics across cohorts before meta-analysis.
 
     Parameters
     ----------
-    args : Tuple[str, pd.DataFrame, str, str]
+    locus_set : LocusSet
+        LocusSet containing input data from multiple studies.
+
+    Returns
+    -------
+    Dict[str, pd.DataFrame]
+        Dictionary of heterogeneity metrics with keys:
+        - 'ld_4th_moment': 4th moment of LD matrix
+        - 'ld_decay': LD decay analysis
+        - 'cochran_q': heterogeneity test (if multiple cohorts)
+        - 'snp_missingness': missingness analysis (if multiple cohorts)
+    """
+    from credtools.qc import (cochran_q, ld_4th_moment, ld_decay,
+                              snp_missingness)
+
+    het_metrics: Dict[str, pd.DataFrame] = {}
+    het_metrics["ld_4th_moment"] = ld_4th_moment(locus_set)
+    het_metrics["ld_decay"] = ld_decay(locus_set)
+    if len(locus_set.loci) > 1:
+        het_metrics["cochran_q"] = cochran_q(locus_set)
+        het_metrics["snp_missingness"] = snp_missingness(locus_set)
+    return het_metrics
+
+
+def heterogeneity_summary(
+    het_metrics: Dict[str, pd.DataFrame],
+    locus_set: LocusSet,
+) -> pd.DataFrame:
+    """Generate per-cohort summary of heterogeneity metrics.
+
+    Parameters
+    ----------
+    het_metrics : Dict[str, pd.DataFrame]
+        Dictionary of heterogeneity metrics from compute_heterogeneity().
+    locus_set : LocusSet
+        LocusSet containing input data from multiple studies.
+
+    Returns
+    -------
+    pd.DataFrame
+        Summary DataFrame with one row per cohort.
+    """
+    rows = []
+    for locus in locus_set.loci:
+        cohort_label = f"{locus.popu}_{locus.cohort}"
+        row: Dict[str, Any] = {"popu": locus.popu, "cohort": locus.cohort}
+
+        # LD 4th moment mean for this cohort
+        ld_4th = het_metrics.get("ld_4th_moment")
+        if ld_4th is not None and cohort_label in ld_4th.columns:
+            row["ld_4th_moment_mean"] = float(ld_4th[cohort_label].mean())
+        else:
+            row["ld_4th_moment_mean"] = np.nan
+
+        # LD decay rate for this cohort
+        ld_dec = het_metrics.get("ld_decay")
+        if ld_dec is not None:
+            cohort_data = ld_dec[ld_dec["cohort"] == cohort_label]
+            if not cohort_data.empty:
+                row["ld_decay_rate"] = float(cohort_data["decay_rate"].iloc[0])
+            else:
+                row["ld_decay_rate"] = np.nan
+        else:
+            row["ld_decay_rate"] = np.nan
+
+        # SNP missingness rate for this cohort
+        miss = het_metrics.get("snp_missingness")
+        if miss is not None and cohort_label in miss.columns:
+            row["missing_rate"] = float(
+                round(1 - miss[cohort_label].sum() / miss.shape[0], 6)
+            )
+        else:
+            row["missing_rate"] = np.nan
+
+        # Cochran Q locus-level summary (same for all cohorts)
+        cq = het_metrics.get("cochran_q")
+        if cq is not None and not cq.empty:
+            row["cochran_q_median"] = float(cq["Q"].median())
+            row["i_squared_median"] = float(cq["I_squared"].median())
+            row["n_het_snps"] = int((cq["Q_pvalue"] < 0.05).sum())
+        else:
+            row["cochran_q_median"] = np.nan
+            row["i_squared_median"] = np.nan
+            row["n_het_snps"] = np.nan
+
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def save_heterogeneity(
+    het_metrics: Dict[str, pd.DataFrame],
+    out_dir: str,
+    summary: Optional[pd.DataFrame] = None,
+) -> None:
+    """Save heterogeneity metrics to compressed TSV files.
+
+    Parameters
+    ----------
+    het_metrics : Dict[str, pd.DataFrame]
+        Dictionary of heterogeneity metrics from compute_heterogeneity().
+    out_dir : str
+        Output directory path.
+    summary : pd.DataFrame, optional
+        Per-cohort summary from heterogeneity_summary(). If provided,
+        saved as heterogeneity.txt.gz.
+    """
+    os.makedirs(out_dir, exist_ok=True)
+    for name, data in het_metrics.items():
+        data.to_csv(
+            f"{out_dir}/{name}.txt.gz",
+            sep="\t",
+            index=False,
+            float_format="%.6f",
+            compression="gzip",
+        )
+    if summary is not None and not summary.empty:
+        summary.to_csv(
+            f"{out_dir}/heterogeneity.txt.gz",
+            sep="\t",
+            index=False,
+            float_format="%.6f",
+            compression="gzip",
+        )
+
+
+def meta_locus(
+    args: Tuple[str, pd.DataFrame, str, str, bool],
+) -> Tuple[List[List[Any]], pd.DataFrame]:
+    """Process a single locus for meta-analysis.
+
+    Parameters
+    ----------
+    args : Tuple[str, pd.DataFrame, str, str, bool]
         A tuple containing:
         - locus_id : str
             The ID of the locus
@@ -373,30 +493,43 @@ def meta_locus(args: Tuple[str, pd.DataFrame, str, str, bool]) -> List[List[Any]
             Output directory path
         - meta_method : str
             Method for meta-analysis
+        - calculate_lambda_s : bool
+            Whether to calculate lambda_s
 
     Returns
     -------
-    List[List[Any]]
-        A list of results containing processed locus information.
-        Each inner list contains: [chrom, start, end, popu, sample_size, cohort, out_prefix, locus_id]
+    Tuple[List[List[Any]], pd.DataFrame]
+        A tuple of (results, het_summary) where results is a list of
+        processed locus info and het_summary is the per-cohort heterogeneity
+        summary DataFrame.
 
     Notes
     -----
     This function is designed for parallel processing and:
 
     1. Loads the locus set from the provided information
-    2. Performs meta-analysis using the specified method
-    3. Creates output directory for the locus
-    4. Saves results to compressed files (sumstats.gz, ld.npz, ldmap.gz)
-    5. Returns metadata for each processed locus
+    2. Computes heterogeneity metrics before meta-analysis
+    3. Performs meta-analysis using the specified method
+    4. Creates output directory for the locus
+    5. Saves results to compressed files (sumstats.gz, ld.npz, ldmap.gz)
+    6. Returns metadata for each processed locus and heterogeneity summary
     """
     locus_id, locus_info, outdir, meta_method, calculate_lambda_s = args
     results = []
     locus_set = load_locus_set(locus_info, calculate_lambda_s=calculate_lambda_s)
+
+    # Compute heterogeneity BEFORE meta combines data
+    het_metrics = compute_heterogeneity(locus_set)
+    het_summary = heterogeneity_summary(het_metrics, locus_set)
+    het_summary["locus_id"] = locus_id
+
     locus_set = meta(locus_set, meta_method)
     out_dir = f"{outdir}/{locus_id}"
     out_dir = os.path.abspath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
+
+    # Save heterogeneity alongside meta results
+    save_heterogeneity(het_metrics, out_dir, summary=het_summary)
 
     for locus in locus_set.loci:
         out_prefix = f"{out_dir}/{locus.prefix}"
@@ -420,7 +553,7 @@ def meta_locus(args: Tuple[str, pd.DataFrame, str, str, bool]) -> List[List[Any]
                 f"chr{chrom}_{start}_{end}",
             ]
         )
-    return results
+    return results, het_summary
 
 
 def meta_loci(
@@ -472,6 +605,7 @@ def meta_loci(
     loci_info = pd.read_csv(inputs, sep="\t")
     loci_info = check_loci_info(loci_info)  # Validate input data
     new_loci_info = pd.DataFrame(columns=loci_info.columns)
+    all_het_summaries: List[pd.DataFrame] = []
 
     # Group loci by locus_id
     grouped_loci = list(loci_info.groupby("locus_id"))
@@ -494,11 +628,27 @@ def meta_loci(
                 (locus_id, locus_info, outdir, meta_method, calculate_lambda_s)
                 for locus_id, locus_info in grouped_loci
             ]
-            for result in pool.imap_unordered(meta_locus, args):  # type: ignore
+            for result, het_summary in pool.imap_unordered(meta_locus, args):  # type: ignore
                 # Update results
                 for i, res in enumerate(result):
                     new_loci_info.loc[len(new_loci_info)] = res
+                # Collect heterogeneity summaries
+                if het_summary is not None and not het_summary.empty:
+                    all_het_summaries.append(het_summary)
                 # Update progress
                 progress.advance(task)
 
     new_loci_info.to_csv(f"{outdir}/loci_info.txt", sep="\t", index=False)
+
+    # Save global heterogeneity summary
+    if all_het_summaries:
+        global_het = pd.concat(all_het_summaries, ignore_index=True)
+        cols = ["locus_id"] + [c for c in global_het.columns if c != "locus_id"]
+        global_het = global_het[cols]
+        global_het.to_csv(
+            f"{outdir}/heterogeneity.txt.gz",
+            sep="\t",
+            index=False,
+            float_format="%.6f",
+            compression="gzip",
+        )

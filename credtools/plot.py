@@ -1143,6 +1143,7 @@ def plot_snp_missingness_upset(
 
 def plot_locus_qc(
     locus_dir: Union[str, Path],
+    het_dir: Optional[Union[str, Path]] = None,
     output_file: Optional[Union[str, Path]] = None,
     figsize: Tuple[float, float] = (16, 12),
     dpi: int = 300,
@@ -1155,6 +1156,11 @@ def plot_locus_qc(
     ----------
     locus_dir : Union[str, Path]
         Directory containing locus QC files.
+    het_dir : Optional[Union[str, Path]]
+        Directory containing heterogeneity files (ld_decay, ld_4th_moment,
+        snp_missingness). If None, defaults to locus_dir. Use this when
+        heterogeneity files are saved separately from QC files (e.g., in the
+        meta output directory).
     output_file : Optional[Union[str, Path]]
         Output file path. If None, displays plot.
     figsize : Tuple[float, float]
@@ -1170,12 +1176,13 @@ def plot_locus_qc(
         Matplotlib figure object.
     """
     locus_dir = Path(locus_dir)
+    het_base = Path(het_dir) if het_dir else locus_dir
 
     # File paths
     expected_z_file = locus_dir / "expected_z.txt.gz"
-    ld_decay_file = locus_dir / "ld_decay.txt.gz"
-    ld_4th_file = locus_dir / "ld_4th_moment.txt.gz"
-    snp_miss_file = locus_dir / "snp_missingness.txt.gz"
+    ld_decay_file = het_base / "ld_decay.txt.gz"
+    ld_4th_file = het_base / "ld_4th_moment.txt.gz"
+    snp_miss_file = het_base / "snp_missingness.txt.gz"
 
     # Create subplot layout
     if include_upset:

@@ -12,19 +12,15 @@ import numpy as np
 import pandas as pd
 
 from credtools.cojo import conditional_selection
-from credtools.credibleset import CredibleSet, combine_creds, filter_credset_by_purity
+from credtools.credibleset import (CredibleSet, combine_creds,
+                                   filter_credset_by_purity)
 from credtools.locus import LocusSet, load_locus_set
-from credtools.meta import meta
+from credtools.meta import (compute_heterogeneity, heterogeneity_summary, meta,
+                            save_heterogeneity)
 from credtools.qc import locus_qc
-from credtools.wrappers import (
-    run_abf,
-    run_abf_cojo,
-    run_finemap,
-    run_multisusie,
-    run_rsparsepro,
-    run_susie,
-    run_susiex,
-)
+from credtools.wrappers import (run_abf, run_abf_cojo, run_finemap,
+                                run_multisusie, run_rsparsepro, run_susie,
+                                run_susiex)
 
 logger = logging.getLogger("CREDTOOLS")
 
@@ -612,6 +608,12 @@ def pipeline(
     try:
         locus_set = load_locus_set(loci_df, calculate_lambda_s=calculate_lambda_s)
         run_summary["total_loci"] = locus_set.n_loci
+
+        # Compute heterogeneity BEFORE meta combines data
+        het_metrics = compute_heterogeneity(locus_set)
+        het_summary = heterogeneity_summary(het_metrics, locus_set)
+        save_heterogeneity(het_metrics, outdir, summary=het_summary)
+        logger.info("Heterogeneity metrics computed and saved.")
 
         # meta-analysis
         locus_set = meta(locus_set, meta_method=meta_method)

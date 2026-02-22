@@ -10,14 +10,8 @@ from typing import Any, Dict, List, Optional, Tuple
 # import matplotlib.pyplot as plt  # Not used in this module
 import numpy as np
 import pandas as pd
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
+                           SpinnerColumn, TextColumn, TimeRemainingColumn)
 from scipy import stats
 from scipy.optimize import curve_fit, minimize_scalar
 
@@ -64,13 +58,8 @@ except ImportError:
 
 from credtools.constants import ColName
 from credtools.ldmatrix import LDMatrix
-from credtools.locus import (
-    Locus,
-    LocusSet,
-    check_loci_info,
-    intersect_sumstat_ld,
-    load_locus_set,
-)
+from credtools.locus import (Locus, LocusSet, check_loci_info,
+                             intersect_sumstat_ld, load_locus_set)
 
 logger = logging.getLogger("QC")
 
@@ -856,10 +845,10 @@ def locus_qc(
         - 'expected_z': kriging RSS results
         - 'dentist_s': Dentist-S test results
         - 'compare_maf': MAF comparison results
-        - 'ld_4th_moment': 4th moment of LD matrix
-        - 'ld_decay': LD decay analysis
-        - 'cochran_q': heterogeneity test (if multiple cohorts)
-        - 'snp_missingness': missingness analysis (if multiple cohorts)
+
+        Note: heterogeneity metrics (ld_4th_moment, ld_decay, cochran_q,
+        snp_missingness) are now computed before meta-analysis via
+        ``credtools.meta.compute_heterogeneity()``.
 
     Notes
     -----
@@ -909,13 +898,6 @@ def locus_qc(
     qc_metrics["expected_z"] = all_expected_z
     qc_metrics["dentist_s"] = all_dentist_s
     qc_metrics["compare_maf"] = all_compare_maf
-
-    qc_metrics["ld_4th_moment"] = ld_4th_moment(locus_set)
-    qc_metrics["ld_decay"] = ld_decay(locus_set)
-
-    if len(locus_set.loci) > 1:
-        qc_metrics["cochran_q"] = cochran_q(locus_set)
-        qc_metrics["snp_missingness"] = snp_missingness(locus_set)
 
     if out_dir is not None:
         os.makedirs(out_dir, exist_ok=True)
