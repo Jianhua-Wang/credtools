@@ -66,7 +66,9 @@ def _make_locus(
     r = r / np.outer(d, d)
     r = r.astype(np.float32)
 
-    ld_map = sumstats[[ColName.SNPID, ColName.CHR, ColName.BP, ColName.A1, ColName.A2]].copy()
+    ld_map = sumstats[
+        [ColName.SNPID, ColName.CHR, ColName.BP, ColName.A1, ColName.A2]
+    ].copy()
     if add_af2:
         ld_map["AF2"] = rng.uniform(0.1, 0.5, n_snps).astype(np.float32)
 
@@ -172,8 +174,17 @@ class TestMetaSumstats:
     def test_output_columns(self, two_population_locus_set):
         """Result DataFrame should have all required columns."""
         result = meta_sumstats(two_population_locus_set)
-        for col in [ColName.SNPID, ColName.BETA, ColName.SE, ColName.P, ColName.EAF,
-                     ColName.CHR, ColName.BP, ColName.EA, ColName.NEA]:
+        for col in [
+            ColName.SNPID,
+            ColName.BETA,
+            ColName.SE,
+            ColName.P,
+            ColName.EAF,
+            ColName.CHR,
+            ColName.BP,
+            ColName.EA,
+            ColName.NEA,
+        ]:
             assert col in result.columns, f"Missing column {col}"
 
     def test_snpid_union(self, two_population_locus_set):
@@ -189,7 +200,9 @@ class TestMetaSumstats:
         """Verify IVW formula by hand for a shared SNP."""
         loci = two_population_locus_set.loci
         # Pick the first SNP in common
-        common = set(loci[0].sumstats[ColName.SNPID]) & set(loci[1].sumstats[ColName.SNPID])
+        common = set(loci[0].sumstats[ColName.SNPID]) & set(
+            loci[1].sumstats[ColName.SNPID]
+        )
         snp = sorted(common)[0]
 
         row0 = loci[0].sumstats[loci[0].sumstats[ColName.SNPID] == snp].iloc[0]
@@ -214,15 +227,25 @@ class TestMetaSumstats:
     def test_eaf_sample_size_weighted(self, two_population_locus_set):
         """EAF should be weighted by sample size."""
         loci = two_population_locus_set.loci
-        common = set(loci[0].sumstats[ColName.SNPID]) & set(loci[1].sumstats[ColName.SNPID])
+        common = set(loci[0].sumstats[ColName.SNPID]) & set(
+            loci[1].sumstats[ColName.SNPID]
+        )
         snp = sorted(common)[0]
 
-        n_sum = sum(l.sample_size for l in loci)
+        n_sum = sum(loc.sample_size for loc in loci)
         w0 = loci[0].sample_size / n_sum
         w1 = loci[1].sample_size / n_sum
 
-        eaf0 = loci[0].sumstats.loc[loci[0].sumstats[ColName.SNPID] == snp, ColName.EAF].iloc[0]
-        eaf1 = loci[1].sumstats.loc[loci[1].sumstats[ColName.SNPID] == snp, ColName.EAF].iloc[0]
+        eaf0 = (
+            loci[0]
+            .sumstats.loc[loci[0].sumstats[ColName.SNPID] == snp, ColName.EAF]
+            .iloc[0]
+        )
+        eaf1 = (
+            loci[1]
+            .sumstats.loc[loci[1].sumstats[ColName.SNPID] == snp, ColName.EAF]
+            .iloc[0]
+        )
         expected_eaf = eaf0 * w0 + eaf1 * w1
 
         result = meta_sumstats(two_population_locus_set)
@@ -232,12 +255,22 @@ class TestMetaSumstats:
     def test_meta_se_smaller(self, same_population_locus_set):
         """Meta SE should be <= the smallest individual SE for shared SNPs."""
         loci = same_population_locus_set.loci
-        common = set(loci[0].sumstats[ColName.SNPID]) & set(loci[1].sumstats[ColName.SNPID])
+        common = set(loci[0].sumstats[ColName.SNPID]) & set(
+            loci[1].sumstats[ColName.SNPID]
+        )
         result = meta_sumstats(same_population_locus_set)
 
         for snp in sorted(common)[:5]:
-            se0 = loci[0].sumstats.loc[loci[0].sumstats[ColName.SNPID] == snp, ColName.SE].iloc[0]
-            se1 = loci[1].sumstats.loc[loci[1].sumstats[ColName.SNPID] == snp, ColName.SE].iloc[0]
+            se0 = (
+                loci[0]
+                .sumstats.loc[loci[0].sumstats[ColName.SNPID] == snp, ColName.SE]
+                .iloc[0]
+            )
+            se1 = (
+                loci[1]
+                .sumstats.loc[loci[1].sumstats[ColName.SNPID] == snp, ColName.SE]
+                .iloc[0]
+            )
             meta_se = result.loc[result[ColName.SNPID] == snp, ColName.SE].iloc[0]
             assert meta_se <= min(float(se0), float(se1)) + 1e-6
 
@@ -259,8 +292,8 @@ class TestMetaLds:
         """Matrix dimension should equal the union of SNPs."""
         loci = two_population_locus_set.loci
         all_snps = set()
-        for l in loci:
-            all_snps.update(l.ld.map[ColName.SNPID].values)
+        for loc in loci:
+            all_snps.update(loc.ld.map[ColName.SNPID].values)
         result = meta_lds(two_population_locus_set)
         assert result.r.shape[0] == len(all_snps)
         assert result.r.shape[1] == len(all_snps)
@@ -325,7 +358,7 @@ class TestMetaAll:
     def test_sample_size_sum(self, two_population_locus_set):
         """Sample size should be summed."""
         result = meta_all(two_population_locus_set)
-        expected = sum(l.sample_size for l in two_population_locus_set.loci)
+        expected = sum(loc.sample_size for loc in two_population_locus_set.loci)
         assert result.sample_size == expected
 
     def test_valueerror_start_mismatch(self, mismatched_start_locus_set):
@@ -488,7 +521,9 @@ class TestMetaLocus:
         assert res[4] == 18000  # sample_size = 10000 + 8000
 
     @patch("credtools.meta.load_locus_set")
-    def test_no_meta_creates_multiple(self, mock_load, tmp_path, two_population_locus_set):
+    def test_no_meta_creates_multiple(
+        self, mock_load, tmp_path, two_population_locus_set
+    ):
         """no_meta should create multiple result entries."""
         mock_load.return_value = two_population_locus_set
         locus_info = self._make_locus_info_df()
@@ -528,7 +563,9 @@ class TestMetaLoci:
         # Mock Pool to return fake results
         fake_result = (
             [[1, 1000, 3000, "EUR", 10000, "UKB", "/fake/prefix", "chr1_1000_3000"]],
-            pd.DataFrame({"popu": ["EUR"], "cohort": ["UKB"], "locus_id": ["chr1_1000_3000"]}),
+            pd.DataFrame(
+                {"popu": ["EUR"], "cohort": ["UKB"], "locus_id": ["chr1_1000_3000"]}
+            ),
         )
         mock_pool = MagicMock()
         mock_pool.__enter__ = MagicMock(return_value=mock_pool)
@@ -587,7 +624,9 @@ class TestMetaLoci:
         meta_loci(str(input_path), outdir, threads=1)
 
         assert os.path.exists(f"{outdir}/heterogeneity.txt.gz")
-        loaded = pd.read_csv(f"{outdir}/heterogeneity.txt.gz", sep="\t", compression="gzip")
+        loaded = pd.read_csv(
+            f"{outdir}/heterogeneity.txt.gz", sep="\t", compression="gzip"
+        )
         assert "locus_id" in loaded.columns
 
     @patch("credtools.meta.Pool")
@@ -677,7 +716,12 @@ class TestHeterogeneitySummaryEdgeCases:
         het_metrics = {
             "ld_4th_moment": pd.DataFrame({"OTHER_COL": [0.5]}),
             "ld_decay": pd.DataFrame(
-                {"cohort": ["EUR_UKB"], "distance_kb": [1.0], "r2_avg": [0.5], "decay_rate": [0.1]}
+                {
+                    "cohort": ["EUR_UKB"],
+                    "distance_kb": [1.0],
+                    "r2_avg": [0.5],
+                    "decay_rate": [0.1],
+                }
             ),
         }
         summary = heterogeneity_summary(het_metrics, locus_set)
