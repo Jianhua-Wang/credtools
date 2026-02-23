@@ -86,9 +86,7 @@ class TestRunAbfCojoSingleSignal:
 class TestRunAbfCojoMultipleSignals:
     """Tests for when COJO detects multiple signals."""
 
-    def test_multiple_signals_calls_conditional(
-        self, locus_with_af2, monkeypatch
-    ):
+    def test_multiple_signals_calls_conditional(self, locus_with_af2, monkeypatch):
         """Multiple signals should run conditional ABF analysis."""
         snpids = locus_with_af2.sumstats[ColName.SNPID].tolist()
         monkeypatch.setattr(
@@ -97,12 +95,14 @@ class TestRunAbfCojoMultipleSignals:
         )
         # Mock COJO class to avoid cojopy dependency complexity
         mock_cojo = MagicMock()
-        cond_result = pd.DataFrame({
-            "SNP": snpids[:10],
-            "cond_beta": np.random.randn(10) * 0.1,
-            "cond_se": np.abs(np.random.randn(10) * 0.02) + 0.001,
-            "cond_p": np.random.uniform(1e-10, 1e-8, 10),
-        })
+        cond_result = pd.DataFrame(
+            {
+                "SNP": snpids[:10],
+                "cond_beta": np.random.randn(10) * 0.1,
+                "cond_se": np.abs(np.random.randn(10) * 0.02) + 0.001,
+                "cond_p": np.random.uniform(1e-10, 1e-8, 10),
+            }
+        )
         mock_cojo.run_conditional_analysis.return_value = cond_result
         monkeypatch.setattr(
             "credtools.wrappers.abf_cojo.COJO",
@@ -120,12 +120,14 @@ class TestRunAbfCojoMultipleSignals:
             lambda *args, **kwargs: _make_cojo_results(snpids, n_signals=2),
         )
         mock_cojo = MagicMock()
-        cond_result = pd.DataFrame({
-            "SNP": snpids[:10],
-            "cond_beta": np.random.randn(10) * 0.1,
-            "cond_se": np.abs(np.random.randn(10) * 0.02) + 0.001,
-            "cond_p": np.random.uniform(1e-10, 1e-8, 10),
-        })
+        cond_result = pd.DataFrame(
+            {
+                "SNP": snpids[:10],
+                "cond_beta": np.random.randn(10) * 0.1,
+                "cond_se": np.abs(np.random.randn(10) * 0.02) + 0.001,
+                "cond_p": np.random.uniform(1e-10, 1e-8, 10),
+            }
+        )
         mock_cojo.run_conditional_analysis.return_value = cond_result
         monkeypatch.setattr(
             "credtools.wrappers.abf_cojo.COJO",
@@ -148,12 +150,14 @@ class TestRunAbfCojoNoAF2:
             lambda *args, **kwargs: _make_cojo_results(snpids, n_signals=2),
         )
         mock_cojo = MagicMock()
-        cond_result = pd.DataFrame({
-            "SNP": snpids[:10],
-            "cond_beta": np.random.randn(10) * 0.1,
-            "cond_se": np.abs(np.random.randn(10) * 0.02) + 0.001,
-            "cond_p": np.random.uniform(1e-10, 1e-8, 10),
-        })
+        cond_result = pd.DataFrame(
+            {
+                "SNP": snpids[:10],
+                "cond_beta": np.random.randn(10) * 0.1,
+                "cond_se": np.abs(np.random.randn(10) * 0.02) + 0.001,
+                "cond_p": np.random.uniform(1e-10, 1e-8, 10),
+            }
+        )
         mock_cojo.run_conditional_analysis.return_value = cond_result
         monkeypatch.setattr(
             "credtools.wrappers.abf_cojo.COJO",
@@ -170,12 +174,14 @@ class TestCreateConditionalLocus:
     def test_creates_new_locus(self, locus_significant):
         """Should create a new locus with conditional stats."""
         snpids = locus_significant.sumstats[ColName.SNPID].tolist()
-        cond_results = pd.DataFrame({
-            "SNP": snpids,
-            "cond_beta": np.random.randn(len(snpids)) * 0.1,
-            "cond_se": np.abs(np.random.randn(len(snpids)) * 0.02) + 0.001,
-            "cond_p": np.random.uniform(1e-10, 1e-8, len(snpids)),
-        })
+        cond_results = pd.DataFrame(
+            {
+                "SNP": snpids,
+                "cond_beta": np.random.randn(len(snpids)) * 0.1,
+                "cond_se": np.abs(np.random.randn(len(snpids)) * 0.02) + 0.001,
+                "cond_p": np.random.uniform(1e-10, 1e-8, len(snpids)),
+            }
+        )
         new_locus = _create_conditional_locus(
             locus_significant, cond_results, snpids[0]
         )
@@ -183,15 +189,17 @@ class TestCreateConditionalLocus:
         assert len(new_locus.sumstats) == len(snpids)
 
     def test_drops_snps_not_in_results(self, locus_significant):
-        """SNPs not in conditional results should be dropped."""
+        """Verify SNPs not in conditional results are dropped."""
         snpids = locus_significant.sumstats[ColName.SNPID].tolist()
         half = len(snpids) // 2
-        cond_results = pd.DataFrame({
-            "SNP": snpids[:half],
-            "cond_beta": np.random.randn(half) * 0.1,
-            "cond_se": np.abs(np.random.randn(half) * 0.02) + 0.001,
-            "cond_p": np.random.uniform(1e-10, 1e-8, half),
-        })
+        cond_results = pd.DataFrame(
+            {
+                "SNP": snpids[:half],
+                "cond_beta": np.random.randn(half) * 0.1,
+                "cond_se": np.abs(np.random.randn(half) * 0.02) + 0.001,
+                "cond_p": np.random.uniform(1e-10, 1e-8, half),
+            }
+        )
         new_locus = _create_conditional_locus(
             locus_significant, cond_results, snpids[0]
         )

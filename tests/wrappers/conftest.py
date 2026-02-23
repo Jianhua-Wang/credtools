@@ -153,11 +153,11 @@ def locus_unmatched():
 
 @pytest.fixture
 def locus_set_two_pop():
-    """LocusSet with 2 populations."""
+    """Create LocusSet with 2 populations."""
     return _make_locus_set(n_pop=2, p_range=(1e-12, 1e-9))
 
 
 @pytest.fixture
 def locus_set_three_pop():
-    """LocusSet with 3 populations."""
+    """Create LocusSet with 3 populations."""
     return _make_locus_set(n_pop=3, p_range=(1e-12, 1e-9))

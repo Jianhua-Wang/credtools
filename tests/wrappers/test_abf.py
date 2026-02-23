@@ -91,7 +91,9 @@ class TestRunAbfEdgeCases:
             lead_snp = lead_snp[0]
         sumstats = locus_significant.original_sumstats
         cs_mask = sumstats[ColName.SNPID].isin(cs_snps)
-        expected_lead = sumstats.loc[sumstats[cs_mask][ColName.P].idxmin(), ColName.SNPID]
+        expected_lead = sumstats.loc[
+            sumstats[cs_mask][ColName.P].idxmin(), ColName.SNPID
+        ]
         assert lead_snp == expected_lead
 
     def test_purity_calculated_with_ld(self, locus_significant):

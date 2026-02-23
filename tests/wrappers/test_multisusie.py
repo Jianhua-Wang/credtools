@@ -37,8 +37,8 @@ def _make_mock_multisusie_rss(n_variants, cs_indices=None, purity_values=None):
                 pip[cs_indices[0][0]] = 0.8
 
         cs_list = cs_indices if cs_indices else []
-        purity_arr = np.array(purity_values) if purity_values else np.full(
-            len(cs_list), np.nan
+        purity_arr = (
+            np.array(purity_values) if purity_values else np.full(len(cs_list), np.nan)
         )
         # include_mask: True for valid CS, False otherwise
         include_mask = [True] * len(cs_list)
@@ -55,7 +55,7 @@ class TestRunMultisusieBasic:
     """Basic MultiSuSiE functionality tests."""
 
     def test_basic_call_two_pop(self, locus_set_two_pop, monkeypatch):
-        """MultiSuSiE returns a CredibleSet for 2-population LocusSet."""
+        """Verify MultiSuSiE returns a CredibleSet for 2-population LocusSet."""
         n = 20  # expected union size (same SNPs across pops)
         monkeypatch.setattr(
             "credtools.wrappers.multisusie.multisusie_rss",
@@ -66,7 +66,7 @@ class TestRunMultisusieBasic:
         assert result.tool == Method.MULTISUSIE
 
     def test_output_structure(self, locus_set_two_pop, monkeypatch):
-        """MultiSuSiE result has correct structure."""
+        """Verify MultiSuSiE result has correct structure."""
         n = 20
         monkeypatch.setattr(
             "credtools.wrappers.multisusie.multisusie_rss",
@@ -84,9 +84,7 @@ class TestRunMultisusieBasic:
             "credtools.wrappers.multisusie.multisusie_rss",
             _make_mock_multisusie_rss(n, cs_indices=[[0]], purity_values=[0.9]),
         )
-        result = run_multisusie(
-            locus_set_two_pop, max_causal=5, coverage=0.99, rho=0.8
-        )
+        result = run_multisusie(locus_set_two_pop, max_causal=5, coverage=0.99, rho=0.8)
         assert result.parameters["max_causal"] == 5
         assert result.parameters["coverage"] == 0.99
         assert result.parameters["rho"] == 0.8
@@ -184,9 +182,7 @@ class TestRunMultisusieCS:
                 ),
             )
 
-        monkeypatch.setattr(
-            "credtools.wrappers.multisusie.multisusie_rss", mock_fn
-        )
+        monkeypatch.setattr("credtools.wrappers.multisusie.multisusie_rss", mock_fn)
         result = run_multisusie(locus_set_two_pop)
         assert result.n_cs == 1
 

@@ -74,7 +74,7 @@ class TestRunSusieBasic:
     """Basic SuSiE functionality tests."""
 
     def test_basic_call(self, locus_significant, monkeypatch):
-        """SuSiE returns a CredibleSet for significant locus."""
+        """Verify SuSiE returns a CredibleSet for significant locus."""
         monkeypatch.setattr(
             "credtools.wrappers.susie.susie_rss", _mock_susie_rss_with_cs
         )
@@ -83,7 +83,7 @@ class TestRunSusieBasic:
         assert result.tool == Method.SUSIE
 
     def test_output_structure(self, locus_significant, monkeypatch):
-        """SuSiE result has correct structure."""
+        """Verify SuSiE result has correct structure."""
         monkeypatch.setattr(
             "credtools.wrappers.susie.susie_rss", _mock_susie_rss_with_cs
         )
@@ -139,9 +139,7 @@ class TestRunSusieCS:
 
     def test_no_cs_found(self, locus_significant, monkeypatch):
         """Should return n_cs=0 when susie_rss finds no credible sets."""
-        monkeypatch.setattr(
-            "credtools.wrappers.susie.susie_rss", _mock_susie_rss_no_cs
-        )
+        monkeypatch.setattr("credtools.wrappers.susie.susie_rss", _mock_susie_rss_no_cs)
         result = run_susie(locus_significant)
         assert result.n_cs == 0
         assert result.snps == []

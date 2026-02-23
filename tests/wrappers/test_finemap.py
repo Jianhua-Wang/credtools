@@ -33,23 +33,25 @@ def _make_mock_finemap_run_tool(temp_dir_ref, snpids, n_causal=1):
         temp_dir_ref.append(td)
 
         # Write .snp file
-        snp_data = pd.DataFrame({
-            "index": range(len(snpids)),
-            "rsid": snpids,
-            "chromosome": [1] * len(snpids),
-            "position": [1000 + i * 100 for i in range(len(snpids))],
-            "allele1": ["A"] * len(snpids),
-            "allele2": ["G"] * len(snpids),
-            "maf": [0.3] * len(snpids),
-            "beta": [0.1] * len(snpids),
-            "se": [0.02] * len(snpids),
-            "prob": np.zeros(len(snpids)),
-            "log10bf": np.zeros(len(snpids)),
-            "mean": np.zeros(len(snpids)),
-            "sd": np.zeros(len(snpids)),
-            "mean_incl": np.zeros(len(snpids)),
-            "sd_incl": np.zeros(len(snpids)),
-        })
+        snp_data = pd.DataFrame(
+            {
+                "index": range(len(snpids)),
+                "rsid": snpids,
+                "chromosome": [1] * len(snpids),
+                "position": [1000 + i * 100 for i in range(len(snpids))],
+                "allele1": ["A"] * len(snpids),
+                "allele2": ["G"] * len(snpids),
+                "maf": [0.3] * len(snpids),
+                "beta": [0.1] * len(snpids),
+                "se": [0.02] * len(snpids),
+                "prob": np.zeros(len(snpids)),
+                "log10bf": np.zeros(len(snpids)),
+                "mean": np.zeros(len(snpids)),
+                "sd": np.zeros(len(snpids)),
+                "mean_incl": np.zeros(len(snpids)),
+                "sd_incl": np.zeros(len(snpids)),
+            }
+        )
         snp_data.to_csv(f"{td}/finemap.snp", sep=" ", index=False)
 
         # Write .config file
@@ -78,9 +80,7 @@ def _make_mock_finemap_run_tool(temp_dir_ref, snpids, n_causal=1):
             cred_df = pd.DataFrame(cred_data)
             with open(f"{td}/finemap.cred{nc}", "w") as f:
                 f.write(f"# posterior probability of {nc} causal SNP(s) = 0.80\n")
-            cred_df.to_csv(
-                f"{td}/finemap.cred{nc}", sep=" ", index=False, mode="a"
-            )
+            cred_df.to_csv(f"{td}/finemap.cred{nc}", sep=" ", index=False, mode="a")
 
     return mock_run_tool
 
@@ -92,11 +92,13 @@ def _make_mock_finemap_empty_cred(temp_dir_ref, snpids):
         td = os.path.dirname(log_file)
         temp_dir_ref.append(td)
 
-        snp_data = pd.DataFrame({
-            "rsid": snpids,
-            "chromosome": [1] * len(snpids),
-            "position": [1000 + i * 100 for i in range(len(snpids))],
-        })
+        snp_data = pd.DataFrame(
+            {
+                "rsid": snpids,
+                "chromosome": [1] * len(snpids),
+                "position": [1000 + i * 100 for i in range(len(snpids))],
+            }
+        )
         snp_data.to_csv(f"{td}/finemap.snp", sep=" ", index=False)
 
         with open(f"{td}/finemap.config", "w") as f:

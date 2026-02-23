@@ -43,10 +43,12 @@ def _make_mock_susiex_run_tool(
 
         if no_cs:
             # Only SNP and PIP columns (no credible set found)
-            pip_df = pd.DataFrame({
-                "SNP": snpids,
-                "PIP": np.random.uniform(0, 0.1, len(snpids)),
-            })
+            pip_df = pd.DataFrame(
+                {
+                    "SNP": snpids,
+                    "PIP": np.random.uniform(0, 0.1, len(snpids)),
+                }
+            )
             pip_df.to_csv(snp_file, sep="\t", index=False)
             # Still need .cs file to exist
             pd.DataFrame({"CS_ID": [], "SNP": []}).to_csv(
@@ -70,7 +72,7 @@ def _make_mock_susiex_run_tool(
             cs_rows = []
             for cs_i in range(1, n_cs + 1):
                 start_idx = (cs_i - 1) * 3
-                cs_snp_ids = snpids[start_idx: start_idx + 3]
+                cs_snp_ids = snpids[start_idx : start_idx + 3]
                 for snp in cs_snp_ids:
                     cs_rows.append({"CS_ID": cs_i, "SNP": snp})
             cs_df = pd.DataFrame(cs_rows)
@@ -91,7 +93,7 @@ class TestRunSusiexBasic:
     """Basic SuSiEx functionality tests."""
 
     def test_basic_call(self, locus_set_two_pop, monkeypatch):
-        """SuSiEx returns a CredibleSet."""
+        """Verify SuSiEx returns a CredibleSet."""
         snpids = locus_set_two_pop.loci[0].sumstats[ColName.SNPID].tolist()
         monkeypatch.setattr(
             "credtools.wrappers.susiex.tool_manager.run_tool",
@@ -102,7 +104,7 @@ class TestRunSusiexBasic:
         assert result.tool == Method.SUSIEX
 
     def test_output_structure(self, locus_set_two_pop, monkeypatch):
-        """SuSiEx result has correct structure."""
+        """Verify SuSiEx result has correct structure."""
         snpids = locus_set_two_pop.loci[0].sumstats[ColName.SNPID].tolist()
         monkeypatch.setattr(
             "credtools.wrappers.susiex.tool_manager.run_tool",
