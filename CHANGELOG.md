@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.3] (2026-02-22)
+
+### Fixed
+- Update uv.lock after version bump
+
 ## [0.4.2] (2026-02-22)
 
 ### Added
