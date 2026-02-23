@@ -119,6 +119,144 @@ def precomputed_qc_metrics(single_locus_set):
     return locus_qc(single_locus_set)
 
 
+def _make_locus_with_disjoint_ld(
+    popu: str = "AFR",
+    cohort: str = "MGBB",
+    seed: int = 999,
+    n_snps: int = 20,
+    sample_size: int = 10000,
+) -> Locus:
+    """Create a locus where sumstats and LD map have completely disjoint SNP IDs."""
+    rng = np.random.default_rng(seed)
+    bps = np.arange(1000, 1000 + n_snps * 100, 100)
+
+    # sumstats SNPs use "A-G" alleles
+    snpids_sumstats = [f"1-{bp}-A-G" for bp in bps]
+    eaf = rng.uniform(0.1, 0.5, n_snps).astype(np.float32)
+    sumstats = pd.DataFrame(
+        {
+            ColName.SNPID: snpids_sumstats,
+            ColName.CHR: np.int8(1),
+            ColName.BP: bps.astype(np.int32),
+            ColName.EA: ["A"] * n_snps,
+            ColName.NEA: ["G"] * n_snps,
+            ColName.EAF: eaf,
+            ColName.MAF: np.minimum(eaf, 1 - eaf),
+            ColName.A1: ["A"] * n_snps,
+            ColName.A2: ["G"] * n_snps,
+            ColName.BETA: rng.normal(0, 0.1, n_snps).astype(np.float32),
+            ColName.SE: rng.uniform(0.01, 0.05, n_snps).astype(np.float32),
+            ColName.P: rng.uniform(1e-10, 0.05, n_snps).astype(np.float64),
+        }
+    )
+
+    # LD map SNPs use completely different IDs ("C-T" alleles)
+    snpids_ld = [f"1-{bp}-C-T" for bp in bps]
+    A = rng.normal(size=(n_snps, n_snps))
+    r = A @ A.T
+    d = np.sqrt(np.diag(r))
+    r = r / np.outer(d, d)
+    r = r.astype(np.float32)
+
+    ld_map = pd.DataFrame(
+        {
+            ColName.SNPID: snpids_ld,
+            ColName.CHR: np.int8(1),
+            ColName.BP: bps.astype(np.int32),
+            ColName.A1: ["C"] * n_snps,
+            ColName.A2: ["T"] * n_snps,
+        }
+    )
+    ld = LDMatrix(ld_map, r)
+
+    return Locus(
+        popu=popu,
+        cohort=cohort,
+        sample_size=sample_size,
+        sumstats=sumstats,
+        locus_start=int(bps[0]),
+        locus_end=int(bps[-1]),
+        ld=ld,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Fixtures for edge cases
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def locus_set_with_no_ld_overlap():
+    """Create LocusSet where one cohort has no overlap between sumstats and LD."""
+    good1 = _make_locus("EUR", "UKB", seed=42)
+    good2 = _make_locus("EAS", "BBJ", seed=456)
+    bad = _make_locus_with_disjoint_ld("AFR", "MGBB", seed=999)
+    return LocusSet([good1, good2, bad])
+
+
+@pytest.fixture
+def locus_set_all_no_ld_overlap():
+    """Create LocusSet where ALL cohorts have no overlap between sumstats and LD."""
+    bad1 = _make_locus_with_disjoint_ld("AFR", "MGBB", seed=999)
+    bad2 = _make_locus_with_disjoint_ld("EUR", "UKB2", seed=888)
+    return LocusSet([bad1, bad2])
+
+
+# ===================================================================
+# TestHeterogeneityEdgeCases
+# ===================================================================
+
+
+class TestHeterogeneityEdgeCases:
+    """Tests for ld_4th_moment / snp_missingness when some cohorts have no LD overlap."""
+
+    def test_ld_4th_moment_skips_no_overlap_cohort(self, locus_set_with_no_ld_overlap):
+        """Cohort with no LD overlap is skipped; valid cohorts produce results."""
+        from credtools.qc import ld_4th_moment
+
+        result = ld_4th_moment(locus_set_with_no_ld_overlap)
+        assert isinstance(result, pd.DataFrame)
+        # The bad cohort (AFR_MGBB) should be absent from columns
+        assert "AFR_MGBB" not in result.columns
+        # The two good cohorts should still be present
+        assert "EUR_UKB" in result.columns
+        assert "EAS_BBJ" in result.columns
+
+    def test_ld_4th_moment_all_no_overlap_returns_empty(
+        self, locus_set_all_no_ld_overlap
+    ):
+        """When all cohorts have no LD overlap, return an empty DataFrame."""
+        from credtools.qc import ld_4th_moment
+
+        result = ld_4th_moment(locus_set_all_no_ld_overlap)
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
+
+    def test_snp_missingness_skips_no_overlap_cohort(
+        self, locus_set_with_no_ld_overlap
+    ):
+        """Cohort with no LD overlap is skipped; valid cohorts produce results."""
+        from credtools.qc import snp_missingness
+
+        result = snp_missingness(locus_set_with_no_ld_overlap)
+        assert isinstance(result, pd.DataFrame)
+        # The bad cohort (AFR_MGBB) should be absent from columns
+        assert "AFR_MGBB" not in result.columns
+        # The two good cohorts should still be present
+        assert "EUR_UKB" in result.columns
+        assert "EAS_BBJ" in result.columns
+
+    def test_snp_missingness_all_no_overlap_returns_empty(
+        self, locus_set_all_no_ld_overlap
+    ):
+        """When all cohorts have no LD overlap, return an empty DataFrame."""
+        from credtools.qc import snp_missingness
+
+        result = snp_missingness(locus_set_all_no_ld_overlap)
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
+
+
 # ===================================================================
 # TestGetEigen
 # ===================================================================

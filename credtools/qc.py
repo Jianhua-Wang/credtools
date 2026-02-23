@@ -562,11 +562,22 @@ def snp_missingness(locus_set: LocusSet) -> pd.DataFrame:
     """
     missingness_df = []
     for locus in locus_set.loci:
-        loc = intersect_sumstat_ld(locus)
+        try:
+            loc = intersect_sumstat_ld(locus)
+        except ValueError:
+            logger.warning(
+                "Skipping cohort %s_%s in snp_missingness: "
+                "no overlap between sumstats and LD matrix.",
+                locus.popu,
+                locus.cohort,
+            )
+            continue
         loc = loc.sumstats[[ColName.SNPID]].copy()
         loc[f"{locus.popu}_{locus.cohort}"] = 1
         loc.set_index(ColName.SNPID, inplace=True)
         missingness_df.append(loc)
+    if not missingness_df:
+        return pd.DataFrame()
     missingness_df = pd.concat(missingness_df, axis=1)
     missingness_df.fillna(0, inplace=True)
     # log warning if missing rate > 0.1
@@ -615,22 +626,55 @@ def ld_4th_moment(locus_set: LocusSet) -> pd.DataFrame:
     The function intersects variants across all cohorts to ensure fair comparison.
     """
     ld_4th_res = []
-    # intersect between loci
-    overlap_snps = set(locus_set.loci[0].sumstats[ColName.SNPID])
-    for locus in locus_set.loci[1:]:
-        overlap_snps = overlap_snps.intersection(set(locus.sumstats[ColName.SNPID]))
+    # Determine valid cohorts: each cohort must have sumstats ∩ ld.map overlap
+    valid_loci = []
     for locus in locus_set.loci:
+        cohort_valid_snps = set(locus.sumstats[ColName.SNPID]) & set(
+            locus.ld.map[ColName.SNPID]
+        )
+        if cohort_valid_snps:
+            valid_loci.append(locus)
+        else:
+            logger.warning(
+                "Skipping cohort %s_%s in ld_4th_moment: "
+                "no overlap between sumstats and LD matrix.",
+                locus.popu,
+                locus.cohort,
+            )
+    if not valid_loci:
+        return pd.DataFrame()
+    # intersect between valid loci — consider both sumstats AND ld.map
+    overlap_snps = set(valid_loci[0].sumstats[ColName.SNPID]) & set(
+        valid_loci[0].ld.map[ColName.SNPID]
+    )
+    for locus in valid_loci[1:]:
+        locus_valid = set(locus.sumstats[ColName.SNPID]) & set(
+            locus.ld.map[ColName.SNPID]
+        )
+        overlap_snps = overlap_snps & locus_valid
+    for locus in valid_loci:
         locus = locus.copy()
         locus.sumstats = locus.sumstats[
             locus.sumstats[ColName.SNPID].isin(overlap_snps)
         ]
-        locus = intersect_sumstat_ld(locus)
+        try:
+            locus = intersect_sumstat_ld(locus)
+        except (ValueError, IndexError):
+            logger.warning(
+                "Skipping cohort %s_%s in ld_4th_moment: "
+                "no overlap after intersection.",
+                locus.popu,
+                locus.cohort,
+            )
+            continue
         r_4th = pd.Series(
             index=locus.ld.map[ColName.SNPID], data=np.power(locus.ld.r, 4).sum(axis=0)
         )
         r_4th = r_4th - 1
         r_4th.name = f"{locus.popu}_{locus.cohort}"
         ld_4th_res.append(r_4th)
+    if not ld_4th_res:
+        return pd.DataFrame()
     return pd.concat(ld_4th_res, axis=1)
 
 
