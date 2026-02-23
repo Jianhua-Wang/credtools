@@ -19,6 +19,7 @@ from credtools.meta import (
     meta_loci,
     meta_locus,
     meta_sumstats,
+    recover_completed_locus,
 )
 
 
@@ -726,3 +727,304 @@ class TestHeterogeneitySummaryEdgeCases:
         }
         summary = heterogeneity_summary(het_metrics, locus_set)
         assert pd.isna(summary.iloc[0]["ld_4th_moment_mean"])
+
+
+# ===========================================================================
+# TestRecoverCompletedLocus
+# ===========================================================================
+
+
+class TestRecoverCompletedLocus:
+    """Tests for recover_completed_locus function."""
+
+    def _make_prev_loci_info(self):
+        """Create a prev_loci_info DataFrame with one locus having two prefixes."""
+        return pd.DataFrame(
+            {
+                "chr": [1, 1],
+                "start": [1000, 1000],
+                "end": [3000, 3000],
+                "popu": ["EUR", "AFR"],
+                "sample_size": [10000, 8000],
+                "cohort": ["UKB", "MVP"],
+                "prefix": [
+                    "/out/chr1_1000_3000/EUR_UKB",
+                    "/out/chr1_1000_3000/AFR_MVP",
+                ],
+                "locus_id": ["chr1_1000_3000", "chr1_1000_3000"],
+            }
+        )
+
+    def test_returns_none_when_no_prev_info(self):
+        """prev_loci_info=None should return None."""
+        result = recover_completed_locus("chr1_1000_3000", "/fake", None)
+        assert result is None
+
+    def test_returns_none_when_dir_missing(self, tmp_path):
+        """Locus directory does not exist should return None."""
+        prev = self._make_prev_loci_info()
+        result = recover_completed_locus(
+            "chr1_1000_3000", str(tmp_path / "nonexistent"), prev
+        )
+        assert result is None
+
+    def test_returns_none_when_files_incomplete(self, tmp_path):
+        """Missing one of the 3 required files should return None."""
+        outdir = str(tmp_path)
+        locus_dir = tmp_path / "chr1_1000_3000"
+        locus_dir.mkdir()
+
+        # Update prefixes to point to tmp_path
+        prev = pd.DataFrame(
+            {
+                "chr": [1],
+                "start": [1000],
+                "end": [3000],
+                "popu": ["EUR"],
+                "sample_size": [10000],
+                "cohort": ["UKB"],
+                "prefix": [str(locus_dir / "EUR_UKB")],
+                "locus_id": ["chr1_1000_3000"],
+            }
+        )
+
+        # Create only sumstats.gz, missing ld.npz and ldmap.gz
+        (locus_dir / "EUR_UKB.sumstats.gz").write_bytes(b"fake")
+
+        result = recover_completed_locus("chr1_1000_3000", outdir, prev)
+        assert result is None
+
+    def test_returns_none_when_locus_id_not_in_prev(self, tmp_path):
+        """Locus id not found in prev should return None."""
+        prev = self._make_prev_loci_info()
+        locus_dir = tmp_path / "chr2_5000_6000"
+        locus_dir.mkdir()
+
+        result = recover_completed_locus("chr2_5000_6000", str(tmp_path), prev)
+        assert result is None
+
+    def test_returns_results_when_complete(self, tmp_path):
+        """All 3 files present should return (results, het_summary)."""
+        outdir = str(tmp_path)
+        locus_dir = tmp_path / "chr1_1000_3000"
+        locus_dir.mkdir()
+
+        prefix = str(locus_dir / "EUR_UKB")
+        prev = pd.DataFrame(
+            {
+                "chr": [1],
+                "start": [1000],
+                "end": [3000],
+                "popu": ["EUR"],
+                "sample_size": [10000],
+                "cohort": ["UKB"],
+                "prefix": [prefix],
+                "locus_id": ["chr1_1000_3000"],
+            }
+        )
+
+        # Create all 3 required files
+        for ext in [".sumstats.gz", ".ld.npz", ".ldmap.gz"]:
+            (locus_dir / f"EUR_UKB{ext}").write_bytes(b"fake")
+
+        # Create heterogeneity file
+        het_df = pd.DataFrame(
+            {"popu": ["EUR"], "cohort": ["UKB"], "locus_id": ["chr1_1000_3000"]}
+        )
+        het_df.to_csv(
+            str(locus_dir / "heterogeneity.txt.gz"),
+            sep="\t",
+            index=False,
+            compression="gzip",
+        )
+
+        result = recover_completed_locus("chr1_1000_3000", outdir, prev)
+        assert result is not None
+        results, het_summary = result
+        assert len(results) == 1
+        assert results[0][0] == 1  # chr
+        assert results[0][3] == "EUR"  # popu
+        assert results[0][4] == 10000  # sample_size
+        assert results[0][7] == "chr1_1000_3000"  # locus_id
+        assert not het_summary.empty
+
+    def test_returns_empty_het_when_no_het_file(self, tmp_path):
+        """No heterogeneity.txt.gz should return empty DataFrame."""
+        outdir = str(tmp_path)
+        locus_dir = tmp_path / "chr1_1000_3000"
+        locus_dir.mkdir()
+
+        prefix = str(locus_dir / "EUR_UKB")
+        prev = pd.DataFrame(
+            {
+                "chr": [1],
+                "start": [1000],
+                "end": [3000],
+                "popu": ["EUR"],
+                "sample_size": [10000],
+                "cohort": ["UKB"],
+                "prefix": [prefix],
+                "locus_id": ["chr1_1000_3000"],
+            }
+        )
+
+        for ext in [".sumstats.gz", ".ld.npz", ".ldmap.gz"]:
+            (locus_dir / f"EUR_UKB{ext}").write_bytes(b"fake")
+
+        result = recover_completed_locus("chr1_1000_3000", outdir, prev)
+        assert result is not None
+        _, het_summary = result
+        assert het_summary.empty
+
+
+# ===========================================================================
+# TestMetaLoci – skip tests
+# ===========================================================================
+
+
+class TestMetaLociSkip:
+    """Tests for meta_loci skip parameter."""
+
+    def _setup_fake_pool(self, mock_pool_cls, fake_results):
+        """Configure mock Pool to return fake_results."""
+        mock_pool = MagicMock()
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool.imap_unordered.return_value = iter(fake_results)
+        mock_pool_cls.return_value = mock_pool
+        return mock_pool
+
+    @patch("credtools.meta.meta_locus")
+    @patch("credtools.meta.recover_completed_locus")
+    @patch("credtools.meta.Pool")
+    @patch("credtools.meta.check_loci_info")
+    def test_skip_completed_locus(
+        self, mock_check, mock_pool_cls, mock_recover, mock_meta_locus, tmp_path
+    ):
+        """skip=True: completed locus should not go through Pool."""
+        loci_info = pd.DataFrame(
+            {
+                "prefix": ["/fake/EUR_UKB", "/fake/AFR_MVP"],
+                "popu": ["EUR", "AFR"],
+                "cohort": ["UKB", "MVP"],
+                "sample_size": [10000, 8000],
+                "chr": [1, 2],
+                "start": [1000, 5000],
+                "end": [3000, 7000],
+                "locus_id": ["chr1_1000_3000", "chr2_5000_7000"],
+            }
+        )
+        mock_check.return_value = loci_info
+
+        # First locus is recovered, second is not
+        recovered_results = [
+            [1, 1000, 3000, "EUR", 10000, "UKB", "/fake/prefix1", "chr1_1000_3000"]
+        ]
+        recovered_het = pd.DataFrame(
+            {"popu": ["EUR"], "cohort": ["UKB"], "locus_id": ["chr1_1000_3000"]}
+        )
+        mock_recover.side_effect = [
+            (recovered_results, recovered_het),  # chr1 recovered
+            None,  # chr2 not recovered
+        ]
+
+        # Pool processes the second locus
+        pool_result = (
+            [[2, 5000, 7000, "AFR", 8000, "MVP", "/fake/prefix2", "chr2_5000_7000"]],
+            pd.DataFrame(
+                {"popu": ["AFR"], "cohort": ["MVP"], "locus_id": ["chr2_5000_7000"]}
+            ),
+        )
+        mock_pool = self._setup_fake_pool(mock_pool_cls, [pool_result])
+
+        # Write prev loci_info.txt so skip can read it
+        outdir = str(tmp_path / "output")
+        os.makedirs(outdir, exist_ok=True)
+        loci_info.to_csv(f"{outdir}/loci_info.txt", sep="\t", index=False)
+
+        input_path = tmp_path / "input.txt"
+        loci_info.to_csv(str(input_path), sep="\t", index=False)
+
+        meta_loci(str(input_path), outdir, threads=1, skip=True)
+
+        # Verify loci_info.txt has both loci
+        result_df = pd.read_csv(f"{outdir}/loci_info.txt", sep="\t")
+        assert len(result_df) == 2
+        assert set(result_df["locus_id"]) == {"chr1_1000_3000", "chr2_5000_7000"}
+
+    @patch("credtools.meta.recover_completed_locus")
+    @patch("credtools.meta.Pool")
+    @patch("credtools.meta.check_loci_info")
+    def test_skip_false_processes_all(
+        self, mock_check, mock_pool_cls, mock_recover, tmp_path
+    ):
+        """skip=False (default): recover should not be called."""
+        loci_info = pd.DataFrame(
+            {
+                "prefix": ["/fake/EUR_UKB"],
+                "popu": ["EUR"],
+                "cohort": ["UKB"],
+                "sample_size": [10000],
+                "chr": [1],
+                "start": [1000],
+                "end": [3000],
+                "locus_id": ["chr1_1000_3000"],
+            }
+        )
+        mock_check.return_value = loci_info
+
+        fake_result = (
+            [[1, 1000, 3000, "EUR", 10000, "UKB", "/fake/prefix", "chr1_1000_3000"]],
+            pd.DataFrame(
+                {"popu": ["EUR"], "cohort": ["UKB"], "locus_id": ["chr1_1000_3000"]}
+            ),
+        )
+        self._setup_fake_pool(mock_pool_cls, [fake_result])
+
+        input_path = tmp_path / "input.txt"
+        loci_info.to_csv(str(input_path), sep="\t", index=False)
+
+        outdir = str(tmp_path / "output")
+        meta_loci(str(input_path), outdir, threads=1, skip=False)
+
+        mock_recover.assert_not_called()
+
+    @patch("credtools.meta.recover_completed_locus")
+    @patch("credtools.meta.Pool")
+    @patch("credtools.meta.check_loci_info")
+    def test_skip_no_prev_loci_info(
+        self, mock_check, mock_pool_cls, mock_recover, tmp_path
+    ):
+        """skip=True but no prev loci_info.txt: all loci processed via Pool."""
+        loci_info = pd.DataFrame(
+            {
+                "prefix": ["/fake/EUR_UKB"],
+                "popu": ["EUR"],
+                "cohort": ["UKB"],
+                "sample_size": [10000],
+                "chr": [1],
+                "start": [1000],
+                "end": [3000],
+                "locus_id": ["chr1_1000_3000"],
+            }
+        )
+        mock_check.return_value = loci_info
+
+        fake_result = (
+            [[1, 1000, 3000, "EUR", 10000, "UKB", "/fake/prefix", "chr1_1000_3000"]],
+            pd.DataFrame(
+                {"popu": ["EUR"], "cohort": ["UKB"], "locus_id": ["chr1_1000_3000"]}
+            ),
+        )
+        self._setup_fake_pool(mock_pool_cls, [fake_result])
+
+        input_path = tmp_path / "input.txt"
+        loci_info.to_csv(str(input_path), sep="\t", index=False)
+
+        outdir = str(tmp_path / "output_fresh")
+        # No prev loci_info.txt exists
+        meta_loci(str(input_path), outdir, threads=1, skip=True)
+
+        # recover should not be called because prev_loci_info is None
+        mock_recover.assert_not_called()
+        assert os.path.exists(f"{outdir}/loci_info.txt")

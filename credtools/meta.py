@@ -566,6 +566,71 @@ def save_heterogeneity(
         )
 
 
+def recover_completed_locus(
+    locus_id: str,
+    outdir: str,
+    prev_loci_info: Optional[pd.DataFrame],
+) -> Optional[Tuple[List[List[Any]], pd.DataFrame]]:
+    """Recover a previously completed locus from existing output files.
+
+    Parameters
+    ----------
+    locus_id : str
+        The locus identifier.
+    outdir : str
+        Output directory path.
+    prev_loci_info : Optional[pd.DataFrame]
+        Previous loci_info DataFrame from a prior run, or None.
+
+    Returns
+    -------
+    Optional[Tuple[List[List[Any]], pd.DataFrame]]
+        (results, het_summary) if the locus is fully complete, else None.
+    """
+    if prev_loci_info is None:
+        return None
+
+    locus_dir = os.path.join(outdir, locus_id)
+    if not os.path.isdir(locus_dir):
+        return None
+
+    rows = prev_loci_info[prev_loci_info["locus_id"] == locus_id]
+    if rows.empty:
+        return None
+
+    # Check all 3 files exist for each prefix
+    for _, row in rows.iterrows():
+        prefix = row["prefix"]
+        for ext in [".sumstats.gz", ".ld.npz", ".ldmap.gz"]:
+            if not os.path.exists(f"{prefix}{ext}"):
+                return None
+
+    # Rebuild results list
+    results = []
+    for _, row in rows.iterrows():
+        results.append(
+            [
+                row["chr"],
+                row["start"],
+                row["end"],
+                row["popu"],
+                row["sample_size"],
+                row["cohort"],
+                row["prefix"],
+                row["locus_id"],
+            ]
+        )
+
+    # Read heterogeneity summary if available
+    het_path = os.path.join(locus_dir, "heterogeneity.txt.gz")
+    if os.path.exists(het_path):
+        het_summary = pd.read_csv(het_path, sep="\t", compression="gzip")
+    else:
+        het_summary = pd.DataFrame()
+
+    return results, het_summary
+
+
 def meta_locus(
     args: Tuple[str, pd.DataFrame, str, str, bool],
 ) -> Tuple[List[List[Any]], pd.DataFrame]:
@@ -655,6 +720,7 @@ def meta_loci(
     threads: int = 1,
     meta_method: str = "meta_all",
     calculate_lambda_s: bool = False,
+    skip: bool = False,
 ) -> None:
     """
     Perform meta-analysis on multiple loci in parallel.
@@ -673,6 +739,8 @@ def meta_loci(
     calculate_lambda_s : bool, optional
         Whether to calculate lambda_s parameter using estimate_s_rss function, by default False.
         See meta() function for available options.
+    skip : bool, optional
+        Skip loci already completed from a previous run, by default False.
 
     Returns
     -------
@@ -705,6 +773,50 @@ def meta_loci(
     total_loci = len(grouped_loci)
     os.makedirs(outdir, exist_ok=True)
 
+    # Try to recover completed loci when skip=True
+    prev_loci_info: Optional[pd.DataFrame] = None
+    pending_args: List[Tuple[str, pd.DataFrame, str, str, bool]] = []
+    skipped_count = 0
+
+    if skip:
+        prev_path = os.path.join(outdir, "loci_info.txt")
+        if os.path.exists(prev_path):
+            prev_loci_info = pd.read_csv(prev_path, sep="\t")
+            logger.info(f"Found previous loci_info.txt with {len(prev_loci_info)} rows")
+
+    if prev_loci_info is not None:
+        for locus_id, locus_info_group in grouped_loci:
+            recovered = recover_completed_locus(locus_id, outdir, prev_loci_info)
+            if recovered is not None:
+                results, het_summary = recovered
+                for res in results:
+                    new_loci_info.loc[len(new_loci_info)] = res
+                if het_summary is not None and not het_summary.empty:
+                    all_het_summaries.append(het_summary)
+                skipped_count += 1
+                logger.info(f"Skipped completed locus: {locus_id}")
+            else:
+                pending_args.append(
+                    (
+                        locus_id,
+                        locus_info_group,
+                        outdir,
+                        meta_method,
+                        calculate_lambda_s,
+                    )
+                )
+    else:
+        pending_args = [
+            (locus_id, locus_info_group, outdir, meta_method, calculate_lambda_s)
+            for locus_id, locus_info_group in grouped_loci
+        ]
+
+    if skipped_count > 0:
+        logger.info(
+            f"Recovered {skipped_count}/{total_loci} loci, "
+            f"processing {len(pending_args)} remaining"
+        )
+
     # Create process pool and process loci in parallel with progress bar
     with Progress(
         SpinnerColumn(),
@@ -714,22 +826,18 @@ def meta_loci(
         TextColumn("•"),
         TimeRemainingColumn(),
     ) as progress:
-        task = progress.add_task("[cyan]Meta-analysing...", total=total_loci)
+        task = progress.add_task(
+            "[cyan]Meta-analysing...", total=total_loci, completed=skipped_count
+        )
 
-        with Pool(threads) as pool:
-            args = [
-                (locus_id, locus_info, outdir, meta_method, calculate_lambda_s)
-                for locus_id, locus_info in grouped_loci
-            ]
-            for result, het_summary in pool.imap_unordered(meta_locus, args):  # type: ignore
-                # Update results
-                for i, res in enumerate(result):
-                    new_loci_info.loc[len(new_loci_info)] = res
-                # Collect heterogeneity summaries
-                if het_summary is not None and not het_summary.empty:
-                    all_het_summaries.append(het_summary)
-                # Update progress
-                progress.advance(task)
+        if pending_args:
+            with Pool(threads) as pool:
+                for result, het_summary in pool.imap_unordered(meta_locus, pending_args):  # type: ignore
+                    for i, res in enumerate(result):
+                        new_loci_info.loc[len(new_loci_info)] = res
+                    if het_summary is not None and not het_summary.empty:
+                        all_het_summaries.append(het_summary)
+                    progress.advance(task)
 
     new_loci_info.to_csv(f"{outdir}/loci_info.txt", sep="\t", index=False)
 

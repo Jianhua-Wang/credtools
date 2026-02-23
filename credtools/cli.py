@@ -933,13 +933,19 @@ def run_meta(
         "-cls",
         help="Calculate lambda_s parameter using estimate_s_rss function.",
     ),
+    skip: bool = typer.Option(
+        False,
+        "--skip",
+        "-s",
+        help="Skip loci already completed from a previous run.",
+    ),
     log_file: Optional[str] = typer.Option(
         None, "--log-file", "-l", help="Log output to specified file."
     ),
 ):
     """Meta-analysis of summary statistics and LD matrices."""
     setup_file_logging(log_file)
-    meta_loci(inputs, outdir, threads, meta_method, calculate_lambda_s)
+    meta_loci(inputs, outdir, threads, meta_method, calculate_lambda_s, skip=skip)
 
 
 @app.command(
