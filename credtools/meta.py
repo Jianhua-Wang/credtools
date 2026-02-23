@@ -385,6 +385,61 @@ def compute_heterogeneity(locus_set: LocusSet) -> Dict[str, pd.DataFrame]:
     return het_metrics
 
 
+def compute_heterogeneity_by_population(
+    locus_set: LocusSet,
+) -> Dict[str, pd.DataFrame]:
+    """Compute heterogeneity metrics with cochran_q and snp_missingness grouped by population.
+
+    LD metrics (ld_4th_moment, ld_decay) are computed globally across all cohorts.
+    Cochran-Q and SNP missingness are computed within each population separately,
+    since heterogeneity should measure differences between cohorts of the same
+    population, not across populations.
+
+    Parameters
+    ----------
+    locus_set : LocusSet
+        LocusSet containing input data from multiple studies.
+
+    Returns
+    -------
+    Dict[str, pd.DataFrame]
+        Dictionary of heterogeneity metrics with keys:
+        - 'ld_4th_moment': 4th moment of LD matrix (global)
+        - 'ld_decay': LD decay analysis (global)
+        - 'cochran_q': heterogeneity test per population (with 'population' column)
+        - 'snp_missingness': missingness per population (with 'population' column)
+    """
+    from credtools.qc import cochran_q, ld_4th_moment, ld_decay, snp_missingness
+
+    het_metrics: Dict[str, pd.DataFrame] = {}
+    het_metrics["ld_4th_moment"] = ld_4th_moment(locus_set)
+    het_metrics["ld_decay"] = ld_decay(locus_set)
+
+    # Group loci by population
+    pop_groups: Dict[str, List[Locus]] = {}
+    for locus in locus_set.loci:
+        pop_groups.setdefault(locus.popu, []).append(locus)
+
+    q_parts: List[pd.DataFrame] = []
+    miss_parts: List[pd.DataFrame] = []
+    for popu, loci in pop_groups.items():
+        if len(loci) > 1:
+            sub_set = LocusSet(loci)
+            cq = cochran_q(sub_set)
+            cq["population"] = popu
+            q_parts.append(cq)
+            ms = snp_missingness(sub_set)
+            ms["population"] = popu
+            miss_parts.append(ms)
+
+    if q_parts:
+        het_metrics["cochran_q"] = pd.concat(q_parts, ignore_index=True)
+    if miss_parts:
+        het_metrics["snp_missingness"] = pd.concat(miss_parts, ignore_index=True)
+
+    return het_metrics
+
+
 def heterogeneity_summary(
     het_metrics: Dict[str, pd.DataFrame],
     locus_set: LocusSet,
@@ -429,18 +484,39 @@ def heterogeneity_summary(
         # SNP missingness rate for this cohort
         miss = het_metrics.get("snp_missingness")
         if miss is not None and cohort_label in miss.columns:
-            row["missing_rate"] = float(
-                round(1 - miss[cohort_label].sum() / miss.shape[0], 6)
-            )
+            # Filter by population if column exists
+            if "population" in miss.columns:
+                miss_filtered = miss[miss["population"] == locus.popu]
+            else:
+                miss_filtered = miss
+            if cohort_label in miss_filtered.columns and not miss_filtered.empty:
+                row["missing_rate"] = float(
+                    round(
+                        1 - miss_filtered[cohort_label].sum() / miss_filtered.shape[0],
+                        6,
+                    )
+                )
+            else:
+                row["missing_rate"] = np.nan
         else:
             row["missing_rate"] = np.nan
 
-        # Cochran Q locus-level summary (same for all cohorts)
+        # Cochran Q locus-level summary
         cq = het_metrics.get("cochran_q")
         if cq is not None and not cq.empty:
-            row["cochran_q_median"] = float(cq["Q"].median())
-            row["i_squared_median"] = float(cq["I_squared"].median())
-            row["n_het_snps"] = int((cq["Q_pvalue"] < 0.05).sum())
+            # Filter by population if column exists
+            if "population" in cq.columns:
+                cq_filtered = cq[cq["population"] == locus.popu]
+            else:
+                cq_filtered = cq
+            if not cq_filtered.empty:
+                row["cochran_q_median"] = float(cq_filtered["Q"].median())
+                row["i_squared_median"] = float(cq_filtered["I_squared"].median())
+                row["n_het_snps"] = int((cq_filtered["Q_pvalue"] < 0.05).sum())
+            else:
+                row["cochran_q_median"] = np.nan
+                row["i_squared_median"] = np.nan
+                row["n_het_snps"] = np.nan
         else:
             row["cochran_q_median"] = np.nan
             row["i_squared_median"] = np.nan
@@ -469,7 +545,11 @@ def save_heterogeneity(
     """
     os.makedirs(out_dir, exist_ok=True)
     for name, data in het_metrics.items():
-        data.to_csv(
+        save_data = data
+        # Drop population column from snp_missingness for file format compatibility
+        if name == "snp_missingness" and "population" in data.columns:
+            save_data = data.drop(columns=["population"])
+        save_data.to_csv(
             f"{out_dir}/{name}.txt.gz",
             sep="\t",
             index=False,
@@ -529,7 +609,10 @@ def meta_locus(
     locus_set = load_locus_set(locus_info, calculate_lambda_s=calculate_lambda_s)
 
     # Compute heterogeneity BEFORE meta combines data
-    het_metrics = compute_heterogeneity(locus_set)
+    if meta_method == "meta_by_population":
+        het_metrics = compute_heterogeneity_by_population(locus_set)
+    else:
+        het_metrics = compute_heterogeneity(locus_set)
     het_summary = heterogeneity_summary(het_metrics, locus_set)
     het_summary["locus_id"] = locus_id
 

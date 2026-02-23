@@ -16,6 +16,7 @@ from credtools.credibleset import CredibleSet, combine_creds, filter_credset_by_
 from credtools.locus import LocusSet, load_locus_set
 from credtools.meta import (
     compute_heterogeneity,
+    compute_heterogeneity_by_population,
     heterogeneity_summary,
     meta,
     save_heterogeneity,
@@ -619,7 +620,10 @@ def pipeline(
         run_summary["total_loci"] = locus_set.n_loci
 
         # Compute heterogeneity BEFORE meta combines data
-        het_metrics = compute_heterogeneity(locus_set)
+        if meta_method == "meta_by_population":
+            het_metrics = compute_heterogeneity_by_population(locus_set)
+        else:
+            het_metrics = compute_heterogeneity(locus_set)
         het_summary = heterogeneity_summary(het_metrics, locus_set)
         save_heterogeneity(het_metrics, outdir, summary=het_summary)
         logger.info("Heterogeneity metrics computed and saved.")

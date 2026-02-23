@@ -281,6 +281,151 @@ class TestSaveHeterogeneitySummary:
         assert not os.path.exists(filepath)
 
 
+@pytest.fixture
+def multi_cohort_same_pop_locus_set():
+    """Create a LocusSet with EUR having 2 cohorts and AFR having 1 cohort."""
+    locus_eur1 = _make_locus("EUR", "UKB", seed=42)
+    locus_eur2 = _make_locus("EUR", "GWAS2", seed=99)
+    locus_afr = _make_locus("AFR", "MVP", seed=123)
+    return LocusSet([locus_eur1, locus_eur2, locus_afr])
+
+
+@pytest.fixture
+def two_pop_multi_cohort_locus_set():
+    """Create a LocusSet where both EUR and AFR have 2 cohorts each."""
+    locus_eur1 = _make_locus("EUR", "UKB", seed=42)
+    locus_eur2 = _make_locus("EUR", "GWAS2", seed=99)
+    locus_afr1 = _make_locus("AFR", "MVP", seed=123)
+    locus_afr2 = _make_locus("AFR", "GWAS3", seed=456)
+    return LocusSet([locus_eur1, locus_eur2, locus_afr1, locus_afr2])
+
+
+class TestComputeHeterogeneityByPopulation:
+    """Tests for compute_heterogeneity_by_population function."""
+
+    def test_ld_metrics_computed_globally(self, multi_cohort_same_pop_locus_set):
+        """LD metrics should be computed across all 3 cohorts."""
+        from credtools.meta import compute_heterogeneity_by_population
+
+        het = compute_heterogeneity_by_population(multi_cohort_same_pop_locus_set)
+
+        assert "ld_4th_moment" in het
+        assert "ld_decay" in het
+        # All 3 cohorts should appear in ld_decay
+        cohorts = het["ld_decay"]["cohort"].unique()
+        assert len(cohorts) == 3
+
+    def test_cochran_q_only_for_multi_cohort_populations(
+        self, multi_cohort_same_pop_locus_set
+    ):
+        """Cochran Q should only be computed for populations with >1 cohort (EUR)."""
+        from credtools.meta import compute_heterogeneity_by_population
+
+        het = compute_heterogeneity_by_population(multi_cohort_same_pop_locus_set)
+
+        assert "cochran_q" in het
+        cq = het["cochran_q"]
+        assert "population" in cq.columns
+        # Only EUR should appear (AFR has only 1 cohort)
+        assert set(cq["population"].unique()) == {"EUR"}
+
+    def test_snp_missingness_only_same_population(
+        self, multi_cohort_same_pop_locus_set
+    ):
+        """SNP missingness should only compare cohorts within the same population."""
+        from credtools.meta import compute_heterogeneity_by_population
+
+        het = compute_heterogeneity_by_population(multi_cohort_same_pop_locus_set)
+
+        assert "snp_missingness" in het
+        miss = het["snp_missingness"]
+        assert "population" in miss.columns
+        # Only EUR should appear
+        assert set(miss["population"].unique()) == {"EUR"}
+
+    def test_single_cohort_population_no_cochran_q(self, single_locus_set):
+        """When all populations have only 1 cohort, cochran_q should not be produced."""
+        from credtools.meta import compute_heterogeneity_by_population
+
+        het = compute_heterogeneity_by_population(single_locus_set)
+
+        assert "cochran_q" not in het
+        assert "snp_missingness" not in het
+
+    def test_summary_eur_has_q_afr_nan(self, multi_cohort_same_pop_locus_set):
+        """In summary, EUR should have Q values, AFR should have NaN."""
+        from credtools.meta import (
+            compute_heterogeneity_by_population,
+            heterogeneity_summary,
+        )
+
+        het = compute_heterogeneity_by_population(multi_cohort_same_pop_locus_set)
+        summary = heterogeneity_summary(het, multi_cohort_same_pop_locus_set)
+
+        eur_rows = summary[summary["popu"] == "EUR"]
+        afr_rows = summary[summary["popu"] == "AFR"]
+
+        # EUR should have non-NaN cochran_q values
+        assert not eur_rows["cochran_q_median"].isna().any()
+        # AFR should have NaN cochran_q values
+        assert afr_rows["cochran_q_median"].isna().all()
+
+    def test_two_populations_produce_different_q_values(
+        self, two_pop_multi_cohort_locus_set
+    ):
+        """When both populations have multiple cohorts, each should have its own Q values."""
+        from credtools.meta import (
+            compute_heterogeneity_by_population,
+            heterogeneity_summary,
+        )
+
+        het = compute_heterogeneity_by_population(two_pop_multi_cohort_locus_set)
+        summary = heterogeneity_summary(het, two_pop_multi_cohort_locus_set)
+
+        eur_q = summary[summary["popu"] == "EUR"]["cochran_q_median"].iloc[0]
+        afr_q = summary[summary["popu"] == "AFR"]["cochran_q_median"].iloc[0]
+
+        # Both should be non-NaN
+        assert not pd.isna(eur_q)
+        assert not pd.isna(afr_q)
+        # They should differ (different seeds produce different data)
+        assert eur_q != afr_q
+
+    def test_save_snp_missingness_no_population_column(
+        self, tmp_path, multi_cohort_same_pop_locus_set
+    ):
+        """Saved snp_missingness file should not contain population column."""
+        from credtools.meta import (
+            compute_heterogeneity_by_population,
+            save_heterogeneity,
+        )
+
+        het = compute_heterogeneity_by_population(multi_cohort_same_pop_locus_set)
+        out_dir = str(tmp_path / "het_output")
+        save_heterogeneity(het, out_dir)
+
+        filepath = os.path.join(out_dir, "snp_missingness.txt.gz")
+        loaded = pd.read_csv(filepath, sep="\t", compression="gzip")
+        assert "population" not in loaded.columns
+
+    def test_save_cochran_q_has_population_column(
+        self, tmp_path, multi_cohort_same_pop_locus_set
+    ):
+        """Saved cochran_q file should retain population column."""
+        from credtools.meta import (
+            compute_heterogeneity_by_population,
+            save_heterogeneity,
+        )
+
+        het = compute_heterogeneity_by_population(multi_cohort_same_pop_locus_set)
+        out_dir = str(tmp_path / "het_output")
+        save_heterogeneity(het, out_dir)
+
+        filepath = os.path.join(out_dir, "cochran_q.txt.gz")
+        loaded = pd.read_csv(filepath, sep="\t", compression="gzip")
+        assert "population" in loaded.columns
+
+
 class TestMetaLocusIntegration:
     """Integration test for heterogeneity in meta_locus flow."""
 
