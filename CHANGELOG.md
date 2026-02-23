@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2] (2026-02-22)
+
+### Added
+- Comprehensive unit tests for QC module (`tests/test_qc.py`): 80 tests across 17 test classes covering `get_eigen`, `estimate_s_rss`, `kriging_rss`, `compute_dentist_s`, `compare_maf`, `snp_missingness`, `ld_4th_moment`, `ld_decay`, `cochran_q`, `locus_qc`, `identify_outliers`, `remove_snps_from_locus`, `save_cleaned_locus`, `remove_outliers_and_rerun_qc`, `locus_qc_summary`, `qc_locus_cli`, `safe_qc_locus_cli`, and `loci_qc` — achieving 82% coverage for `credtools/qc.py`
+
+### Changed
+- Rewrote `docs/qc.md` to match actual code: tabbed quick-start examples, Python API example using exampledata, complete CLI parameter reference, QC method descriptions (Kriging RSS, Dentist-S, MAF comparison), accurate output directory structure and column tables, mermaid pipeline diagram, collapsible troubleshooting FAQ, and note that heterogeneity metrics are now in `credtools meta`
+
 ## [0.4.1] (2026-02-22)
 
 ### Fixed
