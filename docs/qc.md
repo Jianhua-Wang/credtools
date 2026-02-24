@@ -125,20 +125,13 @@ A larger *s* indicates stronger inconsistency. For each SNP, the conditional mea
 - **z_std_diff**: standardised difference between observed and expected z-score
 - **logLR**: log-likelihood ratio for allele switch detection
 
-**Outlier criteria (combined):**
-
-1. **LD Mismatch Indicator**: `logLR > threshold` AND `|z| > threshold`
-2. **Marginal Non-significant SNP**: `|z_std_diff| > threshold` AND `|r_lead| > threshold`
-
 ### Dentist-S
 
 The [Dentist-S](https://github.com/mkanai/slalom) statistic tests each variant against the lead SNP:
 
 $$t_{\text{dentist}} = \frac{(z_j - r_{jk} \cdot z_k)^2}{1 - r_{jk}^2}$$
 
-Under the null, $t_{\text{dentist}} \sim \chi^2(1)$. Outliers are flagged when:
-
-- `−log10(p) >= dentist_pvalue_threshold` AND `r² >= dentist_r2_threshold`
+Under the null, $t_{\text{dentist}} \sim \chi^2(1)$.
 
 ### MAF Comparison
 
@@ -152,9 +145,33 @@ When the LD reference panel includes allele frequencies (`AF2` column), credtool
 | 0.1 – 0.3 | Moderate inconsistency — review flagged SNPs |
 | > 0.3 | Strong inconsistency — consider re-imputation or LD panel swap |
 
-### Outlier Detection
+### Outlier Detection Criteria
 
-The `--remove-outlier` flag triggers automatic outlier removal based on the Kriging RSS and Dentist-S criteria above. After removal, QC is re-run on the cleaned data and both the original and cleaned summaries are saved.
+A SNP is flagged as an outlier if it satisfies **any** of the following three criteria:
+
+| Criterion | Condition | Description |
+|-----------|-----------|-------------|
+| **C1 — LD mismatch** | `logLR > 2` AND `|z| > 2` | Significant SNPs whose observed effect is inconsistent with the LD structure. A high logLR indicates the observed z-score is unlikely under the LD model, and the `|z| > 2` filter ensures only SNPs with real signal are flagged (avoiding noise). |
+| **C2 — Marginal SNP** | `|z| < 2` AND `|z_std_diff| > 3` AND `|r_lead| > 0.8` | Non-significant SNPs that are highly correlated with the lead SNP but show large deviations from expectation. If a SNP is in strong LD with the lead SNP (`r > 0.8`) yet carries little signal (`|z| < 2`) while its standardised residual is extreme (`|z_std_diff| > 3`), it likely reflects data quality issues rather than biology. |
+| **C3 — Dentist-S** | `−log10(p_dentist) ≥ 4` AND `r² ≥ 0.6` | SNPs in moderate-to-high LD with the lead SNP that show significant discrepancy in the Dentist-S test. This catches variants whose z-scores are inconsistent with the lead SNP's z-score given their LD correlation. |
+
+The thresholds in the table above are the defaults. Each can be adjusted via CLI options:
+
+| Threshold | CLI Option | Default | Used in |
+|-----------|-----------|---------|---------|
+| logLR | `--logLR-threshold` | `2.0` | C1 |
+| \|z\| | `--z-threshold` | `2.0` | C1 (upper bound), C2 (lower bound) |
+| \|z_std_diff\| | `--z-std-diff-threshold` | `3.0` | C2 |
+| \|r_lead\| | `--r-threshold` | `0.8` | C2 |
+| −log10(p) | `--dentist-pvalue-threshold` | `4.0` | C3 |
+| r² | `--dentist-r2-threshold` | `0.6` | C3 |
+
+!!! note "z-threshold plays a dual role"
+    The `--z-threshold` parameter serves as a boundary between C1 and C2: SNPs with `|z| > threshold` are evaluated for LD mismatch (C1), while SNPs with `|z| < threshold` are evaluated as marginal outliers (C2). This ensures every SNP is checked by the appropriate criterion based on its signal strength.
+
+### Outlier Removal
+
+The `--remove-outlier` flag triggers automatic outlier removal: SNPs flagged by any of C1, C2, or C3 are removed, and QC is re-run on the cleaned data. Both the original and cleaned summaries are saved for comparison.
 
 ## Output Format
 
