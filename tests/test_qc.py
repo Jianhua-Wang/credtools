@@ -930,6 +930,80 @@ class TestLocusQc:
 class TestIdentifyOutliers:
     """Tests for identify_outliers()."""
 
+    def test_returns_dataframe(self, precomputed_qc_metrics):
+        """Verify identify_outliers returns a DataFrame."""
+        from credtools.qc import identify_outliers
+
+        outliers = identify_outliers(
+            precomputed_qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=0,
+            z_threshold=0,
+            z_std_diff_threshold=0,
+            r_threshold=0,
+            dentist_s_pvalue_threshold=0,
+            dentist_s_r2_threshold=0,
+        )
+        assert isinstance(outliers, pd.DataFrame)
+
+    def test_has_criterion_columns(self, precomputed_qc_metrics):
+        """Verify the DataFrame contains SNPID and C1/C2/C3 criterion columns."""
+        from credtools.qc import identify_outliers
+
+        outliers = identify_outliers(
+            precomputed_qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=0,
+            z_threshold=0,
+            z_std_diff_threshold=0,
+            r_threshold=0,
+            dentist_s_pvalue_threshold=0,
+            dentist_s_r2_threshold=0,
+        )
+        expected_cols = {"SNPID", "C1_ld_mismatch", "C2_marginal", "C3_dentist_s"}
+        assert expected_cols.issubset(set(outliers.columns))
+
+    def test_criterion_flags_are_bool(self, precomputed_qc_metrics):
+        """Verify C1/C2/C3 columns contain boolean values."""
+        from credtools.qc import identify_outliers
+
+        outliers = identify_outliers(
+            precomputed_qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=0,
+            z_threshold=0,
+            z_std_diff_threshold=0,
+            r_threshold=0,
+            dentist_s_pvalue_threshold=0,
+            dentist_s_r2_threshold=0,
+        )
+        if not outliers.empty:
+            assert outliers["C1_ld_mismatch"].dtype == bool
+            assert outliers["C2_marginal"].dtype == bool
+            assert outliers["C3_dentist_s"].dtype == bool
+
+    def test_at_least_one_criterion_true_per_row(self, precomputed_qc_metrics):
+        """Verify each outlier SNP triggers at least one criterion."""
+        from credtools.qc import identify_outliers
+
+        outliers = identify_outliers(
+            precomputed_qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=0,
+            z_threshold=0,
+            z_std_diff_threshold=0,
+            r_threshold=0,
+            dentist_s_pvalue_threshold=0,
+            dentist_s_r2_threshold=0,
+        )
+        if not outliers.empty:
+            any_true = (
+                outliers["C1_ld_mismatch"]
+                | outliers["C2_marginal"]
+                | outliers["C3_dentist_s"]
+            )
+            assert any_true.all()
+
     def test_relaxed_threshold_no_outliers(self, precomputed_qc_metrics):
         """Verify very relaxed thresholds produce no outliers."""
         from credtools.qc import identify_outliers
@@ -960,24 +1034,26 @@ class TestIdentifyOutliers:
         )
         assert len(outliers) > 0
 
-    def test_nonexistent_cohort_returns_empty(self, precomputed_qc_metrics):
-        """Verify a nonexistent cohort name returns an empty list."""
+    def test_nonexistent_cohort_returns_empty_dataframe(self, precomputed_qc_metrics):
+        """Verify a nonexistent cohort name returns an empty DataFrame."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers(
             precomputed_qc_metrics, cohort="NONEXISTENT_COHORT"
         )
-        assert outliers == []
+        assert isinstance(outliers, pd.DataFrame)
+        assert len(outliers) == 0
 
-    def test_empty_metrics_returns_empty(self):
-        """Verify empty QC metrics dict returns an empty list."""
+    def test_empty_metrics_returns_empty_dataframe(self):
+        """Verify empty QC metrics dict returns an empty DataFrame."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers({}, cohort="EUR_UKB")
-        assert outliers == []
+        assert isinstance(outliers, pd.DataFrame)
+        assert len(outliers) == 0
 
-    def test_returns_list_of_strings(self, precomputed_qc_metrics):
-        """Verify outlier SNP IDs are returned as a list of strings."""
+    def test_snpid_column_contains_strings(self, precomputed_qc_metrics):
+        """Verify outlier SNP IDs in SNPID column are strings."""
         from credtools.qc import identify_outliers
 
         outliers = identify_outliers(
@@ -990,7 +1066,25 @@ class TestIdentifyOutliers:
             dentist_s_pvalue_threshold=0,
             dentist_s_r2_threshold=0,
         )
-        assert all(isinstance(s, str) for s in outliers)
+        if not outliers.empty:
+            assert all(isinstance(s, str) for s in outliers["SNPID"])
+
+    def test_no_duplicate_snpids(self, precomputed_qc_metrics):
+        """Verify there are no duplicate SNPIDs in the result."""
+        from credtools.qc import identify_outliers
+
+        outliers = identify_outliers(
+            precomputed_qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=0,
+            z_threshold=0,
+            z_std_diff_threshold=0,
+            r_threshold=0,
+            dentist_s_pvalue_threshold=0,
+            dentist_s_r2_threshold=0,
+        )
+        if not outliers.empty:
+            assert outliers["SNPID"].is_unique
 
 
 # ===================================================================
@@ -1094,21 +1188,24 @@ class TestSaveCleanedLocus:
 class TestRemoveOutliersAndRerunQc:
     """Tests for remove_outliers_and_rerun_qc()."""
 
-    def test_returns_three_element_tuple(
+    def test_returns_four_element_tuple(
         self, tmp_path, single_locus_set, precomputed_qc_metrics
     ):
-        """Verify the function returns a tuple of (LocusSet, dict, DataFrame)."""
+        """Verify the function returns a 4-tuple with expected types."""
         from credtools.qc import remove_outliers_and_rerun_qc
 
-        cleaned_ls, cleaned_qc, summary = remove_outliers_and_rerun_qc(
+        result = remove_outliers_and_rerun_qc(
             single_locus_set,
             precomputed_qc_metrics,
             str(tmp_path),
             "test_locus",
         )
+        assert len(result) == 4
+        cleaned_ls, cleaned_qc, summary, outlier_detail = result
         assert isinstance(cleaned_ls, LocusSet)
         assert isinstance(cleaned_qc, dict)
         assert isinstance(summary, pd.DataFrame)
+        assert isinstance(outlier_detail, pd.DataFrame)
 
     def test_loci_count_unchanged(
         self, tmp_path, single_locus_set, precomputed_qc_metrics
@@ -1116,7 +1213,7 @@ class TestRemoveOutliersAndRerunQc:
         """Verify the number of loci is unchanged after outlier removal."""
         from credtools.qc import remove_outliers_and_rerun_qc
 
-        cleaned_ls, _, _ = remove_outliers_and_rerun_qc(
+        cleaned_ls, _, _, _ = remove_outliers_and_rerun_qc(
             single_locus_set,
             precomputed_qc_metrics,
             str(tmp_path),
@@ -1130,7 +1227,7 @@ class TestRemoveOutliersAndRerunQc:
         """Verify the outlier summary DataFrame contains expected columns."""
         from credtools.qc import remove_outliers_and_rerun_qc
 
-        _, _, summary = remove_outliers_and_rerun_qc(
+        _, _, summary, _ = remove_outliers_and_rerun_qc(
             single_locus_set,
             precomputed_qc_metrics,
             str(tmp_path),
@@ -1147,6 +1244,30 @@ class TestRemoveOutliersAndRerunQc:
         }
         assert expected_cols.issubset(set(summary.columns))
 
+    def test_outlier_detail_columns(
+        self, tmp_path, single_locus_set, precomputed_qc_metrics
+    ):
+        """Verify the outlier detail DataFrame contains expected columns."""
+        from credtools.qc import remove_outliers_and_rerun_qc
+
+        _, _, _, outlier_detail = remove_outliers_and_rerun_qc(
+            single_locus_set,
+            precomputed_qc_metrics,
+            str(tmp_path),
+            "test_locus",
+        )
+        expected_cols = {
+            "SNPID",
+            "C1_ld_mismatch",
+            "C2_marginal",
+            "C3_dentist_s",
+            "locus_id",
+            "popu",
+            "cohort",
+        }
+        if not outlier_detail.empty:
+            assert expected_cols.issubset(set(outlier_detail.columns))
+
     def test_saves_cleaned_files(
         self, tmp_path, single_locus_set, precomputed_qc_metrics
     ):
@@ -1161,6 +1282,48 @@ class TestRemoveOutliersAndRerunQc:
         )
         cleaned_dir = os.path.join(str(tmp_path), "cleaned", "test_locus")
         assert os.path.isdir(cleaned_dir)
+
+    def test_saves_outlier_snps_file(
+        self, tmp_path, single_locus_set, precomputed_qc_metrics
+    ):
+        """Verify outlier_snps.txt.gz is saved in the cleaned directory."""
+        from credtools.qc import remove_outliers_and_rerun_qc
+
+        remove_outliers_and_rerun_qc(
+            single_locus_set,
+            precomputed_qc_metrics,
+            str(tmp_path),
+            "test_locus",
+        )
+        cleaned_dir = os.path.join(str(tmp_path), "cleaned", "test_locus")
+        outlier_file = os.path.join(cleaned_dir, "outlier_snps.txt.gz")
+        assert os.path.exists(outlier_file)
+
+    def test_outlier_snps_file_content(
+        self, tmp_path, single_locus_set, precomputed_qc_metrics
+    ):
+        """Verify outlier_snps.txt.gz content has correct columns."""
+        from credtools.qc import remove_outliers_and_rerun_qc
+
+        remove_outliers_and_rerun_qc(
+            single_locus_set,
+            precomputed_qc_metrics,
+            str(tmp_path),
+            "test_locus",
+        )
+        cleaned_dir = os.path.join(str(tmp_path), "cleaned", "test_locus")
+        outlier_file = os.path.join(cleaned_dir, "outlier_snps.txt.gz")
+        df = pd.read_csv(outlier_file, sep="\t")
+        expected_cols = {
+            "SNPID",
+            "C1_ld_mismatch",
+            "C2_marginal",
+            "C3_dentist_s",
+            "locus_id",
+            "popu",
+            "cohort",
+        }
+        assert expected_cols.issubset(set(df.columns))
 
 
 # ===================================================================
@@ -1229,8 +1392,8 @@ class TestLocusQcSummary:
 class TestQcLocusCli:
     """Tests for qc_locus_cli()."""
 
-    def test_mock_returns_four_tuple(self, tmp_path, single_locus_set):
-        """Verify qc_locus_cli returns a 4-element tuple with expected types."""
+    def test_mock_returns_five_tuple(self, tmp_path, single_locus_set):
+        """Verify qc_locus_cli returns a 5-element tuple with expected types."""
         from credtools.qc import qc_locus_cli
 
         locus_info = pd.DataFrame(
@@ -1258,10 +1421,44 @@ class TestQcLocusCli:
             )
             result = qc_locus_cli(args)
 
-        assert len(result) == 4
-        locus_id, summary, outlier_summary, cleaned_summary = result
+        assert len(result) == 5
+        locus_id, summary, outlier_summary, cleaned_summary, outlier_detail = result
         assert locus_id == "test_locus"
         assert isinstance(summary, pd.DataFrame)
+        assert outlier_detail is None  # no outlier removal requested
+
+    def test_with_outlier_removal_returns_detail(self, tmp_path, single_locus_set):
+        """Verify qc_locus_cli returns outlier detail when remove_outlier=True."""
+        from credtools.qc import qc_locus_cli
+
+        locus_info = pd.DataFrame(
+            {
+                "locus_id": ["test_locus"],
+                "popu": ["EUR"],
+                "cohort": ["UKB"],
+                "sample_size": [10000],
+                "prefix": ["dummy"],
+            }
+        )
+
+        with patch("credtools.qc.load_locus_set", return_value=single_locus_set):
+            args = (
+                "test_locus",
+                locus_info,
+                str(tmp_path),
+                True,  # remove_outlier
+                2.0,
+                2.0,
+                3.0,
+                0.8,
+                4.0,
+                0.6,
+            )
+            result = qc_locus_cli(args)
+
+        assert len(result) == 5
+        _, _, _, _, outlier_detail = result
+        assert isinstance(outlier_detail, pd.DataFrame)
 
     def test_saves_output_files(self, tmp_path, single_locus_set):
         """Verify qc_locus_cli saves QC output files to the locus directory."""
@@ -1324,8 +1521,10 @@ class TestSafeQcLocusCli:
         )
 
         result = safe_qc_locus_cli(args)
-        assert len(result) == 5
-        locus_id, summary, outlier_summary, cleaned_summary, error = result
+        assert len(result) == 6
+        locus_id, summary, outlier_summary, cleaned_summary, outlier_detail, error = (
+            result
+        )
         assert locus_id == "test_locus"
         assert error is not None  # Should have captured the error
 
@@ -1358,8 +1557,8 @@ class TestSafeQcLocusCli:
             )
             result = safe_qc_locus_cli(args)
 
-        assert len(result) == 5
-        assert result[4] is None  # error should be None
+        assert len(result) == 6
+        assert result[5] is None  # error should be None
 
 
 # ===================================================================
@@ -1401,7 +1600,7 @@ class TestLociQc:
         input_df.to_csv(input_file, sep="\t", index=False)
 
         # Mock the pool to avoid real multiprocessing
-        mock_result = ("locus1", pd.DataFrame(), None, None, None)
+        mock_result = ("locus1", pd.DataFrame(), None, None, None, None)
 
         with patch("credtools.qc.Pool") as mock_pool_cls:
             mock_pool = MagicMock()
