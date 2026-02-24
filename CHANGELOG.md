@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.4] (2026-02-23)
+
+### Added
+- Comprehensive unit tests for all wrapper modules (93 new tests): ABF, ABF+COJO, FINEMAP, SuSiE, SuSiEx, MultiSuSiE, RSparsePro
+- `--skip` option to meta command to resume from previous runs
+
+### Fixed
+- Handle cohorts with no sumstats-LD overlap in QC metrics
+- Compute heterogeneity by population in `meta_by_population` mode
+- Format test files and fix D403 docstring lint errors
+
 ## [0.4.3] (2026-02-22)
 
 ### Fixed
