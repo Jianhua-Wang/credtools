@@ -562,9 +562,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#outlier-detection" class="md-nav__link">
+  <a href="#outlier-detection-criteria" class="md-nav__link">
     <span class="md-ellipsis">
-      Outlier Detection
+      Outlier Detection Criteria
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outlier-removal" class="md-nav__link">
+    <span class="md-ellipsis">
+      Outlier Removal
     </span>
   </a>
   
@@ -1317,9 +1326,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#outlier-detection" class="md-nav__link">
+  <a href="#outlier-detection-criteria" class="md-nav__link">
     <span class="md-ellipsis">
-      Outlier Detection
+      Outlier Detection Criteria
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outlier-removal" class="md-nav__link">
+    <span class="md-ellipsis">
+      Outlier Removal
     </span>
   </a>
   
@@ -1582,18 +1600,10 @@
 <li><strong>z_std_diff</strong>: standardised difference between observed and expected z-score</li>
 <li><strong>logLR</strong>: log-likelihood ratio for allele switch detection</li>
 </ul>
-<p><strong>Outlier criteria (combined):</strong></p>
-<ol>
-<li><strong>LD Mismatch Indicator</strong>: <code>logLR &gt; threshold</code> AND <code>|z| &gt; threshold</code></li>
-<li><strong>Marginal Non-significant SNP</strong>: <code>|z_std_diff| &gt; threshold</code> AND <code>|r_lead| &gt; threshold</code></li>
-</ol>
 <h3 id="dentist-s">Dentist-S<a class="headerlink" href="#dentist-s" title="Permanent link">&para;</a></h3>
 <p>The <a href="https://github.com/mkanai/slalom">Dentist-S</a> statistic tests each variant against the lead SNP:</p>
 <p>$$t_{\text{dentist}} = \frac{(z_j - r_{jk} \cdot z_k)^2}{1 - r_{jk}^2}$$</p>
-<p>Under the null, $t_{\text{dentist}} \sim \chi^2(1)$. Outliers are flagged when:</p>
-<ul>
-<li><code>−log10(p) &gt;= dentist_pvalue_threshold</code> AND <code>r² &gt;= dentist_r2_threshold</code></li>
-</ul>
+<p>Under the null, $t_{\text{dentist}} \sim \chi^2(1)$.</p>
 <h3 id="maf-comparison">MAF Comparison<a class="headerlink" href="#maf-comparison" title="Permanent link">&para;</a></h3>
 <p>When the LD reference panel includes allele frequencies (<code>AF2</code> column), credtools compares minor allele frequencies between the summary statistics and the reference. Large discrepancies may indicate population mismatch or allele coding issues.</p>
 <h3 id="lambda-s-interpretation">Lambda-s Interpretation<a class="headerlink" href="#lambda-s-interpretation" title="Permanent link">&para;</a></h3>
@@ -1619,8 +1629,89 @@
 </tr>
 </tbody>
 </table>
-<h3 id="outlier-detection">Outlier Detection<a class="headerlink" href="#outlier-detection" title="Permanent link">&para;</a></h3>
-<p>The <code>--remove-outlier</code> flag triggers automatic outlier removal based on the Kriging RSS and Dentist-S criteria above. After removal, QC is re-run on the cleaned data and both the original and cleaned summaries are saved.</p>
+<h3 id="outlier-detection-criteria">Outlier Detection Criteria<a class="headerlink" href="#outlier-detection-criteria" title="Permanent link">&para;</a></h3>
+<p>A SNP is flagged as an outlier if it satisfies <strong>any</strong> of the following three criteria:</p>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Condition</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>C1 — LD mismatch</strong></td>
+<td><code>logLR &gt; 2</code> AND <code>|z| &gt; 2</code></td>
+<td>Significant SNPs whose observed effect is inconsistent with the LD structure. A high logLR indicates the observed z-score is unlikely under the LD model, and the <code>|z| &gt; 2</code> filter ensures only SNPs with real signal are flagged (avoiding noise).</td>
+</tr>
+<tr>
+<td><strong>C2 — Marginal SNP</strong></td>
+<td><code>|z| &lt; 2</code> AND <code>|z_std_diff| &gt; 3</code> AND <code>|r_lead| &gt; 0.8</code></td>
+<td>Non-significant SNPs that are highly correlated with the lead SNP but show large deviations from expectation. If a SNP is in strong LD with the lead SNP (<code>r &gt; 0.8</code>) yet carries little signal (<code>|z| &lt; 2</code>) while its standardised residual is extreme (<code>|z_std_diff| &gt; 3</code>), it likely reflects data quality issues rather than biology.</td>
+</tr>
+<tr>
+<td><strong>C3 — Dentist-S</strong></td>
+<td><code>−log10(p_dentist) ≥ 4</code> AND <code>r² ≥ 0.6</code></td>
+<td>SNPs in moderate-to-high LD with the lead SNP that show significant discrepancy in the Dentist-S test. This catches variants whose z-scores are inconsistent with the lead SNP's z-score given their LD correlation.</td>
+</tr>
+</tbody>
+</table>
+<p>The thresholds in the table above are the defaults. Each can be adjusted via CLI options:</p>
+<table>
+<thead>
+<tr>
+<th>Threshold</th>
+<th>CLI Option</th>
+<th>Default</th>
+<th>Used in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>logLR</td>
+<td><code>--logLR-threshold</code></td>
+<td><code>2.0</code></td>
+<td>C1</td>
+</tr>
+<tr>
+<td>|z|</td>
+<td><code>--z-threshold</code></td>
+<td><code>2.0</code></td>
+<td>C1 (upper bound), C2 (lower bound)</td>
+</tr>
+<tr>
+<td>|z_std_diff|</td>
+<td><code>--z-std-diff-threshold</code></td>
+<td><code>3.0</code></td>
+<td>C2</td>
+</tr>
+<tr>
+<td>|r_lead|</td>
+<td><code>--r-threshold</code></td>
+<td><code>0.8</code></td>
+<td>C2</td>
+</tr>
+<tr>
+<td>−log10(p)</td>
+<td><code>--dentist-pvalue-threshold</code></td>
+<td><code>4.0</code></td>
+<td>C3</td>
+</tr>
+<tr>
+<td>r²</td>
+<td><code>--dentist-r2-threshold</code></td>
+<td><code>0.6</code></td>
+<td>C3</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">z-threshold plays a dual role</p>
+<p>The <code>--z-threshold</code> parameter serves as a boundary between C1 and C2: SNPs with <code>|z| &gt; threshold</code> are evaluated for LD mismatch (C1), while SNPs with <code>|z| &lt; threshold</code> are evaluated as marginal outliers (C2). This ensures every SNP is checked by the appropriate criterion based on its signal strength.</p>
+</div>
+<h3 id="outlier-removal">Outlier Removal<a class="headerlink" href="#outlier-removal" title="Permanent link">&para;</a></h3>
+<p>The <code>--remove-outlier</code> flag triggers automatic outlier removal: SNPs flagged by any of C1, C2, or C3 are removed, and QC is re-run on the cleaned data. Both the original and cleaned summaries are saved for comparison.</p>
 <h2 id="output-format">Output Format<a class="headerlink" href="#output-format" title="Permanent link">&para;</a></h2>
 <h3 id="directory-structure">Directory Structure<a class="headerlink" href="#directory-structure" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>qc_output/
