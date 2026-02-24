@@ -820,9 +820,7 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
     weight_arr = np.column_stack(
         [1.0 / (merged_df[f"SE_{i}"] ** 2) for i in range(n_cohorts)]
     )
-    effect_arr = np.column_stack(
-        [merged_df[f"BETA_{i}"] for i in range(n_cohorts)]
-    )
+    effect_arr = np.column_stack([merged_df[f"BETA_{i}"] for i in range(n_cohorts)])
 
     # Per-SNP count of non-missing cohorts
     present = ~np.isnan(effect_arr)
@@ -1059,9 +1057,8 @@ def identify_outliers(
                 merged_data["r_abs"] = np.sqrt(merged_data["r2"].fillna(0))
 
                 marginal_condition = (
-                    (merged_data["z_std_diff"].abs() > z_std_diff_threshold)
-                    & (merged_data["r_abs"] > r_threshold)
-                )
+                    merged_data["z_std_diff"].abs() > z_std_diff_threshold
+                ) & (merged_data["r_abs"] > r_threshold)
 
                 # Collect C1 and C2 SNPs
                 c1_hits = merged_data[ld_mismatch_condition.values]["SNPID"].tolist()
@@ -1740,7 +1737,14 @@ def safe_qc_locus_cli(
         )
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.exception("QC failed for locus %s", locus_id)
-        return locus_id, pd.DataFrame(), None, None, None, f"{type(exc).__name__}: {exc}"
+        return (
+            locus_id,
+            pd.DataFrame(),
+            None,
+            None,
+            None,
+            f"{type(exc).__name__}: {exc}",
+        )
 
 
 def loci_qc(

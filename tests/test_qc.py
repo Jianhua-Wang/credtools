@@ -731,9 +731,9 @@ class TestCochranQ:
         all_snps = set(locus1.sumstats[ColName.SNPID]) | set(
             locus2.sumstats[ColName.SNPID]
         )
-        assert len(result) == len(all_snps), (
-            f"Expected {len(all_snps)} SNPs (union), got {len(result)}"
-        )
+        assert len(result) == len(
+            all_snps
+        ), f"Expected {len(all_snps)} SNPs (union), got {len(result)}"
 
     def test_snps_in_single_cohort_have_nan(self):
         """Verify SNPs present in only one cohort have NaN Q values."""
