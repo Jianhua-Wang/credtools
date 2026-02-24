@@ -649,11 +649,11 @@ class TestCochranQ:
         assert isinstance(result, pd.DataFrame)
 
     def test_expected_columns(self, multi_cohort_locus_set):
-        """Verify the result contains Q, Q_pvalue, and I_squared columns."""
+        """Verify the result contains Q, Q_pvalue, I_squared, and k columns."""
         from credtools.qc import cochran_q
 
         result = cochran_q(multi_cohort_locus_set)
-        expected_cols = {"Q", "Q_pvalue", "I_squared"}
+        expected_cols = {"Q", "Q_pvalue", "I_squared", "k"}
         assert expected_cols == set(result.columns)
 
     def test_q_pvalue_range(self, multi_cohort_locus_set):
@@ -677,6 +677,188 @@ class TestCochranQ:
 
         result = cochran_q(multi_cohort_locus_set)
         assert result.index.name == ColName.SNPID
+
+    def test_outer_join_includes_all_snps(self):
+        """Verify cochran_q uses outer join so SNPs in any cohort are included."""
+        from credtools.qc import cochran_q
+
+        # locus1 has SNPs at bp 1000-2900, locus2 has SNPs at bp 1500-3400
+        # Overlap is bp 1500-2900 (15 SNPs), union is bp 1000-3400 (25 SNPs)
+        locus1 = _make_locus("EUR", "UKB", seed=42, n_snps=20)  # bp 1000-2900
+        rng2 = np.random.default_rng(99)
+        n2 = 20
+        bps2 = np.arange(1500, 1500 + n2 * 100, 100)
+        snpids2 = [f"1-{bp}-A-G" for bp in bps2]
+        eaf2 = rng2.uniform(0.1, 0.5, n2).astype(np.float32)
+        sumstats2 = pd.DataFrame(
+            {
+                ColName.SNPID: snpids2,
+                ColName.CHR: np.int8(1),
+                ColName.BP: bps2.astype(np.int32),
+                ColName.EA: ["A"] * n2,
+                ColName.NEA: ["G"] * n2,
+                ColName.EAF: eaf2,
+                ColName.MAF: np.minimum(eaf2, 1 - eaf2),
+                ColName.A1: ["A"] * n2,
+                ColName.A2: ["G"] * n2,
+                ColName.BETA: rng2.normal(0, 0.1, n2).astype(np.float32),
+                ColName.SE: rng2.uniform(0.01, 0.05, n2).astype(np.float32),
+                ColName.P: rng2.uniform(1e-10, 0.05, n2).astype(np.float64),
+            }
+        )
+        A2 = rng2.normal(size=(n2, n2))
+        r2 = A2 @ A2.T
+        d2 = np.sqrt(np.diag(r2))
+        r2 = (r2 / np.outer(d2, d2)).astype(np.float32)
+        ld_map2 = sumstats2[
+            [ColName.SNPID, ColName.CHR, ColName.BP, ColName.A1, ColName.A2]
+        ].copy()
+        ld2 = LDMatrix(ld_map2, r2)
+        locus2 = Locus(
+            popu="AFR",
+            cohort="MVP",
+            sample_size=10000,
+            sumstats=sumstats2,
+            locus_start=int(bps2[0]),
+            locus_end=int(bps2[-1]),
+            ld=ld2,
+        )
+
+        locus_set = LocusSet([locus1, locus2])
+        result = cochran_q(locus_set)
+
+        # Union should have 25 unique SNPs (5 only in locus1 + 15 overlap + 5 only in locus2)
+        all_snps = set(locus1.sumstats[ColName.SNPID]) | set(
+            locus2.sumstats[ColName.SNPID]
+        )
+        assert len(result) == len(all_snps), (
+            f"Expected {len(all_snps)} SNPs (union), got {len(result)}"
+        )
+
+    def test_snps_in_single_cohort_have_nan(self):
+        """Verify SNPs present in only one cohort have NaN Q values."""
+        from credtools.qc import cochran_q
+
+        # locus1: bp 1000-1400 (5 SNPs), locus2: bp 1200-1600 (5 SNPs)
+        # Only bp 1200-1400 overlap (3 SNPs), rest are single-cohort
+        locus1 = _make_locus("EUR", "UKB", seed=42, n_snps=5)
+        rng2 = np.random.default_rng(99)
+        n2 = 5
+        bps2 = np.arange(1200, 1200 + n2 * 100, 100)
+        snpids2 = [f"1-{bp}-A-G" for bp in bps2]
+        eaf2 = rng2.uniform(0.1, 0.5, n2).astype(np.float32)
+        sumstats2 = pd.DataFrame(
+            {
+                ColName.SNPID: snpids2,
+                ColName.CHR: np.int8(1),
+                ColName.BP: bps2.astype(np.int32),
+                ColName.EA: ["A"] * n2,
+                ColName.NEA: ["G"] * n2,
+                ColName.EAF: eaf2,
+                ColName.MAF: np.minimum(eaf2, 1 - eaf2),
+                ColName.A1: ["A"] * n2,
+                ColName.A2: ["G"] * n2,
+                ColName.BETA: rng2.normal(0, 0.1, n2).astype(np.float32),
+                ColName.SE: rng2.uniform(0.01, 0.05, n2).astype(np.float32),
+                ColName.P: rng2.uniform(1e-10, 0.05, n2).astype(np.float64),
+            }
+        )
+        A2 = rng2.normal(size=(n2, n2))
+        r2 = A2 @ A2.T
+        d2 = np.sqrt(np.diag(r2))
+        r2 = (r2 / np.outer(d2, d2)).astype(np.float32)
+        ld_map2 = sumstats2[
+            [ColName.SNPID, ColName.CHR, ColName.BP, ColName.A1, ColName.A2]
+        ].copy()
+        ld2 = LDMatrix(ld_map2, r2)
+        locus2 = Locus(
+            popu="AFR",
+            cohort="MVP",
+            sample_size=10000,
+            sumstats=sumstats2,
+            locus_start=int(bps2[0]),
+            locus_end=int(bps2[-1]),
+            ld=ld2,
+        )
+
+        locus_set = LocusSet([locus1, locus2])
+        result = cochran_q(locus_set)
+
+        # SNPs only in one cohort should have NaN Q
+        only_locus1 = set(locus1.sumstats[ColName.SNPID]) - set(
+            locus2.sumstats[ColName.SNPID]
+        )
+        only_locus2 = set(locus2.sumstats[ColName.SNPID]) - set(
+            locus1.sumstats[ColName.SNPID]
+        )
+        for snp in only_locus1 | only_locus2:
+            assert pd.isna(result.loc[snp, "Q"]), f"SNP {snp} should have NaN Q"
+
+        # SNPs in both cohorts should have valid Q
+        overlap = set(locus1.sumstats[ColName.SNPID]) & set(
+            locus2.sumstats[ColName.SNPID]
+        )
+        for snp in overlap:
+            assert not pd.isna(result.loc[snp, "Q"]), f"SNP {snp} should have valid Q"
+
+    def test_k_column_tracks_cohort_count(self):
+        """Verify the k column correctly reports the number of cohorts per SNP."""
+        from credtools.qc import cochran_q
+
+        locus1 = _make_locus("EUR", "UKB", seed=42, n_snps=5)
+        rng2 = np.random.default_rng(99)
+        n2 = 5
+        bps2 = np.arange(1200, 1200 + n2 * 100, 100)
+        snpids2 = [f"1-{bp}-A-G" for bp in bps2]
+        eaf2 = rng2.uniform(0.1, 0.5, n2).astype(np.float32)
+        sumstats2 = pd.DataFrame(
+            {
+                ColName.SNPID: snpids2,
+                ColName.CHR: np.int8(1),
+                ColName.BP: bps2.astype(np.int32),
+                ColName.EA: ["A"] * n2,
+                ColName.NEA: ["G"] * n2,
+                ColName.EAF: eaf2,
+                ColName.MAF: np.minimum(eaf2, 1 - eaf2),
+                ColName.A1: ["A"] * n2,
+                ColName.A2: ["G"] * n2,
+                ColName.BETA: rng2.normal(0, 0.1, n2).astype(np.float32),
+                ColName.SE: rng2.uniform(0.01, 0.05, n2).astype(np.float32),
+                ColName.P: rng2.uniform(1e-10, 0.05, n2).astype(np.float64),
+            }
+        )
+        A2 = rng2.normal(size=(n2, n2))
+        r2 = A2 @ A2.T
+        d2 = np.sqrt(np.diag(r2))
+        r2 = (r2 / np.outer(d2, d2)).astype(np.float32)
+        ld_map2 = sumstats2[
+            [ColName.SNPID, ColName.CHR, ColName.BP, ColName.A1, ColName.A2]
+        ].copy()
+        ld2 = LDMatrix(ld_map2, r2)
+        locus2 = Locus(
+            popu="AFR",
+            cohort="MVP",
+            sample_size=10000,
+            sumstats=sumstats2,
+            locus_start=int(bps2[0]),
+            locus_end=int(bps2[-1]),
+            ld=ld2,
+        )
+
+        locus_set = LocusSet([locus1, locus2])
+        result = cochran_q(locus_set)
+
+        assert "k" in result.columns, "Result should have a 'k' column"
+        overlap = set(locus1.sumstats[ColName.SNPID]) & set(
+            locus2.sumstats[ColName.SNPID]
+        )
+        only_one = (
+            set(locus1.sumstats[ColName.SNPID]) | set(locus2.sumstats[ColName.SNPID])
+        ) - overlap
+        for snp in overlap:
+            assert result.loc[snp, "k"] == 2
+        for snp in only_one:
+            assert result.loc[snp, "k"] == 1
 
 
 # ===================================================================

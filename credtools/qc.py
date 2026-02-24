@@ -796,6 +796,7 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
     - Batch effects
     - Population stratification
     """
+    # Outer join: include SNPs present in any cohort
     merged_df = locus_set.loci[0].original_sumstats[[ColName.SNPID]].copy()
     for i, locus_obj in enumerate(locus_set.loci):
         locus_df = locus_obj.sumstats[
@@ -810,33 +811,44 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
             inplace=True,
         )
         merged_df = pd.merge(
-            merged_df, locus_df, on=ColName.SNPID, how="inner", suffixes=("", f"_{i}")
+            merged_df, locus_df, on=ColName.SNPID, how="outer", suffixes=("", f"_{i}")
         )
 
-    k: int = len(locus_set.loci)
-    weights = []
-    effects = []
-    for i in range(k):
-        weights.append((1 / (merged_df[f"SE_{i}"] ** 2)))
-        effects.append(merged_df[f"BETA_{i}"])
+    n_cohorts: int = len(locus_set.loci)
 
-    # Calculate weighted mean effect size
-    weighted_mean = np.sum([w * e for w, e in zip(weights, effects)], axis=0) / np.sum(
-        weights, axis=0
+    # Build weight and effect arrays; NaN where a cohort lacks the SNP
+    weight_arr = np.column_stack(
+        [1.0 / (merged_df[f"SE_{i}"] ** 2) for i in range(n_cohorts)]
+    )
+    effect_arr = np.column_stack(
+        [merged_df[f"BETA_{i}"] for i in range(n_cohorts)]
     )
 
-    # Calculate Q statistic
-    Q = np.sum([w * (e - weighted_mean) ** 2 for w, e in zip(weights, effects)], axis=0)
+    # Per-SNP count of non-missing cohorts
+    present = ~np.isnan(effect_arr)
+    k_per_snp = present.sum(axis=1)
 
-    # Calculate degrees of freedom
-    df = k - 1
+    # Replace NaN with 0 in weights so they don't contribute
+    w = np.where(present, weight_arr, 0.0)
+    e = np.where(present, effect_arr, 0.0)
 
-    # Calculate P-value
-    p_value = np.maximum(stats.chi2.sf(Q, df), 1e-300)
+    w_sum = w.sum(axis=1)
+    weighted_mean = np.where(w_sum > 0, (w * e).sum(axis=1) / w_sum, 0.0)
 
-    # Calculate I^2
+    # Q = Σ w_i (β_i - β_pooled)² over non-missing cohorts
+    Q = (w * (e - weighted_mean[:, None]) ** 2).sum(axis=1)
+
+    # df = k_i - 1 per SNP
+    df = k_per_snp - 1
+
+    # P-value and I² only for SNPs with >= 2 cohorts
+    p_value = np.full(len(merged_df), np.nan)
+    I_squared = np.full(len(merged_df), np.nan)
+    valid = df >= 1
+    p_value[valid] = np.maximum(stats.chi2.sf(Q[valid], df[valid]), 1e-300)
     with np.errstate(invalid="ignore"):
-        I_squared = np.maximum(0, (Q - df) / Q * 100)
+        I_squared[valid] = np.maximum(0, (Q[valid] - df[valid]) / Q[valid] * 100)
+    Q = np.where(valid, Q, np.nan)
 
     # Create output dataframe
     output_df = pd.DataFrame(
@@ -845,6 +857,7 @@ def cochran_q(locus_set: LocusSet) -> pd.DataFrame:
             "Q": Q,
             "Q_pvalue": p_value,
             "I_squared": I_squared,
+            "k": k_per_snp,
         }
     )
     return output_df.set_index(ColName.SNPID)
