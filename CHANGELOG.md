@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.5] (2026-02-23)
+
+### Added
+- Outlier SNP detail tracking: `identify_outliers()` now returns a DataFrame with per-criterion flags (`C1_ld_mismatch`, `C2_marginal`, `C3_dentist_s`) instead of a plain SNPID list
+- `outlier_snps.txt.gz` output file saved at both per-locus and global levels, recording each outlier SNP with its triggered detection criteria
+- Updated QC documentation with detailed outlier detection criteria descriptions
+
+### Fixed
+- Use outer join in `cochran_q()` to include all SNPs across cohorts (previously only intersection)
+
 ## [0.4.4] (2026-02-23)
 
 ### Added
