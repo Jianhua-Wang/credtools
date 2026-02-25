@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.6] (2026-02-25)
+
+### Added
+- Unit tests for `susie_rss.py` internal functions (coverage 16% → 82%): 107 tests covering credible sets, statistical gradients, SER, prior variance optimization, initialization, and integration
+- Unit tests for `multisusie_rss.py` internal functions (coverage 8% → 65%): 65 tests covering S/SER_RESULTS classes, recovery functions, compute_lbf, optimization, and integration
+
+### Changed
+- Upgraded `typer>=0.9.0` and `cojopy>=0.1.4` to fix click 8.2 incompatibility
+
+### Fixed
+- Added D102 and E226 to flake8 ignore list for pre-existing lint issues
+
 ## [0.4.5] (2026-02-23)
 
 ### Added
