@@ -74,7 +74,9 @@ def small_K2_data(rng):
     rho = np.array([[1.0, 0.8], [0.8, 1.0]], dtype=np.float32)
 
     return {
-        "K": K, "p": p, "L": L,
+        "K": K,
+        "p": p,
+        "L": L,
         "pop_sizes": pop_sizes,
         "XTX_list": XTX_list,
         "XTY_list": XTY_list,
@@ -104,9 +106,7 @@ def small_S_obj(small_K2_data):
 def X_l2_arr(small_K2_data):
     """Diagonal of XTX for each population, shape (K, p)."""
     d = small_K2_data
-    return np.array(
-        [np.diag(XTX) for XTX in d["XTX_list"]], dtype=np.float32
-    )
+    return np.array([np.diag(XTX) for XTX in d["XTX_list"]], dtype=np.float32)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -118,12 +118,12 @@ class TestSClass:
     """M1: S class initialization and shape validation."""
 
     def test_alpha_shape(self, small_S_obj, small_K2_data):
-        """alpha should be L x p."""
+        """Alpha should be L x p."""
         d = small_K2_data
         assert small_S_obj.alpha.shape == (d["L"], d["p"])
 
     def test_mu_shape(self, small_S_obj, small_K2_data):
-        """mu should be K x L x p."""
+        """Mu should be K x L x p."""
         d = small_K2_data
         assert small_S_obj.mu.shape == (d["K"], d["L"], d["p"])
 
@@ -133,12 +133,12 @@ class TestSClass:
         assert small_S_obj.mu2.shape == (d["K"], d["K"], d["L"], d["p"])
 
     def test_alpha_uniform(self, small_S_obj, small_K2_data):
-        """alpha initialized to 1/p."""
+        """Alpha initialized to 1/p."""
         d = small_K2_data
         assert_allclose(small_S_obj.alpha, 1.0 / d["p"], atol=1e-6)
 
     def test_converged_initial(self, small_S_obj):
-        """converged starts as False."""
+        """Converged starts as False."""
         assert small_S_obj.converged is False
 
     def test_V_shape(self, small_S_obj, small_K2_data):
@@ -150,7 +150,9 @@ class TestSClass:
         """Custom float type should be respected."""
         d = small_K2_data
         s = S(
-            pop_sizes=d["pop_sizes"], L=d["L"], XTX_list=d["XTX_list"],
+            pop_sizes=d["pop_sizes"],
+            L=d["L"],
+            XTX_list=d["XTX_list"],
             scaled_prior_variance=0.2,
             residual_variance=np.ones(d["K"]),
             varY=np.ones(d["K"]),
@@ -176,8 +178,9 @@ class TestSERResultsClass:
         """All attributes should be stored."""
         alpha = np.array([0.5, 0.3, 0.2])
         mu = np.array([[1.0, 0.5, 0.1], [0.5, 1.0, 0.1]])
-        mu2 = np.array([[[1.1, 0.3, 0.02], [0.5, 1.0, 0.1]],
-                         [[0.5, 1.0, 0.1], [1.1, 0.3, 0.02]]])
+        mu2 = np.array(
+            [[[1.1, 0.3, 0.02], [0.5, 1.0, 0.1]], [[0.5, 1.0, 0.1], [1.1, 0.3, 0.02]]]
+        )
         lbf = np.array([0.5, 0.3, 0.1])
         lbf_model = 1.0
         V = np.array([0.5, 0.3])
@@ -217,10 +220,12 @@ class TestMultisusieCSFunctions:
 
     def test_in_CS_matrix(self):
         """in_CS works on LxP matrix."""
-        alpha = np.array([
-            [0.8, 0.1, 0.1],
-            [0.1, 0.1, 0.8],
-        ])
+        alpha = np.array(
+            [
+                [0.8, 0.1, 0.1],
+                [0.1, 0.1, 0.8],
+            ]
+        )
         result = in_CS(alpha, 0.9)
         assert result.shape == (2, 3)
         assert result[0, 0] == 1
@@ -228,10 +233,12 @@ class TestMultisusieCSFunctions:
 
     def test_n_in_CS_array(self):
         """n_in_CS returns per-component counts."""
-        alpha = np.array([
-            [0.9, 0.05, 0.05],
-            [0.33, 0.34, 0.33],
-        ])
+        alpha = np.array(
+            [
+                [0.9, 0.05, 0.05],
+                [0.33, 0.34, 0.33],
+            ]
+        )
         result = n_in_CS(alpha, 0.9)
         assert result[0] == 1
         assert result[1] == 3
@@ -267,7 +274,7 @@ class TestRecoverFunctions:
         assert XTY.shape == (p,)
 
     def test_recover_nan_handling(self):
-        """NaN in input handled gracefully."""
+        """Verify NaN in input handled gracefully."""
         p = 3
         b = np.array([0.1, np.nan, 0.3])
         s = np.array([0.02, 0.02, 0.02])
@@ -277,7 +284,7 @@ class TestRecoverFunctions:
         assert np.all(np.isfinite(XTY))
 
     def test_recover_z_nan_handling(self):
-        """NaN in z scores handled."""
+        """Verify NaN in z scores handled."""
         z = np.array([1.0, np.nan, 2.0])
         R = np.eye(3, dtype=np.float32)
         XTX, XTY = recover_XTX_and_XTY_from_Z(z, R.copy(), 1000)
@@ -307,11 +314,13 @@ class TestRecoverRFromXTX:
 
     def test_recover_with_zeros(self):
         """Handles X_l2 containing zeros."""
-        XTX = np.array([
-            [5.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0],
-            [0.0, 0.0, 3.0],
-        ])
+        XTX = np.array(
+            [
+                [5.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 3.0],
+            ]
+        )
         X_l2 = np.diag(XTX).copy()
         recover_R_from_XTX(XTX, X_l2)
         assert_allclose(XTX[0, 0], 1.0, atol=1e-10)
@@ -334,16 +343,21 @@ class TestGetER2Multi:
         mu = np.zeros((2, p), dtype=np.float32)
         mu2 = np.zeros((2, p), dtype=np.float32)
         X_l2 = np.diag(d["XTX_list"][0])
-        result = get_ER2(d["XTX_list"][0], d["XTY_list"][0], d["YTY_list"][0],
-                         alpha, mu, mu2, X_l2)
+        result = get_ER2(
+            d["XTX_list"][0], d["XTY_list"][0], d["YTY_list"][0], alpha, mu, mu2, X_l2
+        )
         assert_allclose(result, d["YTY_list"][0], atol=1e-3)
 
     def test_get_ER2_finite(self, small_K2_data, small_S_obj, X_l2_arr):
         """Normal input produces finite ER2."""
         d = small_K2_data
         result = get_ER2(
-            d["XTX_list"][0], d["XTY_list"][0], d["YTY_list"][0],
-            small_S_obj.alpha, small_S_obj.mu[0], small_S_obj.mu2[0, 0],
+            d["XTX_list"][0],
+            d["XTY_list"][0],
+            d["YTY_list"][0],
+            small_S_obj.alpha,
+            small_S_obj.mu[0],
+            small_S_obj.mu2[0, 0],
             X_l2_arr[0],
         )
         assert np.isfinite(result)
@@ -385,8 +399,12 @@ class TestGetER2Multi:
             d["XTX_list"], d["XTY_list"], d["YTY_list"], small_S_obj, X_l2_arr
         )
         result = estimate_residual_variance_func(
-            d["XTX_list"], d["XTY_list"], d["YTY_list"],
-            small_S_obj, X_l2_arr, d["pop_sizes"],
+            d["XTX_list"],
+            d["XTY_list"],
+            d["YTY_list"],
+            small_S_obj,
+            X_l2_arr,
+            d["pop_sizes"],
         )
         assert result.shape == (d["K"],)
         assert np.all(np.isfinite(result))
@@ -435,7 +453,9 @@ class TestSusieGetPIPMulti:
         """Components with V near zero filtered."""
         d = small_K2_data
         s = S(
-            pop_sizes=d["pop_sizes"], L=d["L"], XTX_list=d["XTX_list"],
+            pop_sizes=d["pop_sizes"],
+            L=d["L"],
+            XTX_list=d["XTX_list"],
             scaled_prior_variance=0.2,
             residual_variance=np.ones(d["K"], dtype=np.float32),
             varY=np.ones(d["K"], dtype=np.float32),
@@ -450,7 +470,9 @@ class TestSusieGetPIPMulti:
         """All zero V returns zero PIP."""
         d = small_K2_data
         s = S(
-            pop_sizes=d["pop_sizes"], L=d["L"], XTX_list=d["XTX_list"],
+            pop_sizes=d["pop_sizes"],
+            L=d["L"],
+            XTX_list=d["XTX_list"],
             scaled_prior_variance=0.0,
             residual_variance=np.ones(d["K"], dtype=np.float32),
             varY=np.ones(d["K"], dtype=np.float32),
@@ -467,7 +489,10 @@ class TestSusieGetCSMulti:
         """Basic CS extraction."""
         d = small_K2_data
         cs, purity, coverage, mask = susie_get_cs(
-            small_S_obj, d["R_list"], coverage=0.95, purity=0.0,
+            small_S_obj,
+            d["R_list"],
+            coverage=0.95,
+            purity=0.0,
         )
         assert isinstance(cs, list)
         assert isinstance(mask, np.ndarray)
@@ -476,7 +501,9 @@ class TestSusieGetCSMulti:
         """calculate_purity=False skips purity."""
         d = small_K2_data
         cs, purity, coverage, mask = susie_get_cs(
-            small_S_obj, d["R_list"], coverage=0.95,
+            small_S_obj,
+            d["R_list"],
+            coverage=0.95,
             calculate_purity=False,
         )
         assert np.all(np.isnan(purity[mask]))
@@ -485,7 +512,9 @@ class TestSusieGetCSMulti:
         """Duplicate CS are removed."""
         d = small_K2_data
         s = S(
-            pop_sizes=d["pop_sizes"], L=2, XTX_list=d["XTX_list"],
+            pop_sizes=d["pop_sizes"],
+            L=2,
+            XTX_list=d["XTX_list"],
             scaled_prior_variance=0.2,
             residual_variance=np.ones(d["K"], dtype=np.float32),
             varY=np.ones(d["K"], dtype=np.float32),
@@ -494,7 +523,10 @@ class TestSusieGetCSMulti:
         # Make both effects identical → same CS
         s.alpha[1] = s.alpha[0]
         cs, purity, coverage, mask = susie_get_cs(
-            s, d["R_list"], dedup=True, calculate_purity=False,
+            s,
+            d["R_list"],
+            dedup=True,
+            calculate_purity=False,
         )
         # At most 1 CS should be included due to dedup
         assert np.sum(mask) <= 1
@@ -503,7 +535,9 @@ class TestSusieGetCSMulti:
         """Effects with V near zero excluded."""
         d = small_K2_data
         s = S(
-            pop_sizes=d["pop_sizes"], L=2, XTX_list=d["XTX_list"],
+            pop_sizes=d["pop_sizes"],
+            L=2,
+            XTX_list=d["XTX_list"],
             scaled_prior_variance=0.2,
             residual_variance=np.ones(d["K"], dtype=np.float32),
             varY=np.ones(d["K"], dtype=np.float32),
@@ -511,7 +545,9 @@ class TestSusieGetCSMulti:
         )
         s.V[:, 1] = 0
         cs, purity, coverage, mask = susie_get_cs(
-            s, d["R_list"], calculate_purity=False,
+            s,
+            d["R_list"],
+            calculate_purity=False,
         )
         assert mask[1] is False or mask[1] == False  # noqa: E712
 
@@ -562,7 +598,14 @@ class TestComputeLBF:
         XTY_list = [x.astype(np.float64) for x in d["XTY_list"]]
         XTX_list = [x.astype(np.float64) for x in d["XTX_list"]]
         X_l2 = X_l2_arr.astype(np.float64)
-        return V, XTY_list, XTX_list, X_l2, d["rho"].astype(np.float64), residual_variance
+        return (
+            V,
+            XTY_list,
+            XTX_list,
+            X_l2,
+            d["rho"].astype(np.float64),
+            residual_variance,
+        )
 
     def test_compute_lbf_all_zero_V(self, lbf_data):
         """All-zero V returns zero LBF."""
@@ -576,7 +619,13 @@ class TestComputeLBF:
         V, XTY_list, XTX_list, X_l2, rho, resvar = lbf_data
         V_zero = np.zeros(2, dtype=np.float64)
         lbf, pm, pm2 = compute_lbf(
-            V_zero, XTY_list, XTX_list, X_l2, rho, resvar, return_moments=True,
+            V_zero,
+            XTY_list,
+            XTX_list,
+            X_l2,
+            rho,
+            resvar,
+            return_moments=True,
         )
         assert_allclose(lbf, np.zeros(4), atol=1e-6)
         assert_allclose(pm, np.zeros((2, 4)), atol=1e-6)
@@ -600,7 +649,13 @@ class TestComputeLBF:
         """compute_lbf with return_moments=True."""
         V, XTY_list, XTX_list, X_l2, rho, resvar = lbf_data
         lbf, pm, pm2 = compute_lbf(
-            V, XTY_list, XTX_list, X_l2, rho, resvar, return_moments=True,
+            V,
+            XTY_list,
+            XTX_list,
+            X_l2,
+            rho,
+            resvar,
+            return_moments=True,
         )
         assert lbf.shape == (4,)
         assert pm.shape == (2, 4)
@@ -609,8 +664,12 @@ class TestComputeLBF:
     def test_no_moments_vs_moments_lbf_agree(self, lbf_data):
         """LBF should agree whether moments are computed or not."""
         V, XTY_list, XTX_list, X_l2, rho, resvar = lbf_data
-        lbf_no = compute_lbf(V, XTY_list, XTX_list, X_l2, rho, resvar, return_moments=False)
-        lbf_yes, _, _ = compute_lbf(V, XTY_list, XTX_list, X_l2, rho, resvar, return_moments=True)
+        lbf_no = compute_lbf(
+            V, XTY_list, XTX_list, X_l2, rho, resvar, return_moments=False
+        )
+        lbf_yes, _, _ = compute_lbf(
+            V, XTY_list, XTX_list, X_l2, rho, resvar, return_moments=True
+        )
         assert_allclose(lbf_no, lbf_yes, atol=1e-5, rtol=1e-4)
 
     def test_compute_lbf_and_moments_safe_consistent(self, lbf_data):
@@ -619,10 +678,20 @@ class TestComputeLBF:
         XTY = np.ascontiguousarray(np.stack(XTY_list, axis=1))
 
         lbf_std, pm_std, pm2_std = compute_lbf_and_moments(
-            V, XTY, X_l2, rho, resvar, np.float64,
+            V,
+            XTY,
+            X_l2,
+            rho,
+            resvar,
+            np.float64,
         )
         lbf_safe, pm_safe, pm2_safe = compute_lbf_and_moments_safe(
-            V, XTY, X_l2, rho, resvar, np.float64,
+            V,
+            XTY,
+            X_l2,
+            rho,
+            resvar,
+            np.float64,
         )
         assert_allclose(lbf_std, lbf_safe, atol=1e-5, rtol=1e-4)
         assert_allclose(pm_std, pm_safe, atol=1e-5, rtol=1e-4)
@@ -659,58 +728,81 @@ class TestMultisusieOptimizePriorVariance:
         post_mean2[1, 1] = 0.01
         w_pop = np.array([0.5, 0.5], dtype=np.float32)
         return {
-            "prior_weights": prior_weights, "K": K,
+            "prior_weights": prior_weights,
+            "K": K,
             "compute_lbf_params": compute_lbf_params,
-            "alpha": alpha[0], "post_mean2": post_mean2,
-            "w_pop": w_pop, "current_V": V,
+            "alpha": alpha[0],
+            "post_mean2": post_mean2,
+            "w_pop": w_pop,
+            "current_V": V,
         }
 
     def test_EM_method(self, optim_setup):
         """EM method returns positive V."""
         from credtools.wrappers.multisusie_rss import optimize_prior_variance as opt_pv
+
         s = optim_setup
         V = opt_pv(
-            "EM", s["prior_weights"], s["K"],
+            "EM",
+            s["prior_weights"],
+            s["K"],
             compute_lbf_params=s["compute_lbf_params"],
-            alpha=s["alpha"], post_mean2=s["post_mean2"],
-            w_pop=s["w_pop"], current_V=s["current_V"],
+            alpha=s["alpha"],
+            post_mean2=s["post_mean2"],
+            w_pop=s["w_pop"],
+            current_V=s["current_V"],
         )
         assert np.all(np.isfinite(np.atleast_1d(V)))
 
     def test_early_EM_method(self, optim_setup):
         """early_EM method works."""
         from credtools.wrappers.multisusie_rss import optimize_prior_variance as opt_pv
+
         s = optim_setup
         V = opt_pv(
-            "early_EM", s["prior_weights"], s["K"],
+            "early_EM",
+            s["prior_weights"],
+            s["K"],
             compute_lbf_params=s["compute_lbf_params"],
-            alpha=s["alpha"], post_mean2=s["post_mean2"],
-            w_pop=s["w_pop"], current_V=s["current_V"],
+            alpha=s["alpha"],
+            post_mean2=s["post_mean2"],
+            w_pop=s["w_pop"],
+            current_V=s["current_V"],
         )
         assert np.all(np.isfinite(np.atleast_1d(V)))
 
     def test_optim_method(self, optim_setup):
-        """optim method works."""
+        """Optim method works."""
         from credtools.wrappers.multisusie_rss import optimize_prior_variance as opt_pv
+
         s = optim_setup
         V = opt_pv(
-            "optim", s["prior_weights"], s["K"],
+            "optim",
+            s["prior_weights"],
+            s["K"],
             compute_lbf_params=s["compute_lbf_params"],
-            alpha=s["alpha"], post_mean2=s["post_mean2"],
-            w_pop=s["w_pop"], current_V=s["current_V"],
+            alpha=s["alpha"],
+            post_mean2=s["post_mean2"],
+            w_pop=s["w_pop"],
+            current_V=s["current_V"],
         )
         V_arr = np.atleast_1d(V)
         assert np.all(V_arr >= 0)
 
     def test_grid_method(self, optim_setup):
-        """grid method works."""
+        """Grid method works."""
         from credtools.wrappers.multisusie_rss import optimize_prior_variance as opt_pv
+
         s = optim_setup
         V = opt_pv(
-            "grid", s["prior_weights"], s["K"],
+            "grid",
+            s["prior_weights"],
+            s["K"],
             compute_lbf_params=s["compute_lbf_params"],
-            alpha=s["alpha"], post_mean2=s["post_mean2"],
-            w_pop=s["w_pop"], current_V=s["current_V"],
+            alpha=s["alpha"],
+            post_mean2=s["post_mean2"],
+            w_pop=s["w_pop"],
+            current_V=s["current_V"],
         )
         V_arr = np.atleast_1d(V)
         assert np.all(V_arr >= 0)
@@ -718,13 +810,18 @@ class TestMultisusieOptimizePriorVariance:
     def test_invalid_method(self, optim_setup):
         """Invalid method raises ValueError."""
         from credtools.wrappers.multisusie_rss import optimize_prior_variance as opt_pv
+
         s = optim_setup
         with pytest.raises(ValueError, match="unknown"):
             opt_pv(
-                "invalid_method", s["prior_weights"], s["K"],
+                "invalid_method",
+                s["prior_weights"],
+                s["K"],
                 compute_lbf_params=s["compute_lbf_params"],
-                alpha=s["alpha"], post_mean2=s["post_mean2"],
-                w_pop=s["w_pop"], current_V=s["current_V"],
+                alpha=s["alpha"],
+                post_mean2=s["post_mean2"],
+                w_pop=s["w_pop"],
+                current_V=s["current_V"],
             )
 
 
@@ -744,8 +841,11 @@ class TestMultisusieRSSInputValidation:
         s_list = [np.ones(d["p"]) * 0.01 for _ in range(d["K"])]
         with pytest.raises(Exception):
             multisusie_rss(
-                R_list=d["R_list"], population_sizes=d["pop_sizes"],
-                z_list=z_list, b_list=b_list, s_list=s_list,
+                R_list=d["R_list"],
+                population_sizes=d["pop_sizes"],
+                z_list=z_list,
+                b_list=b_list,
+                s_list=s_list,
                 rho=d["rho"],
             )
 
@@ -754,7 +854,8 @@ class TestMultisusieRSSInputValidation:
         d = small_K2_data
         with pytest.raises(Exception):
             multisusie_rss(
-                R_list=d["R_list"], population_sizes=d["pop_sizes"],
+                R_list=d["R_list"],
+                population_sizes=d["pop_sizes"],
                 rho=d["rho"],
             )
 
@@ -799,7 +900,7 @@ class TestSusieMultiSS:
         assert isinstance(s, S)
 
     def test_p_less_than_L(self, small_K2_data):
-        """p < L clips L to p."""
+        """Verify p < L clips L to p."""
         d = small_K2_data
         s = susie_multi_ss(
             XTX_list=d["XTX_list"],
@@ -853,7 +954,7 @@ class TestSusieMultiSS:
         assert isinstance(s, S)
 
     def test_converged_attribute(self, small_K2_data):
-        """converged attribute should be bool."""
+        """Converged attribute should be bool."""
         d = small_K2_data
         s = susie_multi_ss(
             XTX_list=d["XTX_list"],

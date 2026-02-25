@@ -71,20 +71,26 @@ def susie_fit_obj():
     """Minimal SuSiE fit object for testing."""
     p = 5
     L = 2
-    alpha = np.array([
-        [0.7, 0.1, 0.1, 0.05, 0.05],
-        [0.05, 0.05, 0.1, 0.7, 0.1],
-    ])
+    alpha = np.array(
+        [
+            [0.7, 0.1, 0.1, 0.05, 0.05],
+            [0.05, 0.05, 0.1, 0.7, 0.1],
+        ]
+    )
     return {
         "alpha": alpha,
-        "mu": np.array([
-            [1.0, 0.1, 0.1, 0.0, 0.0],
-            [0.0, 0.0, 0.1, 1.0, 0.1],
-        ]),
-        "mu2": np.array([
-            [1.1, 0.11, 0.11, 0.01, 0.01],
-            [0.01, 0.01, 0.11, 1.1, 0.11],
-        ]),
+        "mu": np.array(
+            [
+                [1.0, 0.1, 0.1, 0.0, 0.0],
+                [0.0, 0.0, 0.1, 1.0, 0.1],
+            ]
+        ),
+        "mu2": np.array(
+            [
+                [1.1, 0.11, 0.11, 0.01, 0.01],
+                [0.01, 0.01, 0.11, 1.1, 0.11],
+            ]
+        ),
         "V": np.array([0.5, 0.3]),
         "sigma2": 1.0,
         "KL": np.array([0.1, 0.2]),
@@ -173,7 +179,7 @@ class TestStatisticalGradients:
         assert np.all(np.isfinite(result))
 
     def test_lbf_grad_nan_handling(self):
-        """NaN in T2 should produce 0 in gradient."""
+        """Verify NaN in T2 produces 0 in gradient."""
         V = 1.0
         shat2 = np.array([0.1, 0.2])
         T2 = np.array([4.0, np.nan])
@@ -525,6 +531,7 @@ class TestOptimizePriorVariance:
 
     @pytest.fixture
     def optim_data(self):
+        """Provide test data for optimize_prior_variance tests."""
         betahat = np.array([2.0, 0.5, -0.3])
         shat2 = np.array([0.1, 0.2, 0.3])
         pw = np.ones(3) / 3
@@ -613,7 +620,9 @@ class TestInitSetup:
     def test_basic_initialization(self):
         """Normal init returns correct structure."""
         s = init_setup(
-            n=100, p=5, L=3,
+            n=100,
+            p=5,
+            L=3,
             scaled_prior_variance=0.2,
             residual_variance=1.0,
             prior_weights=None,
@@ -652,7 +661,7 @@ class TestInitSetup:
             init_setup(100, 5, 3, 0.2, 1.0, np.ones(3), 0, 1.0, True)
 
     def test_p_less_than_L(self):
-        """p < L should reduce L to p."""
+        """Verify p < L reduces L to p."""
         s = init_setup(100, 3, 10, 0.2, 1.0, None, 0, 1.0, True)
         assert s["alpha"].shape[0] == 3
 
@@ -877,10 +886,12 @@ class TestSusieGetCS:
     def test_basic_no_purity(self):
         """Without X/Xcorr, returns CS without purity."""
         res = {
-            "alpha": np.array([
-                [0.8, 0.1, 0.05, 0.05],
-                [0.05, 0.05, 0.1, 0.8],
-            ]),
+            "alpha": np.array(
+                [
+                    [0.8, 0.1, 0.05, 0.05],
+                    [0.05, 0.05, 0.1, 0.8],
+                ]
+            ),
             "V": np.array([0.5, 0.5]),
         }
         result = susie_get_cs(res, coverage=0.95)
@@ -890,10 +901,12 @@ class TestSusieGetCS:
     def test_with_xcorr_purity(self, small_pd_matrix):
         """With Xcorr, computes purity."""
         res = {
-            "alpha": np.array([
-                [0.8, 0.1, 0.05, 0.03, 0.02],
-                [0.02, 0.03, 0.05, 0.1, 0.8],
-            ]),
+            "alpha": np.array(
+                [
+                    [0.8, 0.1, 0.05, 0.03, 0.02],
+                    [0.02, 0.03, 0.05, 0.1, 0.8],
+                ]
+            ),
             "V": np.array([0.5, 0.5]),
         }
         result = susie_get_cs(res, Xcorr=small_pd_matrix, coverage=0.95)
@@ -902,10 +915,12 @@ class TestSusieGetCS:
     def test_V_filtering(self):
         """Components with V ~ 0 are filtered."""
         res = {
-            "alpha": np.array([
-                [0.8, 0.1, 0.1],
-                [0.1, 0.1, 0.8],
-            ]),
+            "alpha": np.array(
+                [
+                    [0.8, 0.1, 0.1],
+                    [0.1, 0.1, 0.8],
+                ]
+            ),
             "V": np.array([0.5, 1e-15]),
         }
         result = susie_get_cs(res, coverage=0.95)
@@ -915,10 +930,12 @@ class TestSusieGetCS:
     def test_dedup(self):
         """Duplicate CS are removed."""
         res = {
-            "alpha": np.array([
-                [0.8, 0.1, 0.1],
-                [0.8, 0.1, 0.1],  # duplicate
-            ]),
+            "alpha": np.array(
+                [
+                    [0.8, 0.1, 0.1],
+                    [0.8, 0.1, 0.1],  # duplicate
+                ]
+            ),
             "V": np.array([0.5, 0.5]),
         }
         result = susie_get_cs(res, coverage=0.95, dedup=True)
@@ -928,10 +945,12 @@ class TestSusieGetCS:
     def test_no_dedup(self):
         """Without dedup, duplicates kept."""
         res = {
-            "alpha": np.array([
-                [0.8, 0.1, 0.1],
-                [0.8, 0.1, 0.1],
-            ]),
+            "alpha": np.array(
+                [
+                    [0.8, 0.1, 0.1],
+                    [0.8, 0.1, 0.1],
+                ]
+            ),
             "V": np.array([0.5, 0.5]),
         }
         result = susie_get_cs(res, coverage=0.95, dedup=False)
@@ -942,12 +961,16 @@ class TestSusieGetCS:
         """When all CS filtered by purity, returns None."""
         # Uniform alpha → large CS → likely low purity
         res = {
-            "alpha": np.array([
-                [0.2, 0.2, 0.2, 0.2, 0.2],
-            ]),
+            "alpha": np.array(
+                [
+                    [0.2, 0.2, 0.2, 0.2, 0.2],
+                ]
+            ),
             "V": np.array([0.5]),
         }
-        result = susie_get_cs(res, Xcorr=small_pd_matrix, min_abs_corr=0.999, coverage=0.95)
+        result = susie_get_cs(
+            res, Xcorr=small_pd_matrix, min_abs_corr=0.999, coverage=0.95
+        )
         # May or may not be filtered; depends on matrix
         assert isinstance(result, dict)
 
@@ -975,6 +998,7 @@ class TestUpdateEachEffect:
 
     @pytest.fixture
     def update_data(self):
+        """Provide test data for update_each_effect tests."""
         rng = np.random.default_rng(42)
         p = 4
         A = rng.normal(0, 1, (p, p))
@@ -1004,7 +1028,9 @@ class TestUpdateEachEffect:
         """Should work with prior variance estimation."""
         XtX, Xty, s = update_data
         result = update_each_effect_ss(
-            XtX, Xty, s,
+            XtX,
+            Xty,
+            s,
             estimate_prior_variance=True,
             estimate_prior_method="optim",
         )
@@ -1027,6 +1053,7 @@ class TestSusieSuffStat:
 
     @pytest.fixture
     def suff_stat_data(self):
+        """Provide test data for susie_suff_stat tests."""
         rng = np.random.default_rng(42)
         p = 5
         n = 100
@@ -1060,30 +1087,26 @@ class TestSusieSuffStat:
             susie_suff_stat(XtX, Xty, yty, n)
 
     def test_nan_in_xtx_raises(self, suff_stat_data):
-        """NaN in XtX raises ValueError."""
+        """Verify NaN in XtX raises ValueError."""
         XtX, Xty, yty, n = suff_stat_data
         XtX[0, 0] = np.nan
         with pytest.raises(ValueError, match="NAs"):
             susie_suff_stat(XtX, Xty, yty, n)
 
     def test_standardize_option(self, suff_stat_data):
-        """standardize flag should work."""
+        """Standardize flag should work."""
         XtX, Xty, yty, n = suff_stat_data
-        result = susie_suff_stat(
-            XtX, Xty, yty, n, L=2, max_iter=2, standardize=True
-        )
+        result = susie_suff_stat(XtX, Xty, yty, n, L=2, max_iter=2, standardize=True)
         assert "alpha" in result
 
     def test_no_standardize(self, suff_stat_data):
-        """standardize=False should work."""
+        """Verify standardize=False should work."""
         XtX, Xty, yty, n = suff_stat_data
-        result = susie_suff_stat(
-            XtX, Xty, yty, n, L=2, max_iter=2, standardize=False
-        )
+        result = susie_suff_stat(XtX, Xty, yty, n, L=2, max_iter=2, standardize=False)
         assert "alpha" in result
 
     def test_convergence_flag(self, suff_stat_data):
-        """converged is bool."""
+        """Converged is bool."""
         XtX, Xty, yty, n = suff_stat_data
         result = susie_suff_stat(XtX, Xty, yty, n, L=2, max_iter=100)
         assert isinstance(result["converged"], bool)
@@ -1102,7 +1125,7 @@ class TestSusieSuffStat:
         assert len(result["elbo"]) >= 1
 
     def test_p_less_than_L(self, suff_stat_data):
-        """p < L should reduce L to p."""
+        """Verify p < L reduces L to p."""
         XtX, Xty, yty, n = suff_stat_data
         p = XtX.shape[0]
         result = susie_suff_stat(XtX, Xty, yty, n, L=p + 5, max_iter=2)
