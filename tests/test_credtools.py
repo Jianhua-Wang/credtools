@@ -2,7 +2,9 @@
 """Tests for `credtools` package."""
 
 import os
+import warnings
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
@@ -12,7 +14,14 @@ from typing import List, Optional
 from credtools import __version__
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet
-from credtools.credtools import fine_map
+from credtools.credtools import (
+    _adaptive_fine_map,
+    _adaptive_fine_map_multi,
+    _empty_credible_set,
+    _generate_run_summary,
+    _is_success,
+    fine_map,
+)
 from credtools.ldmatrix import LDMatrix
 from credtools.locus import Locus, LocusSet, load_locus
 
@@ -233,3 +242,275 @@ def test_single_input_returns_zero_without_significant_snp():
             assert cred_col in df.columns
             assert (df[pip_col] == 0).all()
             assert (df[cred_col] == 0).all()
+
+
+# ---------------------------------------------------------------------------
+# TestIsSuccess
+# ---------------------------------------------------------------------------
+class TestIsSuccess:
+    """Tests for _is_success function."""
+
+    @pytest.mark.parametrize(
+        "n_cs, max_causal, expected",
+        [
+            (0, 5, False),     # 0 CS is failure
+            (3, 5, True),      # 3 < 5 is success
+            (5, 5, False),     # n_cs == max_causal is failure (saturated)
+            (6, 5, False),     # n_cs > max_causal is failure
+            (1, 2, True),      # 1 < 2 is success
+        ],
+    )
+    def test_parametrized(self, n_cs, max_causal, expected):
+        cs = CredibleSet(
+            tool="test",
+            parameters={},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[1] * n_cs,
+            lead_snps=[f"s{i}" for i in range(n_cs)],
+            snps=[[f"s{i}"] for i in range(n_cs)],
+            pips=pd.Series(dtype=float),
+        )
+        assert _is_success(cs, max_causal) == expected
+
+
+# ---------------------------------------------------------------------------
+# TestEmptyCredibleSet
+# ---------------------------------------------------------------------------
+class TestEmptyCredibleSet:
+    """Tests for _empty_credible_set function."""
+
+    def test_returns_zero_cs(self):
+        result = _empty_credible_set("susie")
+        assert result.n_cs == 0
+
+    def test_tool_name_correct(self):
+        result = _empty_credible_set("finemap")
+        assert result.tool == "finemap"
+
+    def test_adaptive_failed_flag(self):
+        result = _empty_credible_set("susie")
+        assert result.parameters.get("adaptive_failed") is True
+
+    def test_empty_pips(self):
+        result = _empty_credible_set("susie")
+        assert len(result.pips) == 0
+
+
+# ---------------------------------------------------------------------------
+# TestAdaptiveFinemap
+# ---------------------------------------------------------------------------
+class TestAdaptiveFinemap:
+    """Tests for _adaptive_fine_map function."""
+
+    def _make_cs(self, n_cs, tool="susie"):
+        return CredibleSet(
+            tool=tool,
+            parameters={"max_causal": 5},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[2] * n_cs,
+            lead_snps=[f"s{i}" for i in range(n_cs)],
+            snps=[[f"s{i}", f"s{i}_b"] for i in range(n_cs)],
+            pips=pd.Series({f"s{i}": 0.8 for i in range(n_cs)}),
+        )
+
+    def test_success_on_first_try(self):
+        """Tool returns n_cs < max_causal on first try."""
+        tool_func = MagicMock(return_value=self._make_cs(3))
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "susie", 5, tool_func, {})
+        assert result.n_cs == 3
+        assert tool_func.call_count == 1
+
+    def test_saturated_then_increase(self):
+        """n_cs == max_causal triggers increase."""
+        # First call: n_cs=5 (saturated at max_causal=5)
+        # Second call with max_causal=10: n_cs=7 (success)
+        call_count = 0
+
+        def side_effect(locus, max_causal=5, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if max_causal == 5:
+                return self._make_cs(5)
+            else:
+                return self._make_cs(7)
+
+        tool_func = MagicMock(side_effect=side_effect)
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "susie", 5, tool_func, {})
+        assert result.n_cs == 7
+
+    def test_initial_failure_then_decrease(self):
+        """Initial max_causal fails, then decreasing works."""
+        def side_effect(locus, max_causal=5, **kwargs):
+            if max_causal >= 4:
+                raise RuntimeError("convergence failed")
+            return self._make_cs(2)
+
+        tool_func = MagicMock(side_effect=side_effect)
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "susie", 5, tool_func, {})
+        assert result.n_cs == 2
+
+    def test_all_attempts_fail(self):
+        """All attempts fail, return empty."""
+        tool_func = MagicMock(side_effect=RuntimeError("fail"))
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "susie", 3, tool_func, {})
+        assert result.n_cs == 0
+        assert result.parameters.get("adaptive_failed") is True
+
+
+# ---------------------------------------------------------------------------
+# TestAdaptiveFineMapMulti
+# ---------------------------------------------------------------------------
+class TestAdaptiveFineMapMulti:
+    """Tests for _adaptive_fine_map_multi function."""
+
+    def _make_cs(self, n_cs, tool="multisusie"):
+        return CredibleSet(
+            tool=tool,
+            parameters={},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[2] * n_cs,
+            lead_snps=[f"s{i}" for i in range(n_cs)],
+            snps=[[f"s{i}"] for i in range(n_cs)],
+            pips=pd.Series({f"s{i}": 0.8 for i in range(n_cs)}),
+        )
+
+    def test_success_on_first_try(self):
+        tool_func = MagicMock(return_value=self._make_cs(3))
+        locus_set = MagicMock()
+        locus_set.n_loci = 2
+        result = _adaptive_fine_map_multi(locus_set, "multisusie", 5, tool_func, {})
+        assert result.n_cs == 3
+
+    def test_all_fail_returns_empty(self):
+        tool_func = MagicMock(side_effect=RuntimeError("fail"))
+        locus_set = MagicMock()
+        locus_set.n_loci = 2
+        result = _adaptive_fine_map_multi(locus_set, "multisusie", 3, tool_func, {})
+        assert result.n_cs == 0
+
+
+# ---------------------------------------------------------------------------
+# TestFineMapBranches
+# ---------------------------------------------------------------------------
+class TestFineMapBranches:
+    """Tests for fine_map function branches."""
+
+    def test_unknown_tool_raises(self):
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        with pytest.raises(ValueError, match="not recognized"):
+            fine_map(locus_set, tool="unknown_tool", set_L_by_cojo=False)
+
+    def test_negative_timeout_raises(self):
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        with pytest.raises(ValueError, match="timeout_minutes must be a positive"):
+            fine_map(
+                locus_set,
+                tool="finemap",
+                timeout_minutes=-5,
+                set_L_by_cojo=False,
+            )
+
+    def test_strategy_deprecation_warning(self):
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            fine_map(
+                locus_set,
+                tool="abf",
+                strategy="independent",
+                max_causal=1,
+                set_L_by_cojo=False,
+            )
+            assert len(w) >= 1
+            assert any(issubclass(x.category, DeprecationWarning) for x in w)
+
+    def test_single_locus_abf(self):
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        result = fine_map(
+            locus_set, tool="abf", max_causal=1, set_L_by_cojo=False
+        )
+        assert isinstance(result, CredibleSet)
+
+    def test_purity_filtering(self):
+        """Purity filter parameter should be passed through."""
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        result = fine_map(
+            locus_set, tool="abf", max_causal=1, set_L_by_cojo=False, purity=0.99
+        )
+        # With purity=0.99 and identity LD, all CS should survive
+        assert isinstance(result, CredibleSet)
+
+
+# ---------------------------------------------------------------------------
+# TestGenerateRunSummary
+# ---------------------------------------------------------------------------
+class TestGenerateRunSummary:
+    """Tests for _generate_run_summary function."""
+
+    def test_writes_log_file(self, tmp_path):
+        summary = {
+            "start_time": "2024-01-01T00:00:00",
+            "end_time": "2024-01-01T00:01:00",
+            "total_loci": 10,
+            "successful_loci": 8,
+            "failed_loci": 2,
+            "errors": ["Error 1", "Error 2"],
+            "tool": "susie",
+            "meta_method": "meta_all",
+            "parameters": {"max_causal": 5},
+        }
+        log_file = str(tmp_path / "run_summary.log")
+        _generate_run_summary(summary, log_file)
+        assert os.path.exists(log_file)
+
+    def test_content_correct(self, tmp_path):
+        summary = {
+            "start_time": "2024-01-01T00:00:00",
+            "end_time": "2024-01-01T00:01:00",
+            "total_loci": 5,
+            "successful_loci": 5,
+            "failed_loci": 0,
+            "errors": [],
+            "tool": "finemap",
+            "meta_method": "no_meta",
+            "parameters": {"coverage": 0.95},
+        }
+        log_file = str(tmp_path / "run_summary.log")
+        _generate_run_summary(summary, log_file)
+        with open(log_file) as f:
+            content = f.read()
+        assert "CREDTOOLS FINE-MAPPING RUN SUMMARY" in content
+        assert "Total Loci: 5" in content
+        assert "Successful: 5" in content
+        assert "finemap" in content
+
+    def test_errors_section(self, tmp_path):
+        summary = {
+            "start_time": "t1",
+            "end_time": "t2",
+            "total_loci": 1,
+            "successful_loci": 0,
+            "failed_loci": 1,
+            "errors": ["Something broke"],
+            "tool": "susie",
+            "meta_method": "meta_all",
+            "parameters": {},
+        }
+        log_file = str(tmp_path / "run_summary.log")
+        _generate_run_summary(summary, log_file)
+        with open(log_file) as f:
+            content = f.read()
+        assert "Error Details:" in content
+        assert "Something broke" in content

@@ -1610,3 +1610,89 @@ class TestLociQc:
             loci_qc(input_file, out_dir, threads=1)
 
         assert os.path.isdir(out_dir)
+
+
+# ---------------------------------------------------------------------------
+# Supplementary tests: identify_outliers edge cases
+# ---------------------------------------------------------------------------
+class TestIdentifyOutliersEdgeCases:
+    """Additional edge case tests for identify_outliers."""
+
+    def test_no_outliers_returns_empty_df(self):
+        """When no metrics trigger outlier criteria, return empty DF."""
+        from credtools.qc import identify_outliers
+
+        # Empty qc_metrics
+        qc_metrics = {"expected_z": pd.DataFrame(), "dentist_s": pd.DataFrame()}
+        result = identify_outliers(qc_metrics, cohort="EUR_UKB")
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+        assert "SNPID" in result.columns
+
+    def test_unknown_cohort_returns_empty(self):
+        """When the specified cohort doesn't exist in data, return empty."""
+        from credtools.qc import identify_outliers
+
+        expected_z = pd.DataFrame(
+            {
+                "SNPID": ["s1"],
+                "cohort": ["EUR_UKB"],
+                "z": [1.0],
+                "condmean": [1.0],
+                "condvar": [0.5],
+                "logLR": [0.1],
+                "z_std_diff": [0.5],
+                "lambda_s": [1.0],
+            }
+        )
+        qc_metrics = {"expected_z": expected_z, "dentist_s": pd.DataFrame()}
+        result = identify_outliers(qc_metrics, cohort="AFR_APCDR")
+        assert len(result) == 0
+
+
+# ---------------------------------------------------------------------------
+# Supplementary tests: remove_snps_from_locus
+# ---------------------------------------------------------------------------
+class TestRemoveSnpsEdgeCases:
+    """Additional tests for remove_snps_from_locus."""
+
+    def test_remove_all_snps(self, single_locus):
+        """Removing all SNPs should result in empty sumstats."""
+        from credtools.qc import remove_snps_from_locus
+
+        all_snps = single_locus.sumstats[ColName.SNPID].tolist()
+        result = remove_snps_from_locus(single_locus, all_snps)
+        assert len(result.sumstats) == 0
+
+    def test_remove_nonexistent_snp(self, single_locus):
+        """Removing a non-existent SNP should not change anything."""
+        from credtools.qc import remove_snps_from_locus
+
+        original_n = len(single_locus.sumstats)
+        result = remove_snps_from_locus(single_locus, ["nonexistent_snp"])
+        assert len(result.sumstats) == original_n
+
+
+# ---------------------------------------------------------------------------
+# Supplementary tests: locus_qc_summary
+# ---------------------------------------------------------------------------
+class TestLocusQcSummaryEdgeCases:
+    """Additional tests for locus_qc_summary."""
+
+    def test_empty_expected_z_returns_empty_df(self):
+        """When expected_z is empty, return empty DataFrame."""
+        from credtools.qc import locus_qc_summary
+
+        qc_metrics = {"expected_z": pd.DataFrame()}
+        result = locus_qc_summary(qc_metrics)
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+
+    def test_multi_cohort_returns_multi_rows(self, precomputed_qc_metrics):
+        """Multiple cohorts should produce multiple summary rows."""
+        from credtools.qc import locus_qc_summary
+
+        result = locus_qc_summary(precomputed_qc_metrics)
+        expected_z = precomputed_qc_metrics["expected_z"]
+        n_cohorts = expected_z["cohort"].nunique()
+        assert len(result) == n_cohorts
