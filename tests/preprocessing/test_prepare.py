@@ -57,9 +57,7 @@ class TestHandleAlleleFlipping:
                 "A2": ["G", "T", "T"],
             }
         )
-        ld_matrix = np.array(
-            [[1.0, 0.5, 0.3], [0.5, 1.0, 0.2], [0.3, 0.2, 1.0]]
-        )
+        ld_matrix = np.array([[1.0, 0.5, 0.3], [0.5, 1.0, 0.2], [0.3, 0.2, 1.0]])
         result_map, result_ld = _handle_allele_flipping(ldmap.copy(), ld_matrix.copy())
         np.testing.assert_array_almost_equal(result_ld, ld_matrix)
         assert list(result_map["A1"]) == ["A", "C", "A"]
@@ -74,9 +72,7 @@ class TestHandleAlleleFlipping:
                 "A2": ["A", "T"],
             }
         )
-        ld_matrix = np.array(
-            [[1.0, 0.5], [0.5, 1.0]]
-        )
+        ld_matrix = np.array([[1.0, 0.5], [0.5, 1.0]])
         result_map, result_ld = _handle_allele_flipping(ldmap.copy(), ld_matrix.copy())
         # After flip, A1 should be sorted alphabetically
         assert result_map["A1"].iloc[0] == "A"
@@ -121,11 +117,15 @@ class TestIntersectSumstatsLd:
 
     def _make_sumstats_and_ld(self, common_snps=3, extra_sumstats=2, extra_ld=1):
         """Create matching sumstats and LD data with some overlap."""
-        bps = list(range(1000, 1000 + (common_snps + extra_sumstats + extra_ld) * 100, 100))
+        bps = list(
+            range(1000, 1000 + (common_snps + extra_sumstats + extra_ld) * 100, 100)
+        )
 
         common_ids = [f"1-{bps[i]}-A-G" for i in range(common_snps)]
         extra_sum_ids = [f"1-{bps[common_snps + i]}-A-G" for i in range(extra_sumstats)]
-        extra_ld_ids = [f"1-{bps[common_snps + extra_sumstats + i]}-C-T" for i in range(extra_ld)]
+        extra_ld_ids = [
+            f"1-{bps[common_snps + extra_sumstats + i]}-C-T" for i in range(extra_ld)
+        ]
 
         all_sum_ids = common_ids + extra_sum_ids
         all_ld_ids = common_ids + extra_ld_ids

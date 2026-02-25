@@ -190,9 +190,7 @@ class TestFormatEnhancedPips:
         assert result["pip"].iloc[0] == "0.1235"
 
     def test_nan_values_become_empty(self):
-        df = pd.DataFrame(
-            {"EUR_p": [1e-8, float("nan")], "snpid": ["rs1", "rs2"]}
-        )
+        df = pd.DataFrame({"EUR_p": [1e-8, float("nan")], "snpid": ["rs1", "rs2"]})
         result = format_enhanced_pips(df)
         assert result["EUR_p"].iloc[1] == ""
 

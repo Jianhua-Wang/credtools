@@ -11,9 +11,7 @@ from credtools.ldmatrix import LDMatrix
 from credtools.locus import Locus
 
 
-def _make_cojo_locus(
-    n_snps=20, p_range=(1e-10, 1e-9), add_af2=False, seed=42
-):
+def _make_cojo_locus(n_snps=20, p_range=(1e-10, 1e-9), add_af2=False, seed=42):
     """Create a Locus for COJO testing."""
     rng = np.random.default_rng(seed)
     bps = [1000 + i * 100 for i in range(n_snps)]

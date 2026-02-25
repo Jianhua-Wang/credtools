@@ -253,11 +253,11 @@ class TestIsSuccess:
     @pytest.mark.parametrize(
         "n_cs, max_causal, expected",
         [
-            (0, 5, False),     # 0 CS is failure
-            (3, 5, True),      # 3 < 5 is success
-            (5, 5, False),     # n_cs == max_causal is failure (saturated)
-            (6, 5, False),     # n_cs > max_causal is failure
-            (1, 2, True),      # 1 < 2 is success
+            (0, 5, False),  # 0 CS is failure
+            (3, 5, True),  # 3 < 5 is success
+            (5, 5, False),  # n_cs == max_causal is failure (saturated)
+            (6, 5, False),  # n_cs > max_causal is failure
+            (1, 2, True),  # 1 < 2 is success
         ],
     )
     def test_parametrized(self, n_cs, max_causal, expected):
@@ -344,6 +344,7 @@ class TestAdaptiveFinemap:
 
     def test_initial_failure_then_decrease(self):
         """Initial max_causal fails, then decreasing works."""
+
         def side_effect(locus, max_causal=5, **kwargs):
             if max_causal >= 4:
                 raise RuntimeError("convergence failed")
@@ -437,9 +438,7 @@ class TestFineMapBranches:
     def test_single_locus_abf(self):
         locus = _make_test_locus("EUR", "c1", 1.0)
         locus_set = LocusSet([locus])
-        result = fine_map(
-            locus_set, tool="abf", max_causal=1, set_L_by_cojo=False
-        )
+        result = fine_map(locus_set, tool="abf", max_causal=1, set_L_by_cojo=False)
         assert isinstance(result, CredibleSet)
 
     def test_purity_filtering(self):

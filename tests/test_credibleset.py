@@ -96,7 +96,16 @@ class TestCredibleSetToDict:
     def test_to_dict_keys(self):
         cs = _make_credset(purity=[0.9, 0.7])
         d = cs.to_dict()
-        expected_keys = {"tool", "n_cs", "coverage", "lead_snps", "snps", "cs_sizes", "parameters", "purity"}
+        expected_keys = {
+            "tool",
+            "n_cs",
+            "coverage",
+            "lead_snps",
+            "snps",
+            "cs_sizes",
+            "parameters",
+            "purity",
+        }
         assert set(d.keys()) == expected_keys
 
     def test_roundtrip(self):
@@ -259,5 +268,14 @@ class TestGenerateCsSummary:
             }
         )
         result = generate_cs_summary(causal, "locus_1", ls)
-        expected_keys = {"locus_id", "cs_id", "lead_snp", "cs_size", "pip_01", "pip_05", "pip_09", "purity"}
+        expected_keys = {
+            "locus_id",
+            "cs_id",
+            "lead_snp",
+            "cs_size",
+            "pip_01",
+            "pip_05",
+            "pip_09",
+            "purity",
+        }
         assert set(result[0].keys()) == expected_keys
