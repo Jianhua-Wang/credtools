@@ -599,7 +599,9 @@ class TestDetermineMaxCausalByCojo:
             )
         # The warning should say "No significant SNPs found by COJO, using max_causal=1"
         # without a " for locus X" suffix.
-        warning_msgs = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+        warning_msgs = [
+            r.message for r in caplog.records if r.levelno == logging.WARNING
+        ]
         assert any("No significant SNPs found by COJO" in m for m in warning_msgs)
         assert not any("for locus" in m for m in warning_msgs)
 
@@ -717,9 +719,7 @@ class TestFineMapMultipleLociSingleTool:
             cs_sizes=[2] * n_cs,
             lead_snps=snp_ids[:n_cs],
             snps=[snp_ids[:2]] * n_cs,
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
         )
 
     @patch("credtools.credtools.conditional_selection")
@@ -756,9 +756,7 @@ class TestFineMapMultipleLociSingleTool:
             cs_sizes=[2],
             lead_snps=["1-100-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
         )
         mock_run_finemap.return_value = cs
         locus1 = _make_test_locus("EUR", "c1", 1.0)
@@ -788,9 +786,7 @@ class TestFineMapMultipleLociSingleTool:
             cs_sizes=[2],
             lead_snps=["1-100-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.7, "1-200-A-G": 0.2, "1-300-A-G": 0.1}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.7, "1-200-A-G": 0.2, "1-300-A-G": 0.1}),
         )
         mock_run_abf.return_value = cs
         locus1 = _make_test_locus("EUR", "c1", 1.0)
@@ -853,9 +849,7 @@ class TestCreateEnhancedPipsSingleLocus:
         locus_set = LocusSet([locus])
 
         # Run fine_map (ABF does not need external tools)
-        result = fine_map(
-            locus_set, tool="abf", max_causal=1, set_L_by_cojo=False
-        )
+        result = fine_map(locus_set, tool="abf", max_causal=1, set_L_by_cojo=False)
         df = result.create_enhanced_pips_df(locus_set)
         assert "R2" in df.columns
         # With identity LD and SNPs present, R2 should be computed (not all NaN)
@@ -925,9 +919,7 @@ class TestCreateEnhancedPipsSingleLocus:
         locus = _make_test_locus("EUR", "c1", 1.0)
         locus_set = LocusSet([locus])
 
-        result = fine_map(
-            locus_set, tool="abf", max_causal=1, set_L_by_cojo=False
-        )
+        result = fine_map(locus_set, tool="abf", max_causal=1, set_L_by_cojo=False)
         df = result.create_enhanced_pips_df(locus_set)
         assert "PIP" in df.columns
         assert "CRED" in df.columns
@@ -971,9 +963,7 @@ class TestPipeline:
             cs_sizes=[2],
             lead_snps=["1-100-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
         )
         cs.set_per_locus_results({})
         return cs
@@ -1266,9 +1256,7 @@ class TestFineMapSingleLocusCojoBranch:
             cs_sizes=[2],
             lead_snps=["1-100-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
         )
         mock_run_susie.return_value = cs
         locus = _make_test_locus("EUR", "c1", 1.0)
@@ -1297,9 +1285,7 @@ class TestFineMapSingleLocusCojoBranch:
             cs_sizes=[2, 1],
             lead_snps=["1-100-A-G", "1-200-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"], ["1-300-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
         )
         mock_run_susie.return_value = cs
         locus = _make_test_locus("EUR", "c1", 1.0)
@@ -1369,9 +1355,7 @@ class TestFineMapSingleLocusCojoBranch:
             cs_sizes=[2],
             lead_snps=["1-100-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
         )
         mock_finemap.return_value = cs
         with patch("credtools.credtools.run_finemap", mock_finemap):
@@ -1476,9 +1460,7 @@ class TestAdaptiveFineMapMultiEdgeCases:
         tool_func = MagicMock(side_effect=side_effect)
         locus_set = MagicMock()
         locus_set.n_loci = 2
-        result = _adaptive_fine_map_multi(
-            locus_set, "multisusie", 5, tool_func, {}
-        )
+        result = _adaptive_fine_map_multi(locus_set, "multisusie", 5, tool_func, {})
         assert result.n_cs == 7
 
     def test_saturated_increase_fails_then_decrease_succeeds(self):
@@ -1496,9 +1478,7 @@ class TestAdaptiveFineMapMultiEdgeCases:
         tool_func = MagicMock(side_effect=side_effect)
         locus_set = MagicMock()
         locus_set.n_loci = 2
-        result = _adaptive_fine_map_multi(
-            locus_set, "multisusie", 5, tool_func, {}
-        )
+        result = _adaptive_fine_map_multi(locus_set, "multisusie", 5, tool_func, {})
         assert result.n_cs == 3
 
     def test_initial_failure_then_decrease_succeeds(self):
@@ -1512,9 +1492,7 @@ class TestAdaptiveFineMapMultiEdgeCases:
         tool_func = MagicMock(side_effect=side_effect)
         locus_set = MagicMock()
         locus_set.n_loci = 2
-        result = _adaptive_fine_map_multi(
-            locus_set, "multisusie", 5, tool_func, {}
-        )
+        result = _adaptive_fine_map_multi(locus_set, "multisusie", 5, tool_func, {})
         assert result.n_cs == 2
 
 
@@ -1535,9 +1513,7 @@ class TestFineMapMultiInputPurityFiltering:
             cs_sizes=[2],
             lead_snps=["1-100-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.2, "1-300-A-G": 0.0}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.2, "1-300-A-G": 0.0}),
             purity=[0.3],  # Low purity that should be filtered out
         )
         mock_run.return_value = cs
@@ -1605,9 +1581,7 @@ class TestPipelineQCMetrics:
             cs_sizes=[2],
             lead_snps=["1-100-A-G"],
             snps=[["1-100-A-G", "1-200-A-G"]],
-            pips=pd.Series(
-                {"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}
-            ),
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
         )
         cs.set_per_locus_results({})
         mock_fine_map.return_value = cs

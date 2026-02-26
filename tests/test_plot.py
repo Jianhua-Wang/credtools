@@ -553,7 +553,7 @@ class TestPlotLocusPlotEdgeCases:
             plt.close(fig)
 
     def test_no_p_columns_raises(self, tmp_path):
-        """pips file without any _P columns should raise ValueError."""
+        """Raise ValueError when pips file lacks _P columns."""
         locus_dir = tmp_path / "locus_nop"
         locus_dir.mkdir()
         df = pd.DataFrame(

@@ -307,7 +307,9 @@ def test_detect_separator_gzipped_tab_works(tmp_path):
     import gzip
 
     filepath = tmp_path / "test.tsv.gz"
-    content = "CHR\tBP\tSNPID\tEA\tNEA\tBETA\tSE\tP\n1\t1000\trs1\tA\tG\t0.1\t0.05\t0.01\n"
+    content = (
+        "CHR\tBP\tSNPID\tEA\tNEA\tBETA\tSE\tP\n1\t1000\trs1\tA\tG\t0.1\t0.05\t0.01\n"
+    )
     with gzip.open(str(filepath), "wt") as f:
         f.write(content)
     sep = _detect_separator(str(filepath))

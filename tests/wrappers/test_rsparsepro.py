@@ -8,10 +8,15 @@ import pytest
 
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet
-from credtools.wrappers.RSparsePro import (RSparsePro, adaptive_train,
-                                           get_eff_maxld, get_eff_minld,
-                                           get_ordered, rsparsepro_main,
-                                           run_rsparsepro)
+from credtools.wrappers.RSparsePro import (
+    RSparsePro,
+    adaptive_train,
+    get_eff_maxld,
+    get_eff_minld,
+    get_ordered,
+    rsparsepro_main,
+    run_rsparsepro,
+)
 
 from .conftest import _make_locus
 

@@ -191,9 +191,20 @@ class TestSetupFileLogging:
 
         # Also clean up handlers added to named loggers
         for name in [
-            "CREDTOOLS", "FINEMAP", "RSparsePro", "COJO", "SuSiE",
-            "MULTISUSIE", "SUSIEX", "ABF", "ABF_COJO", "Locus",
-            "LDMatrix", "QC", "Sumstats", "Utils",
+            "CREDTOOLS",
+            "FINEMAP",
+            "RSparsePro",
+            "COJO",
+            "SuSiE",
+            "MULTISUSIE",
+            "SUSIEX",
+            "ABF",
+            "ABF_COJO",
+            "Locus",
+            "LDMatrix",
+            "QC",
+            "Sumstats",
+            "Utils",
         ]:
             logger = logging.getLogger(name)
             for h in list(logger.handlers):
@@ -222,9 +233,20 @@ class TestSetupFileLogging:
             root_logger.removeHandler(h)
             h.close()
         for name in [
-            "CREDTOOLS", "FINEMAP", "RSparsePro", "COJO", "SuSiE",
-            "MULTISUSIE", "SUSIEX", "ABF", "ABF_COJO", "Locus",
-            "LDMatrix", "QC", "Sumstats", "Utils",
+            "CREDTOOLS",
+            "FINEMAP",
+            "RSparsePro",
+            "COJO",
+            "SuSiE",
+            "MULTISUSIE",
+            "SUSIEX",
+            "ABF",
+            "ABF_COJO",
+            "Locus",
+            "LDMatrix",
+            "QC",
+            "Sumstats",
+            "Utils",
         ]:
             logger = logging.getLogger(name)
             for h in list(logger.handlers):
@@ -240,9 +262,20 @@ class TestSetupFileLogging:
         setup_file_logging(log_file=log_path, verbose=False)
 
         expected_names = [
-            "CREDTOOLS", "FINEMAP", "RSparsePro", "COJO", "SuSiE",
-            "MULTISUSIE", "SUSIEX", "ABF", "ABF_COJO", "Locus",
-            "LDMatrix", "QC", "Sumstats", "Utils",
+            "CREDTOOLS",
+            "FINEMAP",
+            "RSparsePro",
+            "COJO",
+            "SuSiE",
+            "MULTISUSIE",
+            "SUSIEX",
+            "ABF",
+            "ABF_COJO",
+            "Locus",
+            "LDMatrix",
+            "QC",
+            "Sumstats",
+            "Utils",
         ]
         resolved = str(Path(log_path).resolve())
         for name in expected_names:
@@ -250,12 +283,11 @@ class TestSetupFileLogging:
             file_handlers = [
                 h
                 for h in logger.handlers
-                if isinstance(h, logging.FileHandler)
-                and h.baseFilename == resolved
+                if isinstance(h, logging.FileHandler) and h.baseFilename == resolved
             ]
-            assert len(file_handlers) >= 1, (
-                f"Logger '{name}' should have a FileHandler pointing to {log_path}"
-            )
+            assert (
+                len(file_handlers) >= 1
+            ), f"Logger '{name}' should have a FileHandler pointing to {log_path}"
 
         # Cleanup
         root_logger = logging.getLogger()
@@ -305,8 +337,18 @@ class TestParsePopulationConfigFileMungeOnly:
         data_file_1 = tmp_path / "eur_c1.tsv"
         data_file_2 = tmp_path / "eas_c2.tsv"
         rows = [
-            {"popu": "EUR", "cohort": "C1", "sample_size": 1000, "path": str(data_file_1)},
-            {"popu": "EAS", "cohort": "C2", "sample_size": 2000, "path": str(data_file_2)},
+            {
+                "popu": "EUR",
+                "cohort": "C1",
+                "sample_size": 1000,
+                "path": str(data_file_1),
+            },
+            {
+                "popu": "EAS",
+                "cohort": "C2",
+                "sample_size": 2000,
+                "path": str(data_file_2),
+            },
         ]
         config_path = self._write_config(tmp_path, rows)
 
@@ -324,9 +366,7 @@ class TestParsePopulationConfigFileMungeOnly:
     def test_file_not_found_raises_file_not_found_error(self, tmp_path):
         """A non-existent config file should raise FileNotFoundError."""
         with pytest.raises(FileNotFoundError, match="Configuration file not found"):
-            parse_population_config_file_munge_only(
-                str(tmp_path / "nonexistent.tsv")
-            )
+            parse_population_config_file_munge_only(str(tmp_path / "nonexistent.tsv"))
 
     def test_missing_required_columns_raises_value_error(self, tmp_path):
         """If required columns are absent, a ValueError should be raised."""
@@ -375,7 +415,9 @@ class TestCreateUpdatedSumstatInfo:
         }
         output_path = str(tmp_path / "updated_config.tsv")
 
-        result_path = create_updated_sumstat_info(original_df, munged_files, output_path)
+        result_path = create_updated_sumstat_info(
+            original_df, munged_files, output_path
+        )
 
         assert result_path == output_path
         assert Path(output_path).exists()
@@ -562,8 +604,15 @@ class TestLoadCustomChunks:
         assert len(result) == 2
 
         expected_cols = [
-            "chr", "start", "end", "locus_id", "lead_snp",
-            "lead_bp", "lead_p", "ancestry", "n_variants",
+            "chr",
+            "start",
+            "end",
+            "locus_id",
+            "lead_snp",
+            "lead_bp",
+            "lead_p",
+            "ancestry",
+            "n_variants",
         ]
         assert list(result.columns) == expected_cols
 
@@ -927,8 +976,14 @@ class TestRunFineMapFailedLoci:
         """When there are no loci, the summary should reflect zero processed."""
         loci_df = pd.DataFrame(
             columns=[
-                "prefix", "popu", "cohort", "sample_size",
-                "chr", "start", "end", "locus_id",
+                "prefix",
+                "popu",
+                "cohort",
+                "sample_size",
+                "chr",
+                "start",
+                "end",
+                "locus_id",
             ]
         )
         inputs_path = tmp_path / "empty_loci.tsv"
@@ -1246,7 +1301,9 @@ class TestRunQc:
         )
 
         assert result.exit_code == 0
-        assert "successfully" in result.output.lower() or "QC completed" in result.output
+        assert (
+            "successfully" in result.output.lower() or "QC completed" in result.output
+        )
 
     def test_qc_command_with_failures(self, tmp_path, monkeypatch):
         """The qc command should report failures when loci fail."""
@@ -1358,7 +1415,9 @@ class TestRunMunge:
         )
 
         assert result.exit_code == 0
-        assert "Successfully munged" in result.output or "munged" in result.output.lower()
+        assert (
+            "Successfully munged" in result.output or "munged" in result.output.lower()
+        )
 
         # Verify that the updated sumstat info file was created
         updated_info = output_dir / "sumstat_info_updated.txt"
@@ -1383,9 +1442,7 @@ class TestRunMunge:
             return {k: f"{output_dir}/{k}.munged.gz" for k in input_files}
 
         def mock_validate_munged_files(result, required_columns):
-            return {
-                k: {"validation_passed": True, "n_variants": 100} for k in result
-            }
+            return {k: {"validation_passed": True, "n_variants": 100} for k in result}
 
         import types
 

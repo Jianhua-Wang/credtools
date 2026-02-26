@@ -524,9 +524,7 @@ class TestCombineCreds:
             [["snpB"]],
             pips_dict={"snpB": 0.8},
         )
-        result = combine_creds(
-            [cred1, cred2], combine_cred="union", combine_pip="max"
-        )
+        result = combine_creds([cred1, cred2], combine_cred="union", combine_pip="max")
         merged = set(result.snps[0])
         assert merged == {"snpA", "snpB"}
 
@@ -680,11 +678,13 @@ class TestCalculateCsPurity:
     def test_three_snps_min_ld(self):
         """Three SNPs: purity is the minimum off-diagonal |R|."""
         snpids = ["1-1000-A-G", "1-1100-A-G", "1-1200-A-G"]
-        r = np.array([
-            [1.0, 0.9, 0.6],
-            [0.9, 1.0, 0.8],
-            [0.6, 0.8, 1.0],
-        ])
+        r = np.array(
+            [
+                [1.0, 0.9, 0.6],
+                [0.9, 1.0, 0.8],
+                [0.6, 0.8, 1.0],
+            ]
+        )
         ld = _make_ld_matrix(snpids, r)
         result = calculate_cs_purity(ld, snpids)
         assert np.isclose(result, 0.6)
@@ -701,7 +701,7 @@ class TestCalculateCsPurity:
         assert np.isclose(result, 0.8)
 
     def test_snps_not_in_ld_returns_none(self):
-        """SNPs not found in LD matrix returns None."""
+        """Return None when SNPs not found in LD matrix."""
         snpids = ["1-1000-A-G", "1-1100-A-G"]
         r = np.eye(2)
         ld = _make_ld_matrix(snpids, r)
@@ -755,12 +755,14 @@ class TestCreateEnhancedPipsDf:
             }
         )
         if with_ld:
-            r = np.array([
-                [1.0, 0.9, 0.5, 0.2],
-                [0.9, 1.0, 0.6, 0.3],
-                [0.5, 0.6, 1.0, 0.4],
-                [0.2, 0.3, 0.4, 1.0],
-            ])
+            r = np.array(
+                [
+                    [1.0, 0.9, 0.5, 0.2],
+                    [0.9, 1.0, 0.6, 0.3],
+                    [0.5, 0.6, 1.0, 0.4],
+                    [0.2, 0.3, 0.4, 1.0],
+                ]
+            )
             ld_map = pd.DataFrame(
                 {
                     ColName.SNPID: snpids,
@@ -862,11 +864,13 @@ class TestCreateEnhancedPipsDfMultiLocus:
                 }
             )
 
-        r = np.array([
-            [1.0, 0.8, 0.3],
-            [0.8, 1.0, 0.4],
-            [0.3, 0.4, 1.0],
-        ])
+        r = np.array(
+            [
+                [1.0, 0.8, 0.3],
+                [0.8, 1.0, 0.4],
+                [0.3, 0.4, 1.0],
+            ]
+        )
         ld_map = pd.DataFrame(
             {
                 ColName.SNPID: snpids,
@@ -1032,7 +1036,7 @@ class TestFilterCredsetByPurityEdgeCases:
     """Additional edge-case tests for filter_credset_by_purity."""
 
     def test_n_cs_zero_returns_original(self):
-        """CredibleSet with n_cs=0 and valid purity list returns original."""
+        """Return original when n_cs=0 and valid purity list."""
         from credtools.credibleset import filter_credset_by_purity
 
         cs = CredibleSet(

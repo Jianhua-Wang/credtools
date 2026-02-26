@@ -1698,6 +1698,18 @@ class TestLocusQcSummaryEdgeCases:
         assert len(result) == n_cohorts
 
 
+def _make_jit_fallback():
+    """Create a no-op jit decorator matching the qc.py fallback."""
+
+    def jit_fallback(*args, **kwargs):
+        def decorator(func):
+            return func
+
+        return decorator
+
+    return jit_fallback
+
+
 # ---------------------------------------------------------------------------
 # Tests: sklearn / numba fallback paths
 # ---------------------------------------------------------------------------
@@ -1755,12 +1767,7 @@ class TestFallbackPaths:
 
     def test_numba_jit_fallback_is_noop_decorator(self):
         """The fallback jit decorator should return the original function unchanged."""
-        # Replicate the fallback jit from qc.py lines 58-62
-        def jit_fallback(*args, **kwargs):
-            def decorator(func):
-                return func
-
-            return decorator
+        jit_fallback = _make_jit_fallback()
 
         @jit_fallback(nopython=True, cache=True)
         def my_func(x):
@@ -1772,6 +1779,7 @@ class TestFallbackPaths:
 
     def test_numba_jit_fallback_preserves_function_name(self):
         """Fallback jit should preserve the original function identity."""
+
         def jit_fallback(*args, **kwargs):
             def decorator(func):
                 return func
@@ -1786,10 +1794,10 @@ class TestFallbackPaths:
 
 
 # ---------------------------------------------------------------------------
-# Tests: loci_qc function
+# Tests: loci_qc function (additional coverage)
 # ---------------------------------------------------------------------------
-class TestLociQc:
-    """Tests for the loci_qc orchestration function."""
+class TestLociQcExtended:
+    """Extended tests for the loci_qc orchestration function."""
 
     @staticmethod
     def _make_loci_info_tsv(tmp_path, n_loci=2):
@@ -1967,9 +1975,7 @@ class TestLociQc:
         fpath = self._make_loci_info_tsv(tmp_path, n_loci=1)
         out_dir = str(tmp_path / "qc_out_cleaned")
 
-        summary = pd.DataFrame(
-            {"locus_id": ["locus_1"], "metric_a": [0.5]}
-        )
+        summary = pd.DataFrame({"locus_id": ["locus_1"], "metric_a": [0.5]})
         outlier_summary = pd.DataFrame(
             {
                 "locus_id": ["locus_1"],
@@ -1980,9 +1986,7 @@ class TestLociQc:
                 "outliers_removed": [5],
             }
         )
-        cleaned_summary = pd.DataFrame(
-            {"locus_id": ["locus_1"], "metric_a": [0.6]}
-        )
+        cleaned_summary = pd.DataFrame({"locus_id": ["locus_1"], "metric_a": [0.6]})
         outlier_detail = pd.DataFrame(
             {
                 "locus_id": ["locus_1"],
@@ -2042,9 +2046,7 @@ class TestLociQc:
         assert len(detail_df) == 1
 
         # Cleaned loci info file
-        cleaned_info_path = os.path.join(
-            out_dir, "cleaned", "cleaned_loci_info.txt.gz"
-        )
+        cleaned_info_path = os.path.join(out_dir, "cleaned", "cleaned_loci_info.txt.gz")
         assert os.path.exists(cleaned_info_path)
         info_df = pd.read_csv(cleaned_info_path, sep="\t")
         assert len(info_df) == 1
@@ -2093,9 +2095,7 @@ class TestLociQc:
 
     @patch("credtools.qc.Pool")
     @patch("credtools.qc.Progress")
-    def test_run_summary_parameters(
-        self, mock_progress_cls, mock_pool_cls, tmp_path
-    ):
+    def test_run_summary_parameters(self, mock_progress_cls, mock_pool_cls, tmp_path):
         """Run summary should contain all input parameters."""
         from credtools.qc import loci_qc
 
@@ -2163,9 +2163,7 @@ class TestLociQc:
         df.to_csv(fpath, sep="\t", index=False)
         out_dir = str(tmp_path / "qc_out_multi")
 
-        summary = pd.DataFrame(
-            {"locus_id": ["locus_1"], "metric_a": [0.5]}
-        )
+        summary = pd.DataFrame({"locus_id": ["locus_1"], "metric_a": [0.5]})
         outlier_summary = pd.DataFrame(
             {
                 "locus_id": ["locus_1"],
@@ -2198,9 +2196,7 @@ class TestLociQc:
         assert result["successful_loci"] == 1
 
         # Verify cleaned_loci_info prefix uses the meta hash pattern
-        cleaned_info_path = os.path.join(
-            out_dir, "cleaned", "cleaned_loci_info.txt.gz"
-        )
+        cleaned_info_path = os.path.join(out_dir, "cleaned", "cleaned_loci_info.txt.gz")
         assert os.path.exists(cleaned_info_path)
         info_df = pd.read_csv(cleaned_info_path, sep="\t")
         assert len(info_df) == 1
