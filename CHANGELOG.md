@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.7] (2026-02-25)
+
+### Changed
+- Increased unit test coverage from 76% to 87% across 9 modules: credtools.py (59%→100%), credibleset.py (69%→97%), prepare.py (31%→95%), cli.py (34%→61%), plot.py (62%→75%), qc.py (85%→92%), validation.py (90%→97%), headers.py (90%→95%), RSparsePro.py (78%→100%)
+
+### Fixed
+- Applied black/isort formatting and resolved flake8 lint errors in test files
+
 ## [0.4.6] (2026-02-25)
 
 ### Added
