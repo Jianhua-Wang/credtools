@@ -327,3 +327,61 @@ class TestValidateFrequencyConsistency:
         df = pd.DataFrame({"EAF": [0.2, 0.3, 0.4], "OTHER": [1, 2, 3]})
         result = validate_frequency_consistency(df)
         pd.testing.assert_frame_equal(result, df)
+
+
+# ============================================================================
+# Tests for validate_pvalue_consistency
+# ============================================================================
+
+import logging
+from scipy.stats import norm
+from credtools.preprocessing.munging.validation import validate_pvalue_consistency
+
+
+class TestValidatePvalueConsistency:
+    """Tests for validate_pvalue_consistency function."""
+
+    def test_consistent_pvalues_no_warning(self, caplog):
+        """Consistent BETA, SE, P should not trigger a warning."""
+        betas = [0.5, -1.0, 0.2]
+        ses = [0.1, 0.25, 0.05]
+        # Compute truly consistent p-values from BETA/SE
+        pvals = [
+            float(2 * (1 - norm.cdf(abs(b / s)))) for b, s in zip(betas, ses)
+        ]
+        df = pd.DataFrame({"BETA": betas, "SE": ses, "P": pvals})
+
+        with caplog.at_level(logging.WARNING, logger="Munging"):
+            result = validate_pvalue_consistency(df)
+
+        # No warning should be logged
+        assert "P-value discrepancies" not in caplog.text
+        # All rows should be preserved
+        assert len(result) == len(df)
+
+    def test_large_discrepancy_triggers_warning(self, caplog):
+        """P-value far from expected should trigger a discrepancy warning."""
+        # BETA=1.0, SE=0.1 => z=10 => expected_p ~ 1.5e-23
+        # We set P=0.5, which is wildly different
+        df = pd.DataFrame(
+            {"BETA": [1.0], "SE": [0.1], "P": [0.5]}
+        )
+
+        with caplog.at_level(logging.WARNING, logger="Munging"):
+            result = validate_pvalue_consistency(df)
+
+        assert "P-value discrepancies" in caplog.text
+        # Rows are preserved (function only warns, does not drop)
+        assert len(result) == 1
+
+    def test_missing_beta_returns_unchanged(self):
+        """Return unchanged when BETA column is missing."""
+        df = pd.DataFrame({"SE": [0.1, 0.2], "P": [0.05, 0.01]})
+        result = validate_pvalue_consistency(df)
+        pd.testing.assert_frame_equal(result, df)
+
+    def test_missing_se_returns_unchanged(self):
+        """Return unchanged when SE column is missing."""
+        df = pd.DataFrame({"BETA": [0.1, 0.2], "P": [0.05, 0.01]})
+        result = validate_pvalue_consistency(df)
+        pd.testing.assert_frame_equal(result, df)

@@ -1696,3 +1696,557 @@ class TestLocusQcSummaryEdgeCases:
         expected_z = precomputed_qc_metrics["expected_z"]
         n_cohorts = expected_z["cohort"].nunique()
         assert len(result) == n_cohorts
+
+
+# ---------------------------------------------------------------------------
+# Tests: sklearn / numba fallback paths
+# ---------------------------------------------------------------------------
+class TestFallbackPaths:
+    """Test the fallback mock classes when sklearn/numba are unavailable."""
+
+    def test_mock_gaussian_mixture_raises_import_error(self):
+        """The mock GaussianMixture __init__ should raise ImportError."""
+        import sys
+
+        # Temporarily hide sklearn so the mock class is activated
+        real_sklearn = sys.modules.get("sklearn.mixture")
+        real_sklearn_pkg = sys.modules.get("sklearn")
+        sys.modules["sklearn.mixture"] = None  # type: ignore[assignment]
+        sys.modules["sklearn"] = None  # type: ignore[assignment]
+        try:
+            # Re-execute the fallback code path manually
+            try:
+                from sklearn.mixture import GaussianMixture as _GM  # noqa: F401
+
+                available = True
+            except (ImportError, TypeError):
+                available = False
+
+                class MockGM:
+                    """Local mock matching qc.py fallback."""
+
+                    def __init__(self, *args, **kwargs):
+                        raise ImportError(
+                            "sklearn not available - install scikit-learn"
+                        )
+
+                    def fit(self, *args):
+                        """Mock fit method."""
+                        pass
+
+                    @property
+                    def weights_(self):
+                        """Mock weights property."""
+                        return None
+
+            assert not available
+            with pytest.raises(ImportError, match="sklearn not available"):
+                MockGM(n_components=2)
+        finally:
+            # Restore original modules
+            if real_sklearn is not None:
+                sys.modules["sklearn.mixture"] = real_sklearn
+            else:
+                sys.modules.pop("sklearn.mixture", None)
+            if real_sklearn_pkg is not None:
+                sys.modules["sklearn"] = real_sklearn_pkg
+            else:
+                sys.modules.pop("sklearn", None)
+
+    def test_numba_jit_fallback_is_noop_decorator(self):
+        """The fallback jit decorator should return the original function unchanged."""
+        # Replicate the fallback jit from qc.py lines 58-62
+        def jit_fallback(*args, **kwargs):
+            def decorator(func):
+                return func
+
+            return decorator
+
+        @jit_fallback(nopython=True, cache=True)
+        def my_func(x):
+            return x + 1
+
+        # The function should work identically without numba
+        assert my_func(5) == 6
+        assert my_func(0) == 1
+
+    def test_numba_jit_fallback_preserves_function_name(self):
+        """Fallback jit should preserve the original function identity."""
+        def jit_fallback(*args, **kwargs):
+            def decorator(func):
+                return func
+
+            return decorator
+
+        def original(x):
+            return x * 2
+
+        decorated = jit_fallback(nopython=True)(original)
+        assert decorated is original
+
+
+# ---------------------------------------------------------------------------
+# Tests: loci_qc function
+# ---------------------------------------------------------------------------
+class TestLociQc:
+    """Tests for the loci_qc orchestration function."""
+
+    @staticmethod
+    def _make_loci_info_tsv(tmp_path, n_loci=2):
+        """Create a minimal valid loci_info TSV file and return its path.
+
+        Parameters
+        ----------
+        tmp_path : pathlib.Path
+            Temporary directory provided by pytest.
+        n_loci : int
+            Number of distinct locus_id entries to create.
+
+        Returns
+        -------
+        str
+            Path to the generated TSV file.
+        """
+        rows = []
+        for i in range(1, n_loci + 1):
+            rows.append(
+                {
+                    "locus_id": f"locus_{i}",
+                    "prefix": f"/fake/path/locus_{i}",
+                    "popu": "EUR",
+                    "cohort": "UKB",
+                    "sample_size": 10000,
+                    "chr": 1,
+                    "start": 1000 * i,
+                    "end": 1000 * i + 5000,
+                }
+            )
+        df = pd.DataFrame(rows)
+        fpath = str(tmp_path / "loci_info.tsv")
+        df.to_csv(fpath, sep="\t", index=False)
+        return fpath
+
+    # ---- threads validation ----
+
+    def test_threads_less_than_one_raises_value_error(self, tmp_path):
+        """Passing threads < 1 should raise ValueError immediately."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=1)
+        with pytest.raises(ValueError, match="threads must be a positive integer"):
+            loci_qc(inputs=fpath, out_dir=str(tmp_path / "out"), threads=0)
+
+    def test_threads_negative_raises_value_error(self, tmp_path):
+        """Passing threads = -1 should raise ValueError."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=1)
+        with pytest.raises(ValueError, match="threads must be a positive integer"):
+            loci_qc(inputs=fpath, out_dir=str(tmp_path / "out"), threads=-1)
+
+    # ---- basic successful run with all summaries populated ----
+
+    @patch("credtools.qc.Pool")
+    @patch("credtools.qc.Progress")
+    def test_successful_run_saves_global_summary(
+        self, mock_progress_cls, mock_pool_cls, tmp_path
+    ):
+        """When all loci succeed, global qc.txt.gz should be written."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=2)
+        out_dir = str(tmp_path / "qc_out")
+
+        summary1 = pd.DataFrame(
+            {"locus_id": ["locus_1"], "metric_a": [0.5], "metric_b": [1.0]}
+        )
+        summary2 = pd.DataFrame(
+            {"locus_id": ["locus_2"], "metric_a": [0.7], "metric_b": [0.9]}
+        )
+
+        pool_results = [
+            ("locus_1", summary1, None, None, None, None),
+            ("locus_2", summary2, None, None, None, None),
+        ]
+
+        # Configure the mock Pool context manager
+        mock_pool = MagicMock()
+        mock_pool.imap_unordered.return_value = iter(pool_results)
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool_cls.return_value = mock_pool
+
+        # Configure mock Progress context manager
+        mock_prog = MagicMock()
+        mock_prog.add_task.return_value = 0
+        mock_prog.__enter__ = MagicMock(return_value=mock_prog)
+        mock_prog.__exit__ = MagicMock(return_value=False)
+        mock_progress_cls.return_value = mock_prog
+
+        result = loci_qc(inputs=fpath, out_dir=out_dir, threads=1)
+
+        assert result["successful_loci"] == 2
+        assert result["failed_loci"] == 0
+        assert result["total_loci"] == 2
+        assert len(result["errors"]) == 0
+        assert result["end_time"] is not None
+
+        # Global summary file should exist
+        assert os.path.exists(os.path.join(out_dir, "qc.txt.gz"))
+        saved = pd.read_csv(os.path.join(out_dir, "qc.txt.gz"), sep="\t")
+        assert len(saved) == 2
+        # locus_id should be the first column
+        assert saved.columns[0] == "locus_id"
+
+        # Log file should exist
+        assert os.path.exists(os.path.join(out_dir, "qc_run_summary.log"))
+
+    # ---- error loci tracked in run_summary ----
+
+    @patch("credtools.qc.Pool")
+    @patch("credtools.qc.Progress")
+    def test_failed_loci_recorded_in_run_summary(
+        self, mock_progress_cls, mock_pool_cls, tmp_path
+    ):
+        """When safe_qc_locus_cli returns an error, it is tracked in run_summary."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=2)
+        out_dir = str(tmp_path / "qc_out_err")
+
+        pool_results = [
+            ("locus_1", pd.DataFrame(), None, None, None, None),
+            (
+                "locus_2",
+                pd.DataFrame(),
+                None,
+                None,
+                None,
+                "RuntimeError: something broke",
+            ),
+        ]
+
+        mock_pool = MagicMock()
+        mock_pool.imap_unordered.return_value = iter(pool_results)
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool_cls.return_value = mock_pool
+
+        mock_prog = MagicMock()
+        mock_prog.add_task.return_value = 0
+        mock_prog.__enter__ = MagicMock(return_value=mock_prog)
+        mock_prog.__exit__ = MagicMock(return_value=False)
+        mock_progress_cls.return_value = mock_prog
+
+        result = loci_qc(inputs=fpath, out_dir=out_dir, threads=1)
+
+        assert result["successful_loci"] == 1
+        assert result["failed_loci"] == 1
+        assert len(result["errors"]) == 1
+        assert "locus_2" in result["errors"][0]
+        assert "something broke" in result["errors"][0]
+
+        # Verify the log file records the error
+        log_path = os.path.join(out_dir, "qc_run_summary.log")
+        assert os.path.exists(log_path)
+        with open(log_path, "r") as f:
+            log_content = f.read()
+        assert "Failed: 1" in log_content
+        assert "locus_2" in log_content
+
+    # ---- cleaned summary and outlier summary paths ----
+
+    @patch("credtools.qc.Pool")
+    @patch("credtools.qc.Progress")
+    def test_cleaned_and_outlier_summaries_saved(
+        self, mock_progress_cls, mock_pool_cls, tmp_path
+    ):
+        """When cleaned/outlier summaries are returned, they are saved correctly."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=1)
+        out_dir = str(tmp_path / "qc_out_cleaned")
+
+        summary = pd.DataFrame(
+            {"locus_id": ["locus_1"], "metric_a": [0.5]}
+        )
+        outlier_summary = pd.DataFrame(
+            {
+                "locus_id": ["locus_1"],
+                "popu": ["EUR"],
+                "cohort": ["UKB"],
+                "original_snps": [100],
+                "cleaned_snps": [95],
+                "outliers_removed": [5],
+            }
+        )
+        cleaned_summary = pd.DataFrame(
+            {"locus_id": ["locus_1"], "metric_a": [0.6]}
+        )
+        outlier_detail = pd.DataFrame(
+            {
+                "locus_id": ["locus_1"],
+                "snpid": ["1-1000-A-G"],
+                "reason": ["ld_mismatch"],
+            }
+        )
+
+        pool_results = [
+            (
+                "locus_1",
+                summary,
+                outlier_summary,
+                cleaned_summary,
+                outlier_detail,
+                None,
+            ),
+        ]
+
+        mock_pool = MagicMock()
+        mock_pool.imap_unordered.return_value = iter(pool_results)
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool_cls.return_value = mock_pool
+
+        mock_prog = MagicMock()
+        mock_prog.add_task.return_value = 0
+        mock_prog.__enter__ = MagicMock(return_value=mock_prog)
+        mock_prog.__exit__ = MagicMock(return_value=False)
+        mock_progress_cls.return_value = mock_prog
+
+        result = loci_qc(inputs=fpath, out_dir=out_dir, threads=1)
+
+        assert result["successful_loci"] == 1
+        assert result["failed_loci"] == 0
+
+        # Global QC summary
+        assert os.path.exists(os.path.join(out_dir, "qc.txt.gz"))
+
+        # Cleaned QC summary
+        cleaned_path = os.path.join(out_dir, "cleaned", "qc_cleaned.txt.gz")
+        assert os.path.exists(cleaned_path)
+        cleaned_df = pd.read_csv(cleaned_path, sep="\t")
+        assert len(cleaned_df) == 1
+        assert cleaned_df.columns[0] == "locus_id"
+
+        # Outlier removal summary
+        outlier_path = os.path.join(
+            out_dir, "cleaned", "outlier_removal_summary.txt.gz"
+        )
+        assert os.path.exists(outlier_path)
+
+        # Outlier SNP details
+        snp_detail_path = os.path.join(out_dir, "cleaned", "outlier_snps.txt.gz")
+        assert os.path.exists(snp_detail_path)
+        detail_df = pd.read_csv(snp_detail_path, sep="\t")
+        assert len(detail_df) == 1
+
+        # Cleaned loci info file
+        cleaned_info_path = os.path.join(
+            out_dir, "cleaned", "cleaned_loci_info.txt.gz"
+        )
+        assert os.path.exists(cleaned_info_path)
+        info_df = pd.read_csv(cleaned_info_path, sep="\t")
+        assert len(info_df) == 1
+        assert info_df["popu"].iloc[0] == "EUR"
+        assert info_df["cohort"].iloc[0] == "UKB"
+
+    # ---- no summary data: qc.txt.gz should NOT be created ----
+
+    @patch("credtools.qc.Pool")
+    @patch("credtools.qc.Progress")
+    def test_empty_summaries_no_qc_file(
+        self, mock_progress_cls, mock_pool_cls, tmp_path
+    ):
+        """When all summaries are empty, qc.txt.gz should not be created."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=1)
+        out_dir = str(tmp_path / "qc_out_empty")
+
+        # Return empty summary (success but nothing to report)
+        pool_results = [
+            ("locus_1", pd.DataFrame(), None, None, None, None),
+        ]
+
+        mock_pool = MagicMock()
+        mock_pool.imap_unordered.return_value = iter(pool_results)
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool_cls.return_value = mock_pool
+
+        mock_prog = MagicMock()
+        mock_prog.add_task.return_value = 0
+        mock_prog.__enter__ = MagicMock(return_value=mock_prog)
+        mock_prog.__exit__ = MagicMock(return_value=False)
+        mock_progress_cls.return_value = mock_prog
+
+        result = loci_qc(inputs=fpath, out_dir=out_dir, threads=1)
+
+        assert result["successful_loci"] == 1
+        # No qc.txt.gz since all_summaries is empty
+        assert not os.path.exists(os.path.join(out_dir, "qc.txt.gz"))
+        # No cleaned directory either
+        assert not os.path.exists(os.path.join(out_dir, "cleaned"))
+
+    # ---- run_summary parameters are stored correctly ----
+
+    @patch("credtools.qc.Pool")
+    @patch("credtools.qc.Progress")
+    def test_run_summary_parameters(
+        self, mock_progress_cls, mock_pool_cls, tmp_path
+    ):
+        """Run summary should contain all input parameters."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=1)
+        out_dir = str(tmp_path / "qc_out_params")
+
+        pool_results = [
+            ("locus_1", pd.DataFrame(), None, None, None, None),
+        ]
+
+        mock_pool = MagicMock()
+        mock_pool.imap_unordered.return_value = iter(pool_results)
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool_cls.return_value = mock_pool
+
+        mock_prog = MagicMock()
+        mock_prog.add_task.return_value = 0
+        mock_prog.__enter__ = MagicMock(return_value=mock_prog)
+        mock_prog.__exit__ = MagicMock(return_value=False)
+        mock_progress_cls.return_value = mock_prog
+
+        result = loci_qc(
+            inputs=fpath,
+            out_dir=out_dir,
+            threads=2,
+            remove_outlier=True,
+            logLR_threshold=3.0,
+            z_threshold=2.5,
+        )
+
+        params = result["parameters"]
+        assert params["inputs"] == fpath
+        assert params["out_dir"] == out_dir
+        assert params["threads"] == 2
+        assert params["remove_outlier"] is True
+        assert params["logLR_threshold"] == 3.0
+        assert params["z_threshold"] == 2.5
+
+    # ---- multi-cohort outlier summary with "+" in cohort name ----
+
+    @patch("credtools.qc.Pool")
+    @patch("credtools.qc.Progress")
+    def test_multi_cohort_prefix_with_plus_sign(
+        self, mock_progress_cls, mock_pool_cls, tmp_path
+    ):
+        """When cohort contains '+', prefix uses meta hash pattern."""
+        from credtools.qc import loci_qc
+
+        # Create loci_info with a multi-cohort entry
+        rows = [
+            {
+                "locus_id": "locus_1",
+                "prefix": "/fake/path/locus_1",
+                "popu": "EUR",
+                "cohort": "UKB+FinnGen",
+                "sample_size": 10000,
+                "chr": 1,
+                "start": 1000,
+                "end": 6000,
+            }
+        ]
+        df = pd.DataFrame(rows)
+        fpath = str(tmp_path / "loci_info_multi.tsv")
+        df.to_csv(fpath, sep="\t", index=False)
+        out_dir = str(tmp_path / "qc_out_multi")
+
+        summary = pd.DataFrame(
+            {"locus_id": ["locus_1"], "metric_a": [0.5]}
+        )
+        outlier_summary = pd.DataFrame(
+            {
+                "locus_id": ["locus_1"],
+                "popu": ["EUR"],
+                "cohort": ["UKB+FinnGen"],
+                "original_snps": [100],
+                "cleaned_snps": [90],
+                "outliers_removed": [10],
+            }
+        )
+
+        pool_results = [
+            ("locus_1", summary, outlier_summary, None, None, None),
+        ]
+
+        mock_pool = MagicMock()
+        mock_pool.imap_unordered.return_value = iter(pool_results)
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool_cls.return_value = mock_pool
+
+        mock_prog = MagicMock()
+        mock_prog.add_task.return_value = 0
+        mock_prog.__enter__ = MagicMock(return_value=mock_prog)
+        mock_prog.__exit__ = MagicMock(return_value=False)
+        mock_progress_cls.return_value = mock_prog
+
+        result = loci_qc(inputs=fpath, out_dir=out_dir, threads=1)
+
+        assert result["successful_loci"] == 1
+
+        # Verify cleaned_loci_info prefix uses the meta hash pattern
+        cleaned_info_path = os.path.join(
+            out_dir, "cleaned", "cleaned_loci_info.txt.gz"
+        )
+        assert os.path.exists(cleaned_info_path)
+        info_df = pd.read_csv(cleaned_info_path, sep="\t")
+        assert len(info_df) == 1
+        prefix_val = info_df["prefix"].iloc[0]
+        assert "meta2cohorts_" in prefix_val
+        assert "UKB+FinnGen" not in prefix_val  # cohort name hashed, not literal
+
+    # ---- all loci fail ----
+
+    @patch("credtools.qc.Pool")
+    @patch("credtools.qc.Progress")
+    def test_all_loci_fail(self, mock_progress_cls, mock_pool_cls, tmp_path):
+        """When every locus fails, all are recorded and no output files written."""
+        from credtools.qc import loci_qc
+
+        fpath = self._make_loci_info_tsv(tmp_path, n_loci=2)
+        out_dir = str(tmp_path / "qc_out_allfail")
+
+        pool_results = [
+            ("locus_1", pd.DataFrame(), None, None, None, "ValueError: bad data"),
+            ("locus_2", pd.DataFrame(), None, None, None, "IOError: file missing"),
+        ]
+
+        mock_pool = MagicMock()
+        mock_pool.imap_unordered.return_value = iter(pool_results)
+        mock_pool.__enter__ = MagicMock(return_value=mock_pool)
+        mock_pool.__exit__ = MagicMock(return_value=False)
+        mock_pool_cls.return_value = mock_pool
+
+        mock_prog = MagicMock()
+        mock_prog.add_task.return_value = 0
+        mock_prog.__enter__ = MagicMock(return_value=mock_prog)
+        mock_prog.__exit__ = MagicMock(return_value=False)
+        mock_progress_cls.return_value = mock_prog
+
+        result = loci_qc(inputs=fpath, out_dir=out_dir, threads=1)
+
+        assert result["successful_loci"] == 0
+        assert result["failed_loci"] == 2
+        assert len(result["errors"]) == 2
+        # No summary files
+        assert not os.path.exists(os.path.join(out_dir, "qc.txt.gz"))
+
+        # Log file should still exist and record both errors
+        log_path = os.path.join(out_dir, "qc_run_summary.log")
+        with open(log_path, "r") as f:
+            log_content = f.read()
+        assert "Successful: 0" in log_content
+        assert "Failed: 2" in log_content

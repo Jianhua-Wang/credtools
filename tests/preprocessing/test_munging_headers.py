@@ -287,3 +287,84 @@ def test_validate_required_columns_custom_required():
     # Should fail if custom required column is missing
     result = validate_required_columns(df, required=["CHR", "BP", "RSID"])
     assert result is False
+
+
+# ============================================================================
+# Additional tests for _detect_separator
+# ============================================================================
+
+
+def test_detect_separator_csv_returns_comma(tmp_path):
+    """Test that _detect_separator returns comma for a CSV file."""
+    filepath = tmp_path / "test.csv"
+    filepath.write_text("col_a,col_b,col_c\n1,2,3\n4,5,6\n")
+    sep = _detect_separator(str(filepath))
+    assert sep == ","
+
+
+def test_detect_separator_gzipped_tab_works(tmp_path):
+    """Test that _detect_separator correctly reads a gzipped tab file."""
+    import gzip
+
+    filepath = tmp_path / "test.tsv.gz"
+    content = "CHR\tBP\tSNPID\tEA\tNEA\tBETA\tSE\tP\n1\t1000\trs1\tA\tG\t0.1\t0.05\t0.01\n"
+    with gzip.open(str(filepath), "wt") as f:
+        f.write(content)
+    sep = _detect_separator(str(filepath))
+    assert sep in ("\t", r"\s+")
+
+
+# ============================================================================
+# Tests for suggest_missing_mappings
+# ============================================================================
+
+from credtools.preprocessing.munging.headers import suggest_missing_mappings
+
+
+def test_suggest_missing_mappings_fuzzy_unmapped():
+    """Unmapped header that fuzzy-matches a missing standard should be suggested."""
+    headers = ["chromosome_id", "BP", "EA", "NEA", "BETA", "SE", "P"]
+    # Only BP..P are already mapped; CHR is missing from mapped_headers
+    mapped = {
+        "BP": "BP",
+        "EA": "EA",
+        "NEA": "NEA",
+        "BETA": "BETA",
+        "SE": "SE",
+        "P": "P",
+    }
+    suggestions = suggest_missing_mappings(headers, mapped)
+    # "chromosome_id" contains "chrom" -> should match CHR
+    assert suggestions.get("chromosome_id") == "CHR"
+
+
+def test_suggest_missing_mappings_all_required_mapped():
+    """When all mandatory columns are already mapped, suggestions should be empty."""
+    headers = ["CHR", "BP", "EA", "NEA", "BETA", "SE", "P", "extra_col"]
+    mapped = {
+        "CHR": "CHR",
+        "BP": "BP",
+        "EA": "EA",
+        "NEA": "NEA",
+        "BETA": "BETA",
+        "SE": "SE",
+        "P": "P",
+    }
+    suggestions = suggest_missing_mappings(headers, mapped)
+    assert suggestions == {}
+
+
+def test_suggest_missing_mappings_no_unmapped_headers():
+    """When all headers are in mapped_headers, suggestions should be empty."""
+    headers = ["CHR", "BP", "EA", "NEA", "BETA", "SE", "P"]
+    mapped = {
+        "CHR": "CHR",
+        "BP": "BP",
+        "EA": "EA",
+        "NEA": "NEA",
+        "BETA": "BETA",
+        "SE": "SE",
+        "P": "P",
+    }
+    suggestions = suggest_missing_mappings(headers, mapped)
+    assert suggestions == {}

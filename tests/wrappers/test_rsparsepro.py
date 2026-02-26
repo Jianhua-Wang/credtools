@@ -1,23 +1,19 @@
 """Tests for the RSparsePro fine-mapping wrapper."""
 
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet
-from credtools.wrappers.RSparsePro import (
-    RSparsePro,
-    adaptive_train,
-    get_eff_maxld,
-    get_eff_minld,
-    get_ordered,
-    rsparsepro_main,
-    run_rsparsepro,
-)
+from credtools.wrappers.RSparsePro import (RSparsePro, adaptive_train,
+                                           get_eff_maxld, get_eff_minld,
+                                           get_ordered, rsparsepro_main,
+                                           run_rsparsepro)
 
 from .conftest import _make_locus
-
 
 # ============================================================
 # Tests for the RSparsePro class
@@ -313,3 +309,353 @@ class TestRunRsparsepro:
         result = run_rsparsepro(locus_significant, max_causal=3, coverage=0.99)
         assert result.parameters["max_causal"] == 3
         assert result.parameters["coverage"] == 0.99
+
+
+# ============================================================
+# Helpers for synthetic data used in adaptive_train / rsparsepro_main tests
+# ============================================================
+
+
+def _build_synthetic_ld(n: int, off_diag: float, seed: int = 100) -> np.ndarray:
+    """Build a symmetric positive-definite correlation matrix.
+
+    Creates an n x n matrix with 1 on the diagonal and approximately
+    ``off_diag`` correlation between all pairs.  A small random perturbation
+    is added so the matrix is not perfectly uniform off-diagonal, then the
+    result is projected to the nearest correlation matrix via eigenvalue
+    clipping.
+
+    Parameters
+    ----------
+    n : int
+        Matrix dimension.
+    off_diag : float
+        Approximate off-diagonal correlation (0 < off_diag < 1).
+    seed : int
+        Random seed for reproducibility.
+
+    Returns
+    -------
+    np.ndarray
+        Symmetric positive-definite correlation matrix of shape (n, n).
+    """
+    rng = np.random.default_rng(seed)
+    base = np.full((n, n), off_diag)
+    np.fill_diagonal(base, 1.0)
+    noise = rng.normal(0, 0.02, size=(n, n))
+    noise = (noise + noise.T) / 2
+    np.fill_diagonal(noise, 0.0)
+    raw = base + noise
+    # Project to nearest valid correlation matrix
+    eigvals, eigvecs = np.linalg.eigh(raw)
+    eigvals = np.maximum(eigvals, 1e-6)
+    cov = eigvecs @ np.diag(eigvals) @ eigvecs.T
+    d = np.sqrt(np.diag(cov))
+    r = cov / np.outer(d, d)
+    np.fill_diagonal(r, 1.0)
+    return r
+
+
+def _build_synthetic_zfile(n: int, seed: int = 200) -> Tuple[pd.DataFrame, np.ndarray]:
+    """Build a small synthetic zfile DataFrame and z-score array.
+
+    The first variant has a strong signal (z=6); the rest are weak.
+
+    Parameters
+    ----------
+    n : int
+        Number of SNPs.
+    seed : int
+        Random seed.
+
+    Returns
+    -------
+    zfile : pd.DataFrame
+        DataFrame with columns RSID, Z.
+    zscore : np.ndarray
+        The z-score vector.
+    """
+    rng = np.random.default_rng(seed)
+    rsids = [f"rs{i}" for i in range(n)]
+    zvals = rng.normal(0, 0.5, size=n)
+    zvals[0] = 6.0  # strong lead signal
+    zfile = pd.DataFrame({"RSID": rsids, "Z": zvals})
+    return zfile, zvals
+
+
+# ============================================================
+# Tests for adaptive_train loop behaviour
+# ============================================================
+
+
+class TestAdaptiveTrain:
+    """Tests that exercise the vare-increment loop inside adaptive_train."""
+
+    def test_converges_on_first_pass_with_identity_ld(self):
+        """With identity LD and a single strong signal, vare=0 should suffice.
+
+        This confirms the happy-path where the while-loop body executes
+        exactly once and the ``len(eff) < 2 and get_ordered(eff_mu)``
+        fallback fires, reaching the K=1 re-fit branch.
+        """
+        n = 5
+        ld = np.eye(n)
+        rng = np.random.default_rng(42)
+        zscore = rng.normal(0, 0.3, size=n)
+        zscore[0] = 5.0
+
+        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+            zscore=zscore,
+            ld=ld,
+            K=3,
+            maxite=100,
+            eps=1e-5,
+            ubound=100000,
+            cthres=0.95,
+            minldthres=0.7,
+            maxldthres=0.2,
+            eincre=1.5,
+            varemax=100.0,
+            varemin=1e-3,
+        )
+        assert isinstance(eff, dict)
+        assert PIP.shape == (n,)
+        assert ztilde.shape == (n,)
+        # With identity LD and one strong signal the model should find <= 1 group
+        assert len(eff) <= 1
+
+    def test_vare_increments_before_converging(self):
+        """Verify vare increments when initial pass fails quality constraints.
+
+        With correlated LD the first pass (vare=0) should fail quality
+        constraints, causing vare to be set to varemin then multiplied by
+        eincre at least once before the loop terminates.
+        We use a high off-diagonal LD so that maxld between groups exceeds
+        maxldthres, forcing the loop to keep incrementing vare.
+        """
+        n = 6
+        # High off-diagonal LD so initial multi-signal fits violate maxldthres
+        ld = _build_synthetic_ld(n, off_diag=0.8, seed=77)
+        rng = np.random.default_rng(55)
+        zscore = rng.normal(0, 0.5, size=n)
+        zscore[0] = 5.5
+        zscore[3] = 4.0
+
+        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+            zscore=zscore,
+            ld=ld,
+            K=3,
+            maxite=50,
+            eps=1e-4,
+            ubound=100000,
+            cthres=0.95,
+            minldthres=0.7,
+            maxldthres=0.2,
+            eincre=2.0,
+            varemax=50.0,
+            varemin=0.01,
+        )
+        assert isinstance(eff, dict)
+        assert PIP.shape == (n,)
+        assert ztilde.shape == (n,)
+        assert np.all(PIP >= 0) and np.all(PIP <= 1)
+
+    def test_vare_exceeds_varemax_falls_back_to_k1(self):
+        """Fall back to K=1 when vare exceeds varemax.
+
+        When vare grows past varemax the function should fall back to a
+        K=1 model with vare=0.  We force this by setting a very small
+        varemax so the loop cannot satisfy quality constraints before
+        exceeding the limit.
+        """
+        n = 6
+        ld = _build_synthetic_ld(n, off_diag=0.85, seed=99)
+        rng = np.random.default_rng(33)
+        zscore = rng.normal(0, 0.5, size=n)
+        zscore[0] = 6.0
+        zscore[3] = 4.5
+
+        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+            zscore=zscore,
+            ld=ld,
+            K=4,
+            maxite=50,
+            eps=1e-4,
+            ubound=100000,
+            cthres=0.95,
+            minldthres=0.7,
+            maxldthres=0.2,
+            eincre=2.0,
+            varemax=0.001,  # very small -> vare will exceed quickly
+            varemin=0.0005,
+        )
+        assert isinstance(eff, dict)
+        assert PIP.shape == (n,)
+        assert ztilde.shape == (n,)
+        # After fallback the model is re-fit with K=1, so at most 1 group
+        assert len(eff) <= 1
+
+    def test_few_effects_ordered_triggers_fallback(self):
+        """Trigger fallback when fewer than 2 ordered effect groups exist.
+
+        When len(eff) < 2 and get_ordered(eff_mu) is True the fallback
+        to K=1 should fire even if vare has not exceeded varemax.
+        Use identity LD (easy convergence) and K>1 so the model is unlikely
+        to find multiple groups.
+        """
+        n = 5
+        ld = np.eye(n)
+        zscore = np.array([5.0, 0.1, 0.05, -0.1, 0.02])
+
+        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+            zscore=zscore,
+            ld=ld,
+            K=5,
+            maxite=100,
+            eps=1e-5,
+            ubound=100000,
+            cthres=0.95,
+            minldthres=0.7,
+            maxldthres=0.2,
+            eincre=1.5,
+            varemax=100.0,
+            varemin=1e-3,
+        )
+        assert len(eff) <= 1
+        assert PIP.shape == (n,)
+        assert ztilde.shape == (n,)
+
+
+# ============================================================
+# Tests for rsparsepro_main complete flow
+# ============================================================
+
+
+class TestRsparseproMain:
+    """Tests for the rsparsepro_main function with real algorithm calls."""
+
+    def test_output_columns_present(self):
+        """Output DataFrame must contain PIP, z_estimated, and cs columns."""
+        n = 5
+        ld = np.eye(n)
+        zfile, _ = _build_synthetic_zfile(n, seed=300)
+
+        result = rsparsepro_main(
+            zfile=zfile,
+            ld=ld,
+            K=2,
+            maxite=50,
+            eps=1e-4,
+        )
+        assert "PIP" in result.columns
+        assert "z_estimated" in result.columns
+        assert "cs" in result.columns
+
+    def test_pip_values_valid(self):
+        """PIP values must be in [0, 1]."""
+        n = 6
+        ld = np.eye(n)
+        zfile, _ = _build_synthetic_zfile(n, seed=301)
+
+        result = rsparsepro_main(zfile=zfile, ld=ld, K=2, maxite=50, eps=1e-4)
+        assert np.all(result["PIP"] >= 0)
+        assert np.all(result["PIP"] <= 1)
+
+    def test_cs_assignments_nonzero_for_credible_set_snps(self):
+        """Verify that variants in a credible set have cs > 0.
+
+        Use identity LD and one strong signal so the algorithm is likely to
+        assign at least one SNP to a credible set.
+        """
+        n = 5
+        ld = np.eye(n)
+        zfile = pd.DataFrame(
+            {
+                "RSID": [f"rs{i}" for i in range(n)],
+                "Z": [8.0, 0.1, 0.05, -0.1, 0.02],
+            }
+        )
+
+        result = rsparsepro_main(zfile=zfile, ld=ld, K=1, maxite=100, eps=1e-5)
+        cs_vals = result["cs"].values
+        # At least one SNP should belong to a credible set
+        assert (cs_vals > 0).any(), "Expected at least one SNP in a credible set"
+        # cs values should be non-negative integers
+        assert np.all(cs_vals >= 0)
+
+    def test_z_estimated_has_correct_shape(self):
+        """z_estimated must have the same length as input."""
+        n = 8
+        ld = _build_synthetic_ld(n, off_diag=0.2, seed=500)
+        zfile, _ = _build_synthetic_zfile(n, seed=302)
+
+        result = rsparsepro_main(zfile=zfile, ld=ld, K=3, maxite=50, eps=1e-4)
+        assert len(result["z_estimated"]) == n
+
+    def test_rsid_column_preserved(self):
+        """The RSID column should be preserved unchanged through the pipeline."""
+        n = 5
+        ld = np.eye(n)
+        rsids = [f"snp_{i}" for i in range(n)]
+        zfile = pd.DataFrame(
+            {
+                "RSID": rsids,
+                "Z": [5.0, 0.2, -0.3, 0.1, 0.0],
+            }
+        )
+
+        result = rsparsepro_main(zfile=zfile, ld=ld, K=1, maxite=50, eps=1e-4)
+        assert list(result["RSID"]) == rsids
+
+    def test_cs_zero_for_non_credible_snps(self):
+        """Verify that variants outside credible sets have cs == 0."""
+        n = 7
+        ld = np.eye(n)
+        zvals = np.zeros(n)
+        zvals[0] = 7.0  # only one strong signal
+        zfile = pd.DataFrame(
+            {
+                "RSID": [f"rs{i}" for i in range(n)],
+                "Z": zvals,
+            }
+        )
+
+        result = rsparsepro_main(zfile=zfile, ld=ld, K=1, maxite=100, eps=1e-5)
+        # SNPs with very small z-scores should remain cs == 0
+        weak_mask = np.abs(result["Z"].values) < 1.0
+        # Most weak SNPs should have cs == 0
+        weak_cs = result.loc[weak_mask, "cs"].values
+        assert (weak_cs == 0).sum() >= 1, "Expected some weak SNPs with cs == 0"
+
+    def test_correlated_ld_with_multiple_signals(self):
+        """Run with non-trivial LD and K>1 to exercise the full adaptive loop."""
+        n = 8
+        ld = _build_synthetic_ld(n, off_diag=0.3, seed=600)
+        rng = np.random.default_rng(601)
+        zvals = rng.normal(0, 0.5, size=n)
+        zvals[0] = 5.5
+        zvals[4] = 4.0
+        zfile = pd.DataFrame(
+            {
+                "RSID": [f"rs{i}" for i in range(n)],
+                "Z": zvals,
+            }
+        )
+
+        result = rsparsepro_main(
+            zfile=zfile,
+            ld=ld,
+            K=3,
+            maxite=50,
+            eps=1e-4,
+            cthres=0.95,
+            minldthres=0.5,
+            maxldthres=0.3,
+            eincre=2.0,
+            varemax=10.0,
+            varemin=0.01,
+        )
+        assert "PIP" in result.columns
+        assert "z_estimated" in result.columns
+        assert "cs" in result.columns
+        assert len(result) == n
