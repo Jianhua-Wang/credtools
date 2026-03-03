@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.8] (2026-03-03)
+
+### Changed
+- Optimized CLI startup speed by deferring heavy module imports (pandas, numpy, scipy, sklearn) and internal modules (credtools.credtools, credtools.locus, credtools.meta, credtools.qc) from module level to function level via lazy loading
+
 ## [0.4.7] (2026-02-25)
 
 ### Changed
