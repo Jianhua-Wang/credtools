@@ -23,9 +23,9 @@ def test_cli_module_does_not_import_pandas_at_top_level():
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"pandas imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
-    )
+    assert (
+        result.returncode == 0
+    ), f"pandas imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
 
 
 def test_cli_module_does_not_import_numpy_at_top_level():
@@ -43,9 +43,9 @@ def test_cli_module_does_not_import_numpy_at_top_level():
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"numpy imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
-    )
+    assert (
+        result.returncode == 0
+    ), f"numpy imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
 
 
 def test_cli_module_does_not_import_scipy_at_top_level():
@@ -62,9 +62,9 @@ def test_cli_module_does_not_import_scipy_at_top_level():
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"scipy imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
-    )
+    assert (
+        result.returncode == 0
+    ), f"scipy imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
 
 
 def test_cli_module_does_not_import_sklearn_at_top_level():
@@ -81,6 +81,6 @@ def test_cli_module_does_not_import_sklearn_at_top_level():
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"sklearn imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
-    )
+    assert (
+        result.returncode == 0
+    ), f"sklearn imported at module level:\nstdout: {result.stdout}\nstderr: {result.stderr}"
