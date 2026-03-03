@@ -483,7 +483,7 @@ class TestProcessFineMapTask:
         }
 
         with patch(
-            "credtools.cli.load_locus_set",
+            "credtools.locus.load_locus_set",
             side_effect=RuntimeError("mock load failure"),
         ):
             result = _process_fine_map_task(task)
@@ -519,8 +519,8 @@ class TestProcessFineMapTask:
         }
 
         with (
-            patch("credtools.cli.load_locus_set", return_value=mock_locus_set),
-            patch("credtools.cli.fine_map", return_value=mock_creds),
+            patch("credtools.locus.load_locus_set", return_value=mock_locus_set),
+            patch("credtools.credtools.fine_map", return_value=mock_creds),
             patch(
                 "credtools.credibleset.generate_cs_summary",
                 return_value=[{"locus_id": "locus_ok", "cs_id": 1, "cs_size": 1}],
@@ -563,8 +563,8 @@ class TestProcessFineMapTask:
         }
 
         with (
-            patch("credtools.cli.load_locus_set", return_value=mock_locus_set),
-            patch("credtools.cli.fine_map", return_value=mock_creds),
+            patch("credtools.locus.load_locus_set", return_value=mock_locus_set),
+            patch("credtools.credtools.fine_map", return_value=mock_creds),
             patch(
                 "credtools.credibleset.generate_cs_summary",
                 return_value=[],
@@ -1243,7 +1243,7 @@ class TestRunMeta:
             call_args["args"] = args
             call_args["kwargs"] = kwargs
 
-        monkeypatch.setattr("credtools.cli.meta_loci", mock_meta_loci)
+        monkeypatch.setattr("credtools.meta.meta_loci", mock_meta_loci)
 
         runner = CliRunner()
         result = runner.invoke(
@@ -1292,7 +1292,7 @@ class TestRunQc:
                 "log_path": str(output_dir / "qc_summary.log"),
             }
 
-        monkeypatch.setattr("credtools.cli.loci_qc", mock_loci_qc)
+        monkeypatch.setattr("credtools.qc.loci_qc", mock_loci_qc)
 
         runner = CliRunner()
         result = runner.invoke(
@@ -1335,7 +1335,7 @@ class TestRunQc:
                 "log_path": str(output_dir / "qc_summary.log"),
             }
 
-        monkeypatch.setattr("credtools.cli.loci_qc", mock_loci_qc)
+        monkeypatch.setattr("credtools.qc.loci_qc", mock_loci_qc)
 
         runner = CliRunner()
         result = runner.invoke(

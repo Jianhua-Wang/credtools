@@ -1,5 +1,7 @@
 """Console script for credtools."""
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -8,10 +10,11 @@ import traceback
 from enum import Enum
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-import numpy as np
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
+
 import typer
 from rich.console import Console
 from rich.progress import (
@@ -24,10 +27,6 @@ from rich.progress import (
 )
 
 from credtools import __version__
-from credtools.credtools import fine_map, pipeline
-from credtools.locus import check_loci_info, load_locus_set
-from credtools.meta import meta_loci
-from credtools.qc import loci_qc
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 app = typer.Typer(
@@ -190,6 +189,8 @@ def parse_population_config_file(
         - Dictionary mapping population identifiers to LD reference file paths
         - Original DataFrame for later updating
     """
+    import pandas as pd
+
     if not os.path.exists(config_file_path):
         raise FileNotFoundError(f"Configuration file not found: {config_file_path}")
 
@@ -253,6 +254,8 @@ def parse_population_config_file_munge_only(
         - Dictionary mapping population identifiers to file paths
         - Original DataFrame for later updating
     """
+    import pandas as pd
+
     if not os.path.exists(config_file_path):
         raise FileNotFoundError(f"Configuration file not found: {config_file_path}")
 
@@ -305,6 +308,8 @@ def create_updated_sumstat_info(
     str
         Path to the created file
     """
+    import pandas as pd
+
     # Create a copy of the original config
     updated_config = original_config_df.copy()
 
@@ -340,6 +345,8 @@ def create_updated_chunk_info(
     str
         Path to the created file
     """
+    import pandas as pd
+
     # Group chunk_info_df by ancestry to get the base directory for each ancestry
     chunk_files_by_ancestry = {}
 
@@ -391,6 +398,8 @@ def run_munge(
     ),
 ):
     """Reformat and standardize GWAS summary statistics from population configuration file."""
+    import pandas as pd
+
     setup_file_logging(log_file)
 
     try:
@@ -533,6 +542,8 @@ def _load_custom_chunks(custom_chunks_file: str) -> pd.DataFrame:
     pd.DataFrame
         DataFrame with loci coordinates.
     """
+    import pandas as pd
+
     if not os.path.exists(custom_chunks_file):
         raise FileNotFoundError(f"Custom chunks file not found: {custom_chunks_file}")
 
@@ -609,6 +620,8 @@ def _prepare_ld_matrices(
     pd.DataFrame
         DataFrame with prepared file information.
     """
+    import pandas as pd
+
     try:
         from credtools.preprocessing.prepare import prepare_finemap_inputs
     except ImportError as e:
@@ -676,6 +689,8 @@ def _update_chunk_info_with_prepared(
     pd.DataFrame
         Updated chunk info DataFrame with prepared file prefixes.
     """
+    import pandas as pd
+
     updated_df = chunk_info_df.copy()
 
     # Create a mapping from locus_id + ancestry to prepared prefix
@@ -743,6 +758,8 @@ def run_chunk(
     ),
 ):
     """Identify independent loci, chunk summary statistics, and extract LD matrices from GWAS info configuration file."""
+    import pandas as pd
+
     setup_file_logging(log_file)
 
     try:
@@ -944,6 +961,8 @@ def run_meta(
     ),
 ):
     """Meta-analysis of summary statistics and LD matrices."""
+    from credtools.meta import meta_loci
+
     setup_file_logging(log_file)
     meta_loci(inputs, outdir, threads, meta_method, calculate_lambda_s, skip=skip)
 
@@ -992,6 +1011,8 @@ def run_qc(
     ),
 ):
     """Quality control of summary statistics and LD matrices."""
+    from credtools.qc import loci_qc
+
     setup_file_logging(log_file)
     run_summary = loci_qc(
         inputs,
@@ -1020,6 +1041,11 @@ def run_qc(
 
 def _process_fine_map_task(task: Dict[str, Any]) -> Dict[str, Any]:
     """Run fine-mapping for a single locus in a worker process."""
+    import pandas as pd
+
+    from credtools.credtools import fine_map
+    from credtools.locus import load_locus_set
+
     locus_id = task["locus_id"]
     outdir = task["outdir"]
 
@@ -1206,6 +1232,10 @@ def run_fine_map(
     When using single-input tools with multiple loci, results are automatically combined.
     Set ``--processes`` greater than 1 to process loci in parallel.
     """
+    import pandas as pd
+
+    from credtools.locus import check_loci_info
+
     setup_file_logging(log_file)
     from datetime import datetime
 
@@ -1664,6 +1694,11 @@ def run_pipeline(
     ),
 ):
     """Run whole fine-mapping pipeline on a list of loci."""
+    import pandas as pd
+
+    from credtools.credtools import pipeline
+    from credtools.locus import check_loci_info
+
     setup_file_logging(log_file)
     import logging
     import sys
