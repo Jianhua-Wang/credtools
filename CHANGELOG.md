@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.9] (2026-03-06)
+
+### Changed
+- Optimized RSparsePro performance: replace repeated O(p³) matrix inversions with single eigendecomposition in `adaptive_train` loop, achieving 8-10x speedup for typical locus sizes
+
 ## [0.4.8] (2026-03-03)
 
 ### Changed
