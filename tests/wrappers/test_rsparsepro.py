@@ -659,7 +659,7 @@ class TestRsparseproMain:
         np.testing.assert_allclose(mat_orig, mat_eig, rtol=1e-10)
 
     def test_eigendecomp_matvec_equivalence(self):
-        """mat @ v via eigendecomposition must match direct multiplication."""
+        """Verify mat @ v via eigendecomposition matches direct multiplication."""
         n = 10
         ld = _build_synthetic_ld(n, off_diag=0.4, seed=77)
         rng = np.random.default_rng(88)
@@ -674,7 +674,9 @@ class TestRsparseproMain:
             result_eig = eigvecs @ (d * (eigvecs.T @ v))
 
             np.testing.assert_allclose(
-                result_orig, result_eig, rtol=1e-9,
+                result_orig,
+                result_eig,
+                rtol=1e-9,
                 err_msg=f"Mismatch at vare={vare}",
             )
 
@@ -687,9 +689,16 @@ class TestRsparseproMain:
         zscore[0] = 5.5
 
         kwargs = dict(
-            K=3, maxite=50, eps=1e-4, ubound=100000,
-            cthres=0.95, minldthres=0.7, maxldthres=0.2,
-            eincre=1.5, varemax=100.0, varemin=1e-3,
+            K=3,
+            maxite=50,
+            eps=1e-4,
+            ubound=100000,
+            cthres=0.95,
+            minldthres=0.7,
+            maxldthres=0.2,
+            eincre=1.5,
+            varemax=100.0,
+            varemin=1e-3,
         )
         eff1, eg1, em1, pip1, zt1 = adaptive_train(zscore, ld, **kwargs)
         eff2, eg2, em2, pip2, zt2 = adaptive_train(zscore, ld, **kwargs)

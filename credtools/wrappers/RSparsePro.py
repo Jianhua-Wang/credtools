@@ -524,7 +524,10 @@ def adaptive_train(
         or (maxld > maxldthres)
     ):
         model = RSparsePro(
-            len(zscore), K, ld, vare,
+            len(zscore),
+            K,
+            ld,
+            vare,
             eigdecomp=eigdecomp if vare != 0 else None,
         )
         mc = model.train(zscore, ld, maxite, eps, ubound)
