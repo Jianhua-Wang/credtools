@@ -51,13 +51,16 @@ class TestRSparseProClass:
         assert small_model.tilde_b.shape == (5,)
 
     def test_init_vare_zero(self, model_vare_zero):
-        """Model with vare=0 should not have mat attribute."""
-        assert not hasattr(model_vare_zero, "mat")
+        """Model with vare=0 should not have eigendecomposition attributes."""
+        assert not hasattr(model_vare_zero, "_eigvecs")
+        assert not hasattr(model_vare_zero, "_d")
 
     def test_init_vare_nonzero(self, small_model):
-        """Model with vare>0 should have mat attribute."""
-        assert hasattr(small_model, "mat")
-        assert small_model.mat.shape == (5, 5)
+        """Model with vare>0 should have eigendecomposition attributes."""
+        assert hasattr(small_model, "_eigvecs")
+        assert hasattr(small_model, "_d")
+        assert small_model._eigvecs.shape == (5, 5)
+        assert small_model._d.shape == (5,)
 
     def test_infer_q_beta(self, small_model):
         """infer_q_beta should update gamma and beta_mu."""
@@ -631,6 +634,69 @@ class TestRsparseproMain:
         # Most weak SNPs should have cs == 0
         weak_cs = result.loc[weak_mask, "cs"].values
         assert (weak_cs == 0).sum() >= 1, "Expected some weak SNPs with cs == 0"
+
+    def test_eigendecomp_equivalence_to_matrix_inversion(self):
+        """Eigendecomposition approach must match np.linalg.inv numerically.
+
+        For a symmetric R matrix:
+            R @ inv(I + R/vare) == Q @ diag(lambda_i * vare / (vare + lambda_i)) @ Q^T
+
+        This is the mathematical basis for the optimization that replaces
+        repeated O(p^3) matrix inversions with a single eigendecomposition.
+        """
+        n = 10
+        ld = _build_synthetic_ld(n, off_diag=0.3, seed=42)
+        vare = 1.0
+
+        # Original approach
+        mat_orig = ld @ np.linalg.inv(np.eye(n) + ld / vare)
+
+        # Eigendecomposition approach
+        eigvals, eigvecs = np.linalg.eigh(ld)
+        d = eigvals * vare / (vare + eigvals)
+        mat_eig = eigvecs @ np.diag(d) @ eigvecs.T
+
+        np.testing.assert_allclose(mat_orig, mat_eig, rtol=1e-10)
+
+    def test_eigendecomp_matvec_equivalence(self):
+        """mat @ v via eigendecomposition must match direct multiplication."""
+        n = 10
+        ld = _build_synthetic_ld(n, off_diag=0.4, seed=77)
+        rng = np.random.default_rng(88)
+        v = rng.normal(0, 1, size=n)
+
+        for vare in [1e-3, 0.1, 1.0, 10.0, 100.0]:
+            mat_orig = ld @ np.linalg.inv(np.eye(n) + ld / vare)
+            result_orig = mat_orig @ v
+
+            eigvals, eigvecs = np.linalg.eigh(ld)
+            d = eigvals * vare / (vare + eigvals)
+            result_eig = eigvecs @ (d * (eigvecs.T @ v))
+
+            np.testing.assert_allclose(
+                result_orig, result_eig, rtol=1e-9,
+                err_msg=f"Mismatch at vare={vare}",
+            )
+
+    def test_adaptive_train_deterministic(self):
+        """adaptive_train must produce identical results across two calls."""
+        n = 8
+        ld = _build_synthetic_ld(n, off_diag=0.3, seed=700)
+        rng = np.random.default_rng(701)
+        zscore = rng.normal(0, 0.5, size=n)
+        zscore[0] = 5.5
+
+        kwargs = dict(
+            K=3, maxite=50, eps=1e-4, ubound=100000,
+            cthres=0.95, minldthres=0.7, maxldthres=0.2,
+            eincre=1.5, varemax=100.0, varemin=1e-3,
+        )
+        eff1, eg1, em1, pip1, zt1 = adaptive_train(zscore, ld, **kwargs)
+        eff2, eg2, em2, pip2, zt2 = adaptive_train(zscore, ld, **kwargs)
+
+        np.testing.assert_allclose(pip1, pip2)
+        np.testing.assert_allclose(zt1, zt2)
+        assert eff1.keys() == eff2.keys()
 
     def test_correlated_ld_with_multiple_signals(self):
         """Run with non-trivial LD and K>1 to exercise the full adaptive loop."""
