@@ -106,14 +106,7 @@ class RSparsePro:
     Bioinformatics (2023).
     """
 
-    def __init__(
-        self,
-        P: int,
-        K: int,
-        R: np.ndarray,
-        vare: float,
-        eigdecomp: Optional[Tuple[np.ndarray, np.ndarray]] = None,
-    ) -> None:
+    def __init__(self, P: int, K: int, R: np.ndarray, vare: float) -> None:
         """
         Initialize the RSparsePro model.
 
@@ -128,21 +121,12 @@ class RSparsePro:
         vare : float
             The error parameter for LD mismatch correction.
             If vare=0, assumes perfect LD; larger values allow more mismatch.
-        eigdecomp : tuple of (np.ndarray, np.ndarray), optional
-            Precomputed eigendecomposition (eigvals, eigvecs) of R.
-            If provided, avoids recomputing eigendecomposition for each vare.
         """
         self.p = P
         self.k = K
         self.vare = vare
         if vare != 0:
-            if eigdecomp is not None:
-                eigvals, eigvecs = eigdecomp
-            else:
-                eigvals, eigvecs = np.linalg.eigh(R)
-            self._eigvecs = eigvecs
-            # d_i = lambda_i * vare / (vare + lambda_i)
-            self._d = eigvals * vare / (vare + eigvals)
+            self.mat = np.dot(R, np.linalg.inv(np.eye(self.p) + 1 / vare * R))
         self.beta_mu = np.zeros([self.p, self.k])
         self.gamma = np.zeros([self.p, self.k])
         self.tilde_b = np.zeros((self.p,))
@@ -187,9 +171,7 @@ class RSparsePro:
             self.tilde_b = bhat
         else:
             beta_all = (self.gamma * self.beta_mu).sum(axis=1)
-            v = 1 / self.vare * bhat + beta_all
-            # mat @ v = Q @ diag(d) @ Q^T @ v, avoids storing full mat matrix
-            self.tilde_b = self._eigvecs @ (self._d * (self._eigvecs.T @ v))
+            self.tilde_b = np.dot(self.mat, (1 / self.vare * bhat + beta_all))
 
     def train(
         self,
@@ -507,10 +489,6 @@ def adaptive_train(
     This procedure makes the method robust to LD reference panel choice
     by automatically adapting to the level of mismatch present.
     """
-    # Precompute eigendecomposition once; reused across all vare iterations
-    eigvals, eigvecs = np.linalg.eigh(ld)
-    eigdecomp = (eigvals, eigvecs)
-
     vare = 0.0
     mc = False
     eff: Dict[int, List[int]] = {}
@@ -523,13 +501,7 @@ def adaptive_train(
         or (minld < minldthres)
         or (maxld > maxldthres)
     ):
-        model = RSparsePro(
-            len(zscore),
-            K,
-            ld,
-            vare,
-            eigdecomp=eigdecomp if vare != 0 else None,
-        )
+        model = RSparsePro(len(zscore), K, ld, vare)
         mc = model.train(zscore, ld, maxite, eps, ubound)
         eff, eff_gamma, eff_mu = model.get_effect(cthres)
         maxld = get_eff_maxld(eff, ld)
@@ -538,6 +510,7 @@ def adaptive_train(
         logging.info("Min ld within effect groups: {}.".format(minld))
         logging.info("vare = {}".format(round(vare, 4)))
         if vare > varemax or (len(eff) < 2 and get_ordered(eff_mu)):
+            # logging.info("Algorithm didn't converge at the max vare. Setting K to 1.")
             model = RSparsePro(len(zscore), 1, ld, 0)
             mc = model.train(zscore, ld, maxite, eps, ubound)
             eff, eff_gamma, eff_mu = model.get_effect(cthres)
