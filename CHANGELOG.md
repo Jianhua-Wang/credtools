@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.10] (2026-03-06)
+
+### Changed
+- Reverted RSparsePro eigendecomposition optimization from v0.4.9 to preserve result consistency across all datasets
+
 ## [0.4.9] (2026-03-06)
 
 ### Changed
