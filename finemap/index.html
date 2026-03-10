@@ -587,6 +587,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mesusie" class="md-nav__link">
+    <span class="md-ellipsis">
+      MESuSiE
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -912,6 +921,15 @@
   <a href="#use-susiex-when" class="md-nav__link">
     <span class="md-ellipsis">
       Use SuSiEx when:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-mesusie-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use MESuSiE when:
     </span>
   </a>
   
@@ -1667,6 +1685,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mesusie" class="md-nav__link">
+    <span class="md-ellipsis">
+      MESuSiE
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1997,6 +2024,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#use-mesusie-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use MESuSiE when:
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2169,13 +2205,19 @@
 - Accounts for different LD structures
 - Models population-specific effect sizes
 - State-of-the-art for multi-ancestry studies</p>
+<h3 id="mesusie">MESuSiE<a class="headerlink" href="#mesusie" title="Permanent link">&para;</a></h3>
+<p><strong>Multiple Ancestry Sum of Single Effects</strong>
+- Identifies both shared and ancestry-specific causal variants
+- Classifies each credible set as shared or population-specific
+- R-based tool called via subprocess (requires R + MESuSiE package)
+- See <a href="../installation/#mesusie">Installation</a> for setup instructions</p>
 <h2 id="how-fine-mapping-works">How Fine-Mapping Works<a class="headerlink" href="#how-fine-mapping-works" title="Permanent link">&para;</a></h2>
 <h3 id="automatic-strategy-selection">Automatic Strategy Selection<a class="headerlink" href="#automatic-strategy-selection" title="Permanent link">&para;</a></h3>
 <p>Credtools automatically selects the appropriate fine-mapping strategy based on:</p>
 <p><strong>For single-input tools (ABF, SuSiE, FINEMAP, RSparsePro):</strong>
 - Single locus → Direct analysis
 - Multiple loci → Analyze each separately, then combine results using specified combination methods</p>
-<p><strong>For multi-input tools (multiSuSiE, SuSiEx):</strong>
+<p><strong>For multi-input tools (multiSuSiE, SuSiEx, MESuSiE):</strong>
 - Process all loci together in a joint analysis
 - Leverage information across ancestries automatically</p>
 <h3 id="result-combination-methods">Result Combination Methods<a class="headerlink" href="#result-combination-methods" title="Permanent link">&para;</a></h3>
@@ -2507,6 +2549,13 @@
 <li>Multi-ancestry data with population-specific effects</li>
 <li>Different LD structures across populations</li>
 <li>Want state-of-the-art multi-population method</li>
+</ul>
+<h3 id="use-mesusie-when">Use MESuSiE when:<a class="headerlink" href="#use-mesusie-when" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Want to classify credible sets as shared or ancestry-specific</li>
+<li>Multi-ancestry data with potentially distinct causal architectures</li>
+<li>Need explicit identification of population-specific signals</li>
+<li>R is available in your environment</li>
 </ul>
 <h2 id="interpreting-results">Interpreting Results<a class="headerlink" href="#interpreting-results" title="Permanent link">&para;</a></h2>
 <h3 id="posterior-inclusion-probabilities-pips">Posterior Inclusion Probabilities (PIPs)<a class="headerlink" href="#posterior-inclusion-probabilities-pips" title="Permanent link">&para;</a></h3>

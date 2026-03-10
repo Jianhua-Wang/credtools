@@ -851,6 +851,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mesusie" class="md-nav__link">
+    <span class="md-ellipsis">
+      MESuSiE
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1535,6 +1544,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mesusie" class="md-nav__link">
+    <span class="md-ellipsis">
+      MESuSiE
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1819,6 +1837,7 @@
 <ul>
 <li><strong>MultiSuSiE</strong>: Multi-population extension of SuSiE</li>
 <li><strong>SuSiEx</strong>: Cross-ancestry fine-mapping tool</li>
+<li><strong>MESuSiE</strong>: Multi-ancestry fine-mapping with shared/ancestry-specific classification</li>
 </ul>
 <h4 id="b-post-hoc-combination">B. Post-hoc Combination<a class="headerlink" href="#b-post-hoc-combination" title="Permanent link">&para;</a></h4>
 <p>Run single-input tools on each study, then intelligently combine results:</p>
@@ -1896,63 +1915,98 @@
 </code></pre></div>
 <p><strong>Key Parameters:</strong></p>
 <ul>
-<li><code>--mult-step</code>: Use multiple refinement steps  </li>
+<li><code>--mult-step</code>: Use multiple refinement steps</li>
 <li><code>--keep-ambig</code>: Keep ambiguous SNPs in analysis</li>
 <li><code>--min-purity</code>: Minimum purity for credible sets (0.5)</li>
 <li><code>--tol</code>: Convergence tolerance (1e-3)</li>
 </ul>
+<h3 id="mesusie">MESuSiE<a class="headerlink" href="#mesusie" title="Permanent link">&para;</a></h3>
+<p><strong>Best for</strong>: Multi-ancestry fine-mapping with shared vs. ancestry-specific credible set classification</p>
+<div class="admonition note">
+<p class="admonition-title">Requires R</p>
+<p>MESuSiE requires R and the MESuSiE R package. See <a href="../../installation/#mesusie">Installation</a> for setup instructions.</p>
+</div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input_loci.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span>--tool<span class="w"> </span>mesusie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span>--coverage<span class="w"> </span><span class="m">0</span>.95
+</code></pre></div>
+<p><strong>Key Parameters:</strong></p>
+<ul>
+<li><code>--max-causal</code>: Maximum number of causal variants (L parameter)</li>
+<li><code>--coverage</code>: Coverage probability for credible sets (0.95)</li>
+<li><code>--max-iter</code>: Maximum iterations (100)</li>
+<li><code>--estimate-residual-variance</code>: Estimate residual variance from data</li>
+</ul>
+<p><strong>Unique Feature — Credible Set Classification:</strong></p>
+<p>MESuSiE classifies each credible set as either <strong>shared</strong> across ancestries or <strong>specific</strong> to a particular ancestry. This information is stored in the result parameters and can be accessed programmatically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">credtools.wrappers</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_mesusie</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">run_mesusie</span><span class="p">(</span><span class="n">locus_set</span><span class="p">,</span> <span class="n">max_causal</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># Access credible set types</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">if</span> <span class="s2">&quot;cs_types&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">lead</span><span class="p">,</span> <span class="n">cs_type</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="nb">zip</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">lead_snps</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;cs_types&quot;</span><span class="p">])</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="p">):</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CS </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: lead=</span><span class="si">{</span><span class="n">lead</span><span class="si">}</span><span class="s2">, type=</span><span class="si">{</span><span class="n">cs_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="c1"># Example output:</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="c1"># CS 1: lead=9-22071751-A-G, type=EUR_AFR</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="c1"># CS 2: lead=9-22020493-A-G, type=EUR_AFR</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="c1"># CS 3: lead=9-21959751-C-T, type=AFR</span>
+</code></pre></div>
 <h2 id="comprehensive-multi-input-example">Comprehensive Multi-Input Example<a class="headerlink" href="#comprehensive-multi-input-example" title="Permanent link">&para;</a></h2>
 <p>Here's a complete workflow for multi-ancestry fine-mapping:</p>
 <h3 id="step-1-input-preparation">Step 1: Input Preparation<a class="headerlink" href="#step-1-input-preparation" title="Permanent link">&para;</a></h3>
-<div class="highlight"><span class="filename">multi_ancestry_loci.txt</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>chr<span class="w"> </span>start<span class="w">   </span>end<span class="w"> </span>popu<span class="w">    </span>sample_size<span class="w"> </span>cohort<span class="w">  </span>prefix<span class="w">  </span>locus_id
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>AFR<span class="w"> </span><span class="m">89499</span><span class="w">   </span>MVP<span class="w"> </span>data/AFR.MVP.chr8_41242482_42492482<span class="w"> </span>chr8_41242482_42492482
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>EUR<span class="w"> </span><span class="m">337465</span><span class="w">  </span>MVP<span class="w"> </span>data/EUR.MVP.chr8_41242482_42492482<span class="w"> </span>chr8_41242482_42492482
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>EUR<span class="w"> </span><span class="m">442817</span><span class="w">  </span>UKBB<span class="w">    </span>data/EUR.UKBB.chr8_41242482_42492482<span class="w">    </span>chr8_41242482_42492482
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>SAS<span class="w"> </span><span class="m">8253</span><span class="w">    </span>UKBB<span class="w">    </span>data/SAS.UKBB.chr8_41242482_42492482<span class="w">    </span>chr8_41242482_42492482
+<div class="highlight"><span class="filename">multi_ancestry_loci.txt</span><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>chr<span class="w"> </span>start<span class="w">   </span>end<span class="w"> </span>popu<span class="w">    </span>sample_size<span class="w"> </span>cohort<span class="w">  </span>prefix<span class="w">  </span>locus_id
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>AFR<span class="w"> </span><span class="m">89499</span><span class="w">   </span>MVP<span class="w"> </span>data/AFR.MVP.chr8_41242482_42492482<span class="w"> </span>chr8_41242482_42492482
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>EUR<span class="w"> </span><span class="m">337465</span><span class="w">  </span>MVP<span class="w"> </span>data/EUR.MVP.chr8_41242482_42492482<span class="w"> </span>chr8_41242482_42492482
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>EUR<span class="w"> </span><span class="m">442817</span><span class="w">  </span>UKBB<span class="w">    </span>data/EUR.UKBB.chr8_41242482_42492482<span class="w">    </span>chr8_41242482_42492482
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="m">8</span><span class="w">   </span><span class="m">41242482</span><span class="w">    </span><span class="m">42492482</span><span class="w">    </span>SAS<span class="w"> </span><span class="m">8253</span><span class="w">    </span>UKBB<span class="w">    </span>data/SAS.UKBB.chr8_41242482_42492482<span class="w">    </span>chr8_41242482_42492482
 </code></pre></div>
 <h3 id="step-2-quality-control">Step 2: Quality Control<a class="headerlink" href="#step-2-quality-control" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Run comprehensive QC</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>credtools<span class="w"> </span>qc<span class="w"> </span>multi_ancestry_loci.txt<span class="w"> </span>qc_results/<span class="w"> </span>--threads<span class="w"> </span><span class="m">4</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Review heterogeneity</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>head<span class="w"> </span>qc_results/cochran_q.txt
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Run comprehensive QC</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>credtools<span class="w"> </span>qc<span class="w"> </span>multi_ancestry_loci.txt<span class="w"> </span>qc_results/<span class="w"> </span>--threads<span class="w"> </span><span class="m">4</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Review heterogeneity</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>head<span class="w"> </span>qc_results/cochran_q.txt
 </code></pre></div>
 <h3 id="step-3a-cross-ancestry-analysis-with-multisusie">Step 3A: Cross-Ancestry Analysis with MultiSuSiE<a class="headerlink" href="#step-3a-cross-ancestry-analysis-with-multisusie" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Meta-analyze across all populations</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>multi_ancestry_loci.txt<span class="w"> </span>results_cross_ancestry/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span>--meta-method<span class="w"> </span>meta_all<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span>--tool<span class="w"> </span>multisusie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span>--rho<span class="w"> </span><span class="m">0</span>.8<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span>--pop-spec-standardization<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span>--estimate-prior-variance
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Meta-analyze across all populations</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>multi_ancestry_loci.txt<span class="w"> </span>results_cross_ancestry/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span>--meta-method<span class="w"> </span>meta_all<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span>--tool<span class="w"> </span>multisusie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span>--max-causal<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span>--rho<span class="w"> </span><span class="m">0</span>.8<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span>--pop-spec-standardization<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">    </span>--estimate-prior-variance
 </code></pre></div>
 <h3 id="step-3b-population-specific-analysis">Step 3B: Population-Specific Analysis<a class="headerlink" href="#step-3b-population-specific-analysis" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Meta-analyze within populations, then combine</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>multi_ancestry_loci.txt<span class="w"> </span>results_pop_specific/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span>--meta-method<span class="w"> </span>meta_by_population<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span>--combine-cred<span class="w"> </span>cluster<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span>--combine-pip<span class="w"> </span>meta<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">    </span>--jaccard-threshold<span class="w"> </span><span class="m">0</span>.2
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Meta-analyze within populations, then combine</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>multi_ancestry_loci.txt<span class="w"> </span>results_pop_specific/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span>--meta-method<span class="w"> </span>meta_by_population<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span>--combine-cred<span class="w"> </span>cluster<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span>--combine-pip<span class="w"> </span>meta<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">    </span>--jaccard-threshold<span class="w"> </span><span class="m">0</span>.2
 </code></pre></div>
 <h3 id="step-4-compare-approaches">Step 4: Compare Approaches<a class="headerlink" href="#step-4-compare-approaches" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Compare results from different strategies</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># Load results</span>
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;results_cross_ancestry/creds.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="n">cross_ancestry</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
-<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;results_pop_specific/creds.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="n">pop_specific</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>
-<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="c1"># Compare credible sets and PIPs</span>
-<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="n">cross_pips</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;results_cross_ancestry/pips.txt&#39;</span><span class="p">,</span> 
-<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>                        <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SNP&#39;</span><span class="p">,</span> <span class="s1">&#39;PIP&#39;</span><span class="p">])</span>
-<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="n">pop_pips</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;results_pop_specific/pips.txt&#39;</span><span class="p">,</span> 
-<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>                      <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SNP&#39;</span><span class="p">,</span> <span class="s1">&#39;PIP&#39;</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Compare results from different strategies</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># Load results</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;results_cross_ancestry/creds.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="n">cross_ancestry</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;results_pop_specific/creds.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="n">pop_specific</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="c1"># Compare credible sets and PIPs</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="n">cross_pips</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;results_cross_ancestry/pips.txt&#39;</span><span class="p">,</span> 
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>                        <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SNP&#39;</span><span class="p">,</span> <span class="s1">&#39;PIP&#39;</span><span class="p">])</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">pop_pips</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;results_pop_specific/pips.txt&#39;</span><span class="p">,</span> 
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>                      <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SNP&#39;</span><span class="p">,</span> <span class="s1">&#39;PIP&#39;</span><span class="p">])</span>
 </code></pre></div>
 <h2 id="advanced-multi-input-considerations">Advanced Multi-Input Considerations<a class="headerlink" href="#advanced-multi-input-considerations" title="Permanent link">&para;</a></h2>
 <h3 id="handling-missing-data">Handling Missing Data<a class="headerlink" href="#handling-missing-data" title="Permanent link">&para;</a></h3>
@@ -1973,11 +2027,11 @@
 </div>
 <h3 id="population-stratification">Population Stratification<a class="headerlink" href="#population-stratification" title="Permanent link">&para;</a></h3>
 <p>When populations have internal structure:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Use more conservative thresholds</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span>--tool<span class="w"> </span>multisusie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span>--rho<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span>--min-abs-corr<span class="w"> </span><span class="m">0</span>.8
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Use more conservative thresholds</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>input.txt<span class="w"> </span>output/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span>--tool<span class="w"> </span>multisusie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">    </span>--rho<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">    </span>--min-abs-corr<span class="w"> </span><span class="m">0</span>.8
 </code></pre></div>
 <h3 id="computational-considerations">Computational Considerations<a class="headerlink" href="#computational-considerations" title="Permanent link">&para;</a></h3>
 <p>Large multi-population analyses can be computationally intensive:</p>
