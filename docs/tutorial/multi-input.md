@@ -133,6 +133,7 @@ credtools finemap input_loci.txt output/ \
 
 - **MultiSuSiE**: Multi-population extension of SuSiE
 - **SuSiEx**: Cross-ancestry fine-mapping tool
+- **MESuSiE**: Multi-ancestry fine-mapping with shared/ancestry-specific classification
 
 #### B. Post-hoc Combination
 
@@ -205,7 +206,7 @@ credtools finemap input_loci.txt output/ \
     - Use `--pop-spec-standardization` when sample sizes vary greatly
     - `--estimate-prior-variance` is usually recommended
 
-### SuSiEx  
+### SuSiEx
 
 **Best for**: Cross-ancestry fine-mapping with explicit modeling of population differences
 
@@ -221,10 +222,52 @@ credtools finemap input_loci.txt output/ \
 
 **Key Parameters:**
 
-- `--mult-step`: Use multiple refinement steps  
+- `--mult-step`: Use multiple refinement steps
 - `--keep-ambig`: Keep ambiguous SNPs in analysis
 - `--min-purity`: Minimum purity for credible sets (0.5)
 - `--tol`: Convergence tolerance (1e-3)
+
+### MESuSiE
+
+**Best for**: Multi-ancestry fine-mapping with shared vs. ancestry-specific credible set classification
+
+!!! note "Requires R"
+    MESuSiE requires R and the MESuSiE R package. See [Installation](../installation.md#mesusie) for setup instructions.
+
+```bash
+credtools finemap input_loci.txt output/ \
+    --tool mesusie \
+    --max-causal 5 \
+    --coverage 0.95
+```
+
+**Key Parameters:**
+
+- `--max-causal`: Maximum number of causal variants (L parameter)
+- `--coverage`: Coverage probability for credible sets (0.95)
+- `--max-iter`: Maximum iterations (100)
+- `--estimate-residual-variance`: Estimate residual variance from data
+
+**Unique Feature — Credible Set Classification:**
+
+MESuSiE classifies each credible set as either **shared** across ancestries or **specific** to a particular ancestry. This information is stored in the result parameters and can be accessed programmatically:
+
+```python
+from credtools.wrappers import run_mesusie
+
+result = run_mesusie(locus_set, max_causal=5)
+
+# Access credible set types
+if "cs_types" in result.parameters:
+    for i, (lead, cs_type) in enumerate(
+        zip(result.lead_snps, result.parameters["cs_types"])
+    ):
+        print(f"CS {i+1}: lead={lead}, type={cs_type}")
+# Example output:
+# CS 1: lead=9-22071751-A-G, type=EUR_AFR
+# CS 2: lead=9-22020493-A-G, type=EUR_AFR
+# CS 3: lead=9-21959751-C-T, type=AFR
+```
 
 ## Comprehensive Multi-Input Example
 

@@ -74,6 +74,13 @@ Use `credtools finemap` when you have:
 - Models population-specific effect sizes
 - State-of-the-art for multi-ancestry studies
 
+### MESuSiE
+**Multiple Ancestry Sum of Single Effects**
+- Identifies both shared and ancestry-specific causal variants
+- Classifies each credible set as shared or population-specific
+- R-based tool called via subprocess (requires R + MESuSiE package)
+- See [Installation](installation.md#mesusie) for setup instructions
+
 ## How Fine-Mapping Works
 
 ### Automatic Strategy Selection
@@ -84,7 +91,7 @@ Credtools automatically selects the appropriate fine-mapping strategy based on:
 - Single locus → Direct analysis
 - Multiple loci → Analyze each separately, then combine results using specified combination methods
 
-**For multi-input tools (multiSuSiE, SuSiEx):**
+**For multi-input tools (multiSuSiE, SuSiEx, MESuSiE):**
 - Process all loci together in a joint analysis
 - Leverage information across ancestries automatically
 
@@ -316,6 +323,12 @@ credtools finemap qc/passed_loci.txt finemap_results/ \
 - Multi-ancestry data with population-specific effects
 - Different LD structures across populations
 - Want state-of-the-art multi-population method
+
+### Use MESuSiE when:
+- Want to classify credible sets as shared or ancestry-specific
+- Multi-ancestry data with potentially distinct causal architectures
+- Need explicit identification of population-specific signals
+- R is available in your environment
 
 ## Interpreting Results
 
