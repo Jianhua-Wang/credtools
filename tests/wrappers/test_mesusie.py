@@ -104,9 +104,7 @@ def _make_mock_mesusie_subprocess(
         with open(f"{temp_dir}/mesusie_converged.txt", "w") as f:
             f.write("TRUE")
 
-        return subprocess.CompletedProcess(
-            args=cmd, returncode=0, stdout="", stderr=""
-        )
+        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
 
     return mock_subprocess_run
 

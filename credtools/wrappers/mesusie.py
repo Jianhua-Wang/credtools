@@ -127,7 +127,9 @@ def run_mesusie(
             common_snps = common_snps.intersection(snp_set)
 
     common_snps_list = sorted(common_snps)  # Sort for deterministic order
-    logger.info(f"Found {len(common_snps_list)} common SNPs across {len(loci)} populations")
+    logger.info(
+        f"Found {len(common_snps_list)} common SNPs across {len(loci)} populations"
+    )
 
     if len(common_snps_list) == 0:
         raise ValueError("No common SNPs found across populations")
@@ -161,7 +163,9 @@ def run_mesusie(
         ld_r = locus.ld.r.copy()
         # Get indices of common SNPs in LD map
         ldmap_snps = ldmap[ColName.SNPID].values.tolist()
-        common_indices = [ldmap_snps.index(s) for s in common_snps_list if s in ldmap_snps]
+        common_indices = [
+            ldmap_snps.index(s) for s in common_snps_list if s in ldmap_snps
+        ]
         ld_subset = ld_r[np.ix_(common_indices, common_indices)]
 
         # Write LD matrix as float64 binary
@@ -171,7 +175,9 @@ def run_mesusie(
         with open(f"{temp_dir}/pop_{i}_ld_dim.txt", "w") as f:
             f.write(str(ld_subset.shape[0]) + "\n")
 
-        logger.debug(f"Wrote input files for population {i} ({locus.popu}): {len(snpids)} SNPs")
+        logger.debug(
+            f"Wrote input files for population {i} ({locus.popu}): {len(snpids)} SNPs"
+        )
 
     # Write population names file
     pop_names = [locus.popu for locus in locus_set.loci]
@@ -182,13 +188,20 @@ def run_mesusie(
     cmd = [
         "Rscript",
         _R_SCRIPT_PATH,
-        "--temp_dir", temp_dir,
-        "--n_pop", str(locus_set.n_loci),
-        "--L", str(max_causal),
-        "--coverage", str(coverage),
-        "--max_iter", str(max_iter),
-        "--purity", str(purity),
-        "--estimate_residual_variance", str(estimate_residual_variance).upper(),
+        "--temp_dir",
+        temp_dir,
+        "--n_pop",
+        str(locus_set.n_loci),
+        "--L",
+        str(max_causal),
+        "--coverage",
+        str(coverage),
+        "--max_iter",
+        str(max_iter),
+        "--purity",
+        str(purity),
+        "--estimate_residual_variance",
+        str(estimate_residual_variance).upper(),
     ]
 
     logger.info(f"Running MESuSiE R script: {' '.join(cmd)}")
@@ -221,7 +234,9 @@ def run_mesusie(
             logger.warning("MESuSiE did not converge. Results may be unreliable.")
 
     # Build PIP series
-    pip = pd.Series(index=pip_df["SNP"].values.tolist(), data=pip_df["PIP"].values.tolist())
+    pip = pd.Series(
+        index=pip_df["SNP"].values.tolist(), data=pip_df["PIP"].values.tolist()
+    )
 
     # Build credible sets
     cs_snp: List[List[str]] = []
