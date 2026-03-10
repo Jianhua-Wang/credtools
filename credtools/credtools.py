@@ -26,6 +26,7 @@ from credtools.wrappers import (
     run_abf,
     run_abf_cojo,
     run_finemap,
+    run_mesusie,
     run_multisusie,
     run_rsparsepro,
     run_susie,
@@ -335,9 +336,9 @@ def fine_map(
     locus_set : LocusSet
         Locus set to fine-mapping.
     tool : str
-        Fine-mapping tool. Choose from ["abf", "abf_cojo", "finemap", "rsparsepro", "susie", "multisusie", "susiex"]
+        Fine-mapping tool. Choose from ["abf", "abf_cojo", "finemap", "rsparsepro", "susie", "multisusie", "susiex", "mesusie"]
         - Single-input tools (abf, abf_cojo, finemap, rsparsepro, susie): Process each locus individually
-        - Multi-input tools (multisusie, susiex): Process all loci together
+        - Multi-input tools (multisusie, susiex, mesusie): Process all loci together
         When using single-input tools with multiple loci, results are automatically combined
     combine_cred : str, optional
         Method to combine credible sets, by default "union".
@@ -403,7 +404,7 @@ def fine_map(
 
     # Define tool categories
     single_input_tools = ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]
-    multi_input_tools = ["multisusie", "susiex"]
+    multi_input_tools = ["multisusie", "susiex", "mesusie"]
 
     # Tool function mapping
     tool_func_dict: Dict[str, Callable[..., Any]] = {
@@ -414,6 +415,7 @@ def fine_map(
         "susie": run_susie,
         "multisusie": run_multisusie,
         "susiex": run_susiex,
+        "mesusie": run_mesusie,
     }
 
     # Get tool-specific parameters
@@ -425,6 +427,7 @@ def fine_map(
         "susie": set(inspect.signature(run_susie).parameters),
         "multisusie": set(inspect.signature(run_multisusie).parameters),
         "susiex": set(inspect.signature(run_susiex).parameters),
+        "mesusie": set(inspect.signature(run_mesusie).parameters),
     }
     params_dict = {}
     for t, args in inspect_dict.items():

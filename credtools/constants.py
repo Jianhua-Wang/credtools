@@ -64,6 +64,7 @@ class Method:
     RSparsePro = "RSparsePro"
     SUSIEX = "SUSIEX"
     MULTISUSIE = "MULTISUSIE"
+    MESUSIE = "MESUSIE"
 
 
 chrom_len = {

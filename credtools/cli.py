@@ -54,6 +54,7 @@ class Tool(str, Enum):
     susie = "susie"
     multisusie = "multisusie"
     susiex = "susiex"
+    mesusie = "mesusie"
 
 
 class CombineCred(str, Enum):
@@ -108,6 +109,7 @@ def setup_file_logging(log_file: Optional[str], verbose: bool = False) -> None:
             "SuSiE",
             "MULTISUSIE",
             "SUSIEX",
+            "MESUSIE",
             "ABF",
             "ABF_COJO",
             "Locus",
@@ -155,6 +157,7 @@ def main(
             "SuSiE",
             "MULTISUSIE",
             "SUSIEX",
+            "MESUSIE",
             "ABF",
             "ABF_COJO",
             "Locus",
