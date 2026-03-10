@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0] (2026-03-10)
+
+### Added
+- MESuSiE (Multiple Ancestry Sum of Single Effects) multi-ancestry fine-mapping tool, integrated via Rscript subprocess following the SuSiEx wrapper pattern
+  - Identifies both shared and ancestry-specific causal variants across populations
+  - Credible set classification (shared/population-specific) stored in `parameters["cs_types"]`
+  - Automatic cross-population SNP alignment and LD matrix subsetting
+  - R environment validation with clear installation guidance on error
+- MESuSiE installation documentation covering native R, conda, and HPC module environments
+- MESuSiE sections in fine-mapping docs and multi-input tutorial with usage examples
+
 ## [0.4.10] (2026-03-06)
 
 ### Changed
