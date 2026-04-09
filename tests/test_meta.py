@@ -280,7 +280,9 @@ class TestMetaSumstats:
             )
 
         ss_a = _make_ss(snps_a, [0.3, 0.4, 0.5], [0.1, 0.2, 0.3], [0.01, 0.02, 0.03])
-        ss_b = _make_ss(snps_b, [0.35, 0.45, 0.6], [0.15, 0.25, 0.35], [0.015, 0.025, 0.035])
+        ss_b = _make_ss(
+            snps_b, [0.35, 0.45, 0.6], [0.15, 0.25, 0.35], [0.015, 0.025, 0.035]
+        )
 
         def _make_ld(snpids):
             n = len(snpids)
@@ -429,11 +431,21 @@ class TestMetaLds:
             )
 
         locus_a = Locus(
-            "EUR", "UKB", 10000, _make_ss(snps_a), 900, 3500,
+            "EUR",
+            "UKB",
+            10000,
+            _make_ss(snps_a),
+            900,
+            3500,
             ld=_make_ld_af2(snps_a, [0.4, 0.5]),
         )
         locus_b = Locus(
-            "AFR", "MVP", 5000, _make_ss(snps_b), 900, 3500,
+            "AFR",
+            "MVP",
+            5000,
+            _make_ss(snps_b),
+            900,
+            3500,
             ld=_make_ld_af2(snps_b, [0.45, 0.7]),
         )
         ls = LocusSet([locus_a, locus_b])

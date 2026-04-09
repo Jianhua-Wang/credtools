@@ -107,12 +107,12 @@ def meta_sumstats(inputs: LocusSet) -> pd.DataFrame:
 
     # Calculate meta-analysis EAF (normalize weights to present cohorts only)
     eaf_weight_sum = sum(
-        eaf_present[i].astype(float) * eaf_weights[i]
-        for i in range(len(inputs.loci))
+        eaf_present[i].astype(float) * eaf_weights[i] for i in range(len(inputs.loci))
     )
-    meta_eaf = sum(
-        merged_df[f"EAF_{i}"] * eaf_weights[i] for i in range(len(inputs.loci))
-    ) / eaf_weight_sum
+    meta_eaf = (
+        sum(merged_df[f"EAF_{i}"] * eaf_weights[i] for i in range(len(inputs.loci)))
+        / eaf_weight_sum
+    )
 
     # Create output dataframe
     output_df = pd.DataFrame(
@@ -187,9 +187,10 @@ def meta_lds(inputs: LocusSet) -> LDMatrix:
             af_present[f"AF2_{i}"].astype(float) * weights[i]
             for i in range(len(variant_dfs))
         )
-        af_df["AF2_meta"] = sum(
-            af_df[f"AF2_{i}"] * weights[i] for i in range(len(variant_dfs))
-        ) / weight_sum
+        af_df["AF2_meta"] = (
+            sum(af_df[f"AF2_{i}"] * weights[i] for i in range(len(variant_dfs)))
+            / weight_sum
+        )
         merged_variants["AF2"] = merged_variants[ColName.SNPID].map(af_df["AF2_meta"])
     all_variants = merged_variants[ColName.SNPID].values
     variant_to_index = {snp: idx for idx, snp in enumerate(all_variants)}
