@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.1] (2026-04-09)
+
+### Fixed
+- EAF and AF2 in meta-analysis were incorrectly diluted when SNPs were missing from some cohorts; weights are now re-normalized to only include cohorts with data for each SNP
+
 ## [0.5.0] (2026-03-10)
 
 ### Added
