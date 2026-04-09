@@ -253,6 +253,68 @@ class TestMetaSumstats:
         res_eaf = result.loc[result[ColName.SNPID] == snp, ColName.EAF].iloc[0]
         np.testing.assert_allclose(res_eaf, expected_eaf, rtol=1e-4)
 
+    def test_eaf_missing_cohort_not_diluted(self):
+        """EAF for SNPs only in one cohort should equal that cohort's EAF, not be diluted."""
+        # Cohort A has SNPs 1-3, Cohort B has SNPs 2-4
+        # SNP 1 only in A, SNP 4 only in B => meta EAF should equal original EAF
+        snps_a = ["1-1000-A-G", "1-1100-A-G", "1-1200-A-G"]
+        snps_b = ["1-1100-A-G", "1-1200-A-G", "1-1300-A-G"]
+
+        def _make_ss(snpids, eafs, betas, ses):
+            bps = [int(s.split("-")[1]) for s in snpids]
+            return pd.DataFrame(
+                {
+                    ColName.SNPID: snpids,
+                    ColName.CHR: np.int8(1),
+                    ColName.BP: np.array(bps, dtype=np.int32),
+                    ColName.EA: "A",
+                    ColName.NEA: "G",
+                    ColName.EAF: np.array(eafs, dtype=np.float32),
+                    ColName.MAF: np.array(eafs, dtype=np.float32),
+                    ColName.A1: "A",
+                    ColName.A2: "G",
+                    ColName.BETA: np.array(betas, dtype=np.float32),
+                    ColName.SE: np.array(ses, dtype=np.float32),
+                    ColName.P: [1e-5] * len(snpids),
+                }
+            )
+
+        ss_a = _make_ss(snps_a, [0.3, 0.4, 0.5], [0.1, 0.2, 0.3], [0.01, 0.02, 0.03])
+        ss_b = _make_ss(snps_b, [0.35, 0.45, 0.6], [0.15, 0.25, 0.35], [0.015, 0.025, 0.035])
+
+        def _make_ld(snpids):
+            n = len(snpids)
+            bps = [int(s.split("-")[1]) for s in snpids]
+            ld_map = pd.DataFrame(
+                {
+                    ColName.SNPID: snpids,
+                    ColName.CHR: np.int8(1),
+                    ColName.BP: np.array(bps, dtype=np.int32),
+                    ColName.A1: "A",
+                    ColName.A2: "G",
+                }
+            )
+            return LDMatrix(ld_map, np.eye(n, dtype=np.float32))
+
+        locus_a = Locus("EUR", "UKB", 10000, ss_a, 900, 3500, ld=_make_ld(snps_a))
+        locus_b = Locus("AFR", "MVP", 5000, ss_b, 900, 3500, ld=_make_ld(snps_b))
+        ls = LocusSet([locus_a, locus_b])
+
+        result = meta_sumstats(ls)
+
+        # SNP "1-1000-A-G" only in cohort A => meta EAF should be 0.3, not 0.3 * 10000/15000
+        snp_only_a = result[result[ColName.SNPID] == "1-1000-A-G"].iloc[0]
+        np.testing.assert_allclose(snp_only_a[ColName.EAF], 0.3, atol=1e-4)
+
+        # SNP "1-1300-A-G" only in cohort B => meta EAF should be 0.6, not 0.6 * 5000/15000
+        snp_only_b = result[result[ColName.SNPID] == "1-1300-A-G"].iloc[0]
+        np.testing.assert_allclose(snp_only_b[ColName.EAF], 0.6, atol=1e-4)
+
+        # Shared SNP "1-1100-A-G" => weighted average
+        expected = 0.4 * (10000 / 15000) + 0.35 * (5000 / 15000)
+        snp_shared = result[result[ColName.SNPID] == "1-1100-A-G"].iloc[0]
+        np.testing.assert_allclose(snp_shared[ColName.EAF], expected, atol=1e-4)
+
     def test_meta_se_smaller(self, same_population_locus_set):
         """Meta SE should be <= the smallest individual SE for shared SNPs."""
         loci = same_population_locus_set.loci
@@ -326,6 +388,65 @@ class TestMetaLds:
         """When LD maps have AF2, the result LD map should also have AF2."""
         result = meta_lds(locus_set_with_af2)
         assert "AF2" in result.map.columns
+
+    def test_af2_missing_cohort_not_diluted(self):
+        """AF2 for SNPs only in one cohort should equal that cohort's AF2."""
+        snps_a = ["1-1000-A-G", "1-1100-A-G"]
+        snps_b = ["1-1100-A-G", "1-1200-A-G"]
+
+        def _make_ld_af2(snpids, af2_vals):
+            n = len(snpids)
+            bps = [int(s.split("-")[1]) for s in snpids]
+            ld_map = pd.DataFrame(
+                {
+                    ColName.SNPID: snpids,
+                    ColName.CHR: np.int8(1),
+                    ColName.BP: np.array(bps, dtype=np.int32),
+                    ColName.A1: "A",
+                    ColName.A2: "G",
+                    "AF2": np.array(af2_vals, dtype=np.float32),
+                }
+            )
+            return LDMatrix(ld_map, np.eye(n, dtype=np.float32))
+
+        def _make_ss(snpids):
+            bps = [int(s.split("-")[1]) for s in snpids]
+            return pd.DataFrame(
+                {
+                    ColName.SNPID: snpids,
+                    ColName.CHR: np.int8(1),
+                    ColName.BP: np.array(bps, dtype=np.int32),
+                    ColName.EA: "A",
+                    ColName.NEA: "G",
+                    ColName.EAF: np.float32(0.3),
+                    ColName.MAF: np.float32(0.3),
+                    ColName.A1: "A",
+                    ColName.A2: "G",
+                    ColName.BETA: np.float32(0.1),
+                    ColName.SE: np.float32(0.01),
+                    ColName.P: 1e-5,
+                }
+            )
+
+        locus_a = Locus(
+            "EUR", "UKB", 10000, _make_ss(snps_a), 900, 3500,
+            ld=_make_ld_af2(snps_a, [0.4, 0.5]),
+        )
+        locus_b = Locus(
+            "AFR", "MVP", 5000, _make_ss(snps_b), 900, 3500,
+            ld=_make_ld_af2(snps_b, [0.45, 0.7]),
+        )
+        ls = LocusSet([locus_a, locus_b])
+        result = meta_lds(ls)
+        af2 = result.map.set_index(ColName.SNPID)["AF2"]
+
+        # SNP only in cohort A => AF2 should be 0.4, not diluted
+        np.testing.assert_allclose(af2["1-1000-A-G"], 0.4, atol=1e-4)
+        # SNP only in cohort B => AF2 should be 0.7, not diluted
+        np.testing.assert_allclose(af2["1-1200-A-G"], 0.7, atol=1e-4)
+        # Shared SNP => weighted average
+        expected = 0.5 * (10000 / 15000) + 0.45 * (5000 / 15000)
+        np.testing.assert_allclose(af2["1-1100-A-G"], expected, atol=1e-4)
 
     def test_output_dtype_float32(self, two_population_locus_set):
         """Output LD matrix should be float32."""

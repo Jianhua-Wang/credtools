@@ -82,7 +82,11 @@ def meta_sumstats(inputs: LocusSet) -> pd.DataFrame:
     # Calculate weights (inverse of variance)
     for i in range(len(inputs.loci)):
         merged_df[f"weight_{i}"] = 1 / (merged_df[f"SE_{i}"] ** 2)
-        # merged_df[f"EAF_{i}"] = merged_df[f"EAF_{i}"] * eaf_weights[i]
+
+    # Record which cohorts have EAF data before filling NaN
+    eaf_present = pd.DataFrame(
+        {i: merged_df[f"EAF_{i}"].notna() for i in range(len(inputs.loci))}
+    )
 
     merged_df.fillna(0, inplace=True)
 
@@ -101,10 +105,14 @@ def meta_sumstats(inputs: LocusSet) -> pd.DataFrame:
     meta_z = meta_beta / meta_se
     meta_p = np.maximum(2 * stats.norm.sf(abs(meta_z)), 1e-300)
 
-    # Calculate meta-analysis EAF
+    # Calculate meta-analysis EAF (normalize weights to present cohorts only)
+    eaf_weight_sum = sum(
+        eaf_present[i].astype(float) * eaf_weights[i]
+        for i in range(len(inputs.loci))
+    )
     meta_eaf = sum(
         merged_df[f"EAF_{i}"] * eaf_weights[i] for i in range(len(inputs.loci))
-    )
+    ) / eaf_weight_sum
 
     # Create output dataframe
     output_df = pd.DataFrame(
@@ -171,9 +179,17 @@ def meta_lds(inputs: LocusSet) -> LDMatrix:
         for i, variant_df in enumerate(variant_dfs):
             df = variant_df.copy()
             df.set_index(ColName.SNPID, inplace=True)
-            af_df[f"AF2_{i}"] = df["AF2"] * weights[i]
+            af_df[f"AF2_{i}"] = df["AF2"]
+        # Normalize weights to present cohorts only
+        af_present = af_df.notna()
         af_df.fillna(0, inplace=True)
-        af_df["AF2_meta"] = af_df.sum(axis=1)
+        weight_sum = sum(
+            af_present[f"AF2_{i}"].astype(float) * weights[i]
+            for i in range(len(variant_dfs))
+        )
+        af_df["AF2_meta"] = sum(
+            af_df[f"AF2_{i}"] * weights[i] for i in range(len(variant_dfs))
+        ) / weight_sum
         merged_variants["AF2"] = merged_variants[ColName.SNPID].map(af_df["AF2_meta"])
     all_variants = merged_variants[ColName.SNPID].values
     variant_to_index = {snp: idx for idx, snp in enumerate(all_variants)}
