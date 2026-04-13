@@ -4,12 +4,12 @@
 import os
 import warnings
 from pathlib import Path
+from typing import List, Optional
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
-from typing import List, Optional
 
 from credtools import __version__
 from credtools.constants import ColName, Method
@@ -561,9 +561,9 @@ class TestDetermineMaxCausalByCojo:
         """When locus_index is provided, log message includes 'for locus X'."""
         mock_cojo.return_value = pd.DataFrame({"SNP": ["rs1", "rs2"]})
         locus = _make_test_locus("EUR", "c1", 1.0)
-        from credtools.credtools import _determine_max_causal_by_cojo
-
         import logging
+
+        from credtools.credtools import _determine_max_causal_by_cojo
 
         with caplog.at_level(logging.INFO, logger="CREDTOOLS"):
             result = _determine_max_causal_by_cojo(
@@ -583,9 +583,9 @@ class TestDetermineMaxCausalByCojo:
         """When locus_index is None, log message does not include 'for locus'."""
         mock_cojo.return_value = pd.DataFrame(columns=["SNP"])
         locus = _make_test_locus("EUR", "c1", 1.0)
-        from credtools.credtools import _determine_max_causal_by_cojo
-
         import logging
+
+        from credtools.credtools import _determine_max_causal_by_cojo
 
         with caplog.at_level(logging.WARNING, logger="CREDTOOLS"):
             _determine_max_causal_by_cojo(
@@ -805,6 +805,63 @@ class TestFineMapMultipleLociSingleTool:
         assert result.n_cs >= 1
         # per_locus_results should have entries for each locus
         assert len(result.per_locus_results) == 2
+
+    @patch("credtools.credtools.run_abf")
+    def test_two_loci_abf_purity_filters_per_locus_results(self, mock_run_abf):
+        """Purity threshold must also filter per-locus results.
+
+        Regression test: previously ``per_locus_results`` used the unfiltered
+        per-locus credible sets while the combined (global) CRED column used
+        the purity-filtered version, causing ``AFR_..._CRED`` / ``EUR_..._CRED``
+        to disagree with the global ``CRED`` column. Non-SuSiE wrappers
+        (ABF / FINEMAP / RSparsePro) attach purity but do not apply filtering,
+        so the centralized filter in ``fine_map`` must be applied to both the
+        combined and per-locus results.
+        """
+        cs = CredibleSet(
+            tool="abf",
+            parameters={"max_causal": 2},
+            coverage=0.95,
+            n_cs=2,
+            cs_sizes=[1, 2],
+            lead_snps=["1-100-A-G", "1-200-A-G"],
+            snps=[["1-100-A-G"], ["1-200-A-G", "1-300-A-G"]],
+            pips=pd.Series({"1-100-A-G": 0.9, "1-200-A-G": 0.5, "1-300-A-G": 0.4}),
+            # Singleton passes, 2-SNP CS fails (identity LD in test locus).
+            purity=[1.0, 0.0],
+        )
+        mock_run_abf.return_value = cs
+        locus1 = _make_test_locus("EUR", "c1", 1.0)
+        locus2 = _make_test_locus("AFR", "c2", 0.8)
+        locus_set = LocusSet([locus1, locus2])
+
+        result = fine_map(
+            locus_set,
+            tool="abf",
+            max_causal=2,
+            set_L_by_cojo=False,
+            combine_cred="union",
+            combine_pip="max",
+            purity=0.5,
+        )
+
+        assert len(result.per_locus_results) == 2
+        for locus_key, locus_cred in result.per_locus_results.items():
+            assert locus_cred.n_cs == 1, (
+                f"Expected 1 CS after purity filter for {locus_key}, "
+                f"got {locus_cred.n_cs}"
+            )
+            assert locus_cred.snps == [["1-100-A-G"]]
+
+        df = result.create_enhanced_pips_df(locus_set)
+        eur_col = "EUR_c1_CRED"
+        afr_col = "AFR_c2_CRED"
+        assert eur_col in df.columns
+        assert afr_col in df.columns
+        labelled_snps = set(
+            df[(df[eur_col] > 0) | (df[afr_col] > 0)][ColName.SNPID].tolist()
+        )
+        assert labelled_snps == {"1-100-A-G"}
 
     @patch("credtools.credtools.conditional_selection")
     @patch("credtools.credtools.run_susie")

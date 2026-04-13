@@ -555,10 +555,14 @@ def fine_map(
                 ld_matrices=ld_list,
                 min_purity=purity_threshold,
             )
-            per_locus_results = {
-                locus.locus_id: cred.copy()
-                for locus, cred in zip(locus_set.loci, all_creds)
-            }
+            per_locus_results: Dict[str, CredibleSet] = {}
+            for locus, cred in zip(locus_set.loci, all_creds):
+                cred_copy = cred.copy()
+                if purity_threshold > 0:
+                    cred_copy = filter_credset_by_purity(
+                        cred_copy, min_purity=purity_threshold
+                    )
+                per_locus_results[locus.locus_id] = cred_copy
             combined.set_per_locus_results(per_locus_results)
             return combined
 
