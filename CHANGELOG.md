@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.2] (2026-04-13)
+
+### Fixed
+- Per-locus CRED columns (e.g., `AFR_..._CRED`, `EUR_..._CRED`) now respect the purity threshold in multi-locus fine-mapping, matching the global `CRED` column. Previously, `fine_map` stored the unfiltered per-locus credible sets from FINEMAP/ABF/RSparsePro while the combined CRED was purity-filtered, causing per-population CRED columns to disagree with the global CRED. SuSiE was unaffected because it applies purity filtering internally.
+
 ## [0.5.1] (2026-04-09)
 
 ### Fixed
