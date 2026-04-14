@@ -363,6 +363,88 @@ class TestAdaptiveFinemap:
         assert result.n_cs == 0
         assert result.parameters.get("adaptive_failed") is True
 
+    def _make_cs_with_purity(self, purities, tool="finemap"):
+        """Create a CredibleSet with explicit purity values (one per CS)."""
+        n_cs = len(purities)
+        return CredibleSet(
+            tool=tool,
+            parameters={"max_causal": 5},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[2] * n_cs,
+            lead_snps=[f"s{i}" for i in range(n_cs)],
+            snps=[[f"s{i}", f"s{i}_b"] for i in range(n_cs)],
+            pips=pd.Series({f"s{i}": 0.8 for i in range(n_cs)}),
+            purity=list(purities),
+        )
+
+    def test_purity_threshold_prevents_ratcheting_on_saturated_garbage(self):
+        """Saturated n_cs with low-purity garbage → filter → success, no ratcheting."""
+        # Tool returns n_cs=5 at max_causal=5 (saturated), but only 2 CS have high purity.
+        cs = self._make_cs_with_purity([0.8, 0.1, 0.9, 0.2, 0.1])
+        tool_func = MagicMock(return_value=cs)
+        locus = MagicMock()
+        result = _adaptive_fine_map(
+            locus, "finemap", 5, tool_func, {}, purity_threshold=0.5
+        )
+        # After filter: 2 CS survive (0.8 and 0.9) → _is_success(2, 5) = True.
+        assert result.n_cs == 2
+        # Key assertion: no ratcheting (tool called only once).
+        assert tool_func.call_count == 1
+
+    def test_purity_threshold_zero_preserves_old_ratcheting_behavior(self):
+        """purity_threshold=0 → saturated n_cs still triggers ratcheting."""
+        call_count = 0
+
+        def side_effect(locus, max_causal=5, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if max_causal == 5:
+                return self._make_cs_with_purity([0.1] * 5)
+            return self._make_cs_with_purity([0.1] * 3)
+
+        tool_func = MagicMock(side_effect=side_effect)
+        locus = MagicMock()
+        result = _adaptive_fine_map(
+            locus, "finemap", 5, tool_func, {}, purity_threshold=0.0
+        )
+        # purity=0 → no filter → saturated at 5 → ratchets to 10 → 3 < 10 → return.
+        assert result.n_cs == 3
+        assert tool_func.call_count == 2
+
+    def test_purity_threshold_passed_as_keyword(self):
+        """purity_threshold must be passable as keyword argument."""
+        cs = self._make_cs_with_purity([0.8, 0.9])
+        tool_func = MagicMock(return_value=cs)
+        locus = MagicMock()
+        result = _adaptive_fine_map(
+            locus,
+            "finemap",
+            5,
+            tool_func,
+            {},
+            purity_threshold=0.5,
+        )
+        assert result.n_cs == 2
+
+    def test_purity_threshold_default_is_zero(self):
+        """Default purity_threshold (omitted) → old behavior preserved."""
+        # Saturated → ratcheting expected.
+        call_count = 0
+
+        def side_effect(locus, max_causal=5, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if max_causal == 5:
+                return self._make_cs_with_purity([0.1] * 5)
+            return self._make_cs_with_purity([0.8] * 3)
+
+        tool_func = MagicMock(side_effect=side_effect)
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "finemap", 5, tool_func, {})
+        assert result.n_cs == 3
+        assert tool_func.call_count == 2
+
 
 # ---------------------------------------------------------------------------
 # TestAdaptiveFineMapMulti
@@ -395,6 +477,124 @@ class TestAdaptiveFineMapMulti:
         locus_set.n_loci = 2
         result = _adaptive_fine_map_multi(locus_set, "multisusie", 3, tool_func, {})
         assert result.n_cs == 0
+
+    def _make_cs_with_purity(self, purities, tool="multisusie"):
+        """Create a CredibleSet with explicit purity values (one per CS)."""
+        n_cs = len(purities)
+        return CredibleSet(
+            tool=tool,
+            parameters={},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[2] * n_cs,
+            lead_snps=[f"s{i}" for i in range(n_cs)],
+            snps=[[f"s{i}"] for i in range(n_cs)],
+            pips=pd.Series({f"s{i}": 0.8 for i in range(n_cs)}),
+            purity=list(purities),
+        )
+
+    def test_purity_threshold_prevents_ratcheting_on_saturated_garbage(self):
+        """Saturated n_cs with low-purity garbage → filter → success, no ratcheting."""
+        cs = self._make_cs_with_purity([0.8, 0.1, 0.9, 0.2, 0.1])
+        tool_func = MagicMock(return_value=cs)
+        locus_set = MagicMock()
+        locus_set.n_loci = 2
+        result = _adaptive_fine_map_multi(
+            locus_set, "multisusie", 5, tool_func, {}, purity_threshold=0.5
+        )
+        assert result.n_cs == 2
+        assert tool_func.call_count == 1
+
+    def test_purity_threshold_zero_preserves_old_ratcheting_behavior(self):
+        """purity_threshold=0 → saturated still triggers ratcheting."""
+
+        def side_effect(locus_set, max_causal=5, **kwargs):
+            if max_causal == 5:
+                return self._make_cs_with_purity([0.1] * 5)
+            return self._make_cs_with_purity([0.1] * 3)
+
+        tool_func = MagicMock(side_effect=side_effect)
+        locus_set = MagicMock()
+        locus_set.n_loci = 2
+        result = _adaptive_fine_map_multi(
+            locus_set, "multisusie", 5, tool_func, {}, purity_threshold=0.0
+        )
+        assert result.n_cs == 3
+        assert tool_func.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# TestFineMapAdaptivePurityIntegration
+# ---------------------------------------------------------------------------
+class TestFineMapAdaptivePurityIntegration:
+    """Integration: fine_map with adaptive_max_causal=True and purity>0."""
+
+    @patch("credtools.credtools.run_finemap")
+    def test_fine_map_adaptive_with_purity_no_ratcheting(self, mock_run):
+        """fine_map passes purity_threshold into adaptive helper → no ratcheting."""
+
+        def side_effect(locus, max_causal=5, **kwargs):
+            # Return saturated 5 CS, 3 of them low-purity garbage.
+            return CredibleSet(
+                tool="finemap",
+                parameters={"max_causal": max_causal},
+                coverage=0.95,
+                n_cs=5,
+                cs_sizes=[2] * 5,
+                lead_snps=[f"s{i}" for i in range(5)],
+                snps=[[f"s{i}"] for i in range(5)],
+                pips=pd.Series({f"s{i}": 0.8 for i in range(5)}),
+                purity=[0.8, 0.1, 0.9, 0.2, 0.1],
+            )
+
+        mock_run.side_effect = side_effect
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+
+        result = fine_map(
+            locus_set,
+            tool="finemap",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=True,
+            purity=0.5,
+        )
+        # Tool called exactly once (no ratcheting because post-filter n_cs=2 < 5).
+        assert mock_run.call_count == 1
+        assert result.n_cs == 2
+
+    @patch("credtools.credtools.run_multisusie")
+    def test_fine_map_multi_input_adaptive_with_purity_no_ratcheting(self, mock_run):
+        """Multi-input adaptive path also passes purity_threshold."""
+
+        def side_effect(locus_set, max_causal=5, **kwargs):
+            return CredibleSet(
+                tool="multisusie",
+                parameters={"max_causal": max_causal},
+                coverage=0.95,
+                n_cs=5,
+                cs_sizes=[2] * 5,
+                lead_snps=[f"s{i}" for i in range(5)],
+                snps=[[f"s{i}"] for i in range(5)],
+                pips=pd.Series({f"s{i}": 0.8 for i in range(5)}),
+                purity=[0.8, 0.1, 0.9, 0.2, 0.1],
+            )
+
+        mock_run.side_effect = side_effect
+        locus1 = _make_test_locus("EUR", "c1", 1.0)
+        locus2 = _make_test_locus("AFR", "c2", 0.8)
+        locus_set = LocusSet([locus1, locus2])
+
+        result = fine_map(
+            locus_set,
+            tool="multisusie",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=True,
+            purity=0.5,
+        )
+        assert mock_run.call_count == 1
+        assert result.n_cs == 2
 
 
 # ---------------------------------------------------------------------------

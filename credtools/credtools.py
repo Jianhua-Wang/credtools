@@ -128,7 +128,12 @@ def _empty_credible_set(tool: str) -> CredibleSet:
 
 
 def _adaptive_fine_map(
-    locus, tool: str, initial_max_causal: int, tool_func, params: dict
+    locus,
+    tool: str,
+    initial_max_causal: int,
+    tool_func,
+    params: dict,
+    purity_threshold: float = 0.0,
 ) -> CredibleSet:
     """
     Implement adaptive max_causal logic for fine-mapping tools.
@@ -145,6 +150,11 @@ def _adaptive_fine_map(
         The fine-mapping tool function.
     params : dict
         Parameters for the tool function.
+    purity_threshold : float, optional
+        Minimum CS purity, applied after each tool_func call. When > 0, the
+        post-filter n_cs is used for all success / saturation decisions so
+        that low-purity credible sets do not inflate L. Defaults to 0.0
+        (no filtering, legacy behavior).
 
     Returns
     -------
@@ -156,9 +166,15 @@ def _adaptive_fine_map(
         f"Starting adaptive fine-mapping with {tool}, initial max_causal={max_causal}"
     )
 
+    def _run(mc: int) -> CredibleSet:
+        r = tool_func(locus, max_causal=mc, **params)
+        if purity_threshold > 0:
+            r = filter_credset_by_purity(r, min_purity=purity_threshold)
+        return r
+
     # Phase 1: Try initial max_causal and increase if needed
     try:
-        result = tool_func(locus, max_causal=max_causal, **params)
+        result = _run(max_causal)
         logger.info(
             f"Initial attempt: found {result.n_cs} credible sets with max_causal={max_causal}"
         )
@@ -177,7 +193,7 @@ def _adaptive_fine_map(
                 f"Too many credible sets found, increasing max_causal to {max_causal}"
             )
             try:
-                result = tool_func(locus, max_causal=max_causal, **params)
+                result = _run(max_causal)
                 logger.info(
                     f"Attempt with max_causal={max_causal}: found {result.n_cs} credible sets"
                 )
@@ -198,7 +214,7 @@ def _adaptive_fine_map(
     while max_causal >= 1:
         logger.info(f"Trying reduced max_causal={max_causal}")
         try:
-            result = tool_func(locus, max_causal=max_causal, **params)
+            result = _run(max_causal)
             logger.info(
                 f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
             )
@@ -218,6 +234,7 @@ def _adaptive_fine_map_multi(
     initial_max_causal: int,
     tool_func: Callable,
     params: dict,
+    purity_threshold: float = 0.0,
 ) -> CredibleSet:
     """
     Implement adaptive max_causal logic for multi-input fine-mapping tools.
@@ -241,6 +258,11 @@ def _adaptive_fine_map_multi(
         The fine-mapping tool function.
     params : dict
         Parameters for the tool function.
+    purity_threshold : float, optional
+        Minimum CS purity, applied after each tool_func call. When > 0, the
+        post-filter n_cs is used for all success / saturation decisions so
+        that low-purity credible sets do not inflate L. Defaults to 0.0
+        (no filtering, legacy behavior).
 
     Returns
     -------
@@ -253,9 +275,15 @@ def _adaptive_fine_map_multi(
         f"initial max_causal={max_causal}"
     )
 
+    def _run(mc: int) -> CredibleSet:
+        r = tool_func(locus_set, max_causal=mc, **params)
+        if purity_threshold > 0:
+            r = filter_credset_by_purity(r, min_purity=purity_threshold)
+        return r
+
     # Phase 1: Try initial max_causal and increase if needed
     try:
-        result = tool_func(locus_set, max_causal=max_causal, **params)
+        result = _run(max_causal)
         logger.info(
             f"Initial attempt: found {result.n_cs} credible sets with max_causal={max_causal}"
         )
@@ -274,7 +302,7 @@ def _adaptive_fine_map_multi(
                 f"Too many credible sets found, increasing max_causal to {max_causal}"
             )
             try:
-                result = tool_func(locus_set, max_causal=max_causal, **params)
+                result = _run(max_causal)
                 logger.info(
                     f"Attempt with max_causal={max_causal}: found {result.n_cs} credible sets"
                 )
@@ -295,7 +323,7 @@ def _adaptive_fine_map_multi(
     while max_causal >= 1:
         logger.info(f"Trying reduced max_causal={max_causal}")
         try:
-            result = tool_func(locus_set, max_causal=max_causal, **params)
+            result = _run(max_causal)
             logger.info(
                 f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
             )
@@ -446,6 +474,7 @@ def fine_map(
                 max_causal,
                 tool_func_dict[tool],
                 params_dict[tool],
+                purity_threshold=purity_threshold,
             )
         else:
             combined = tool_func_dict[tool](
@@ -484,6 +513,7 @@ def fine_map(
                     max_causal,
                     tool_func_dict[tool],
                     params_dict[tool],
+                    purity_threshold=purity_threshold,
                 )
             else:
                 result = tool_func_dict[tool](
@@ -536,6 +566,7 @@ def fine_map(
                         locus_max_causal,
                         tool_func_dict[tool],
                         params_dict[tool],
+                        purity_threshold=purity_threshold,
                     )
                 else:
                     creds = tool_func_dict[tool](
