@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.3] (2026-04-14)
+
+### Fixed
+- Adaptive `max_causal` tuning in `fine_map` (finemap/rsparsepro/susie and multisusie/susiex/mesusie) now applies the purity filter inside the adaptive loop so that `_is_success` and saturation decisions operate on post-filter `n_cs`. Previously, FINEMAP and RSparsePro wasted compute ratcheting L up to 20 when the initial fit already produced enough qualified credible sets plus some low-purity noise, because the purity filter only ran after the loop returned. SuSiE was unaffected because it filters purity internally.
+
 ## [0.5.2] (2026-04-13)
 
 ### Fixed
