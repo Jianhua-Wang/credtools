@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.4] (2026-04-23)
+
+### Fixed
+- Restore the missing `|z| < z_threshold` guard in the C2 ("marginally non-significant SNPs") criterion of `identify_outliers` / `locus_qc`. The guard had been commented out since v0.0.39, but the docstring and SuSiE guidelines (Wang et al., JRSSB 2020) require all three conditions. Without it, causal / lead-like SNPs (large `|z|`, high LD to lead) were misclassified as LD-mismatch outliers and removed during QC. Added 4 regression tests pinning the three-condition semantics.
+
 ## [0.5.3] (2026-04-14)
 
 ### Fixed
