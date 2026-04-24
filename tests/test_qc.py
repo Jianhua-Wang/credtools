@@ -1651,13 +1651,14 @@ class TestIdentifyOutliersEdgeCases:
 
 
 class TestIdentifyOutliersC2Semantics:
-    """C2 must require all three conditions per its docstring:
+    """C2 must require all three conditions per its docstring.
 
-    |z| < z_threshold  AND  |z_std_diff| > z_std_diff_threshold
-    AND  |r_to_lead| > r_threshold.
+    Per SuSiE guidelines (Wang et al., JRSSB 2020), C2 fires only when:
+    ``|z| < z_threshold`` AND ``|z_std_diff| > z_std_diff_threshold``
+    AND ``|r_to_lead| > r_threshold``.
 
     Prior bug: the |z| < z_threshold guard was missing, so any SNP with large
-    |z_std_diff| and high LD with the lead was flagged — including causal /
+    |z_std_diff| and high LD with the lead was flagged -- including causal /
     lead SNPs themselves (|z| very large). This class pins the intended
     semantics.
     """
@@ -1696,10 +1697,11 @@ class TestIdentifyOutliersC2Semantics:
         return {"expected_z": expected_z, "dentist_s": dentist_s}
 
     def test_large_z_high_ld_not_flagged_as_c2(self):
-        """A lead-like SNP with |z|=15 must NOT be flagged as C2, even if
-        |z_std_diff| and |r_to_lead| both exceed their thresholds.
+        """Lead-like SNPs must not be flagged as C2.
 
-        This is the regression test for the causal-SNP-removal bug.
+        A SNP with |z|=15 must not trigger C2 even if |z_std_diff| and
+        |r_to_lead| both exceed their thresholds. This is the regression
+        test for the causal-SNP-removal bug.
         """
         from credtools.qc import identify_outliers
 
@@ -1723,8 +1725,11 @@ class TestIdentifyOutliersC2Semantics:
         )
 
     def test_small_z_high_ld_big_zdiff_is_flagged_as_c2(self):
-        """A truly marginally-non-significant SNP (small |z|, high LD with
-        lead, large |z_std_diff|) must still be flagged as C2."""
+        """True marginally-non-significant flip SNPs must still be flagged.
+
+        A SNP with small |z|, high LD to lead, and large |z_std_diff| must
+        still trigger C2.
+        """
         from credtools.qc import identify_outliers
 
         qc_metrics = self._make_qc_metrics(
