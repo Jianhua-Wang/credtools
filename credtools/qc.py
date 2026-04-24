@@ -1056,9 +1056,16 @@ def identify_outliers(
                 )
                 merged_data["r_abs"] = np.sqrt(merged_data["r2"].fillna(0))
 
+                # C2 per SuSiE guidelines (Wang et al., JRSSB 2020): all three
+                # conditions are required. The |z| < z_threshold guard is what
+                # restricts this criterion to marginally non-significant SNPs;
+                # without it, causal / lead SNPs (large |z|, high LD to lead)
+                # get misclassified as LD-mismatch outliers and removed.
                 marginal_condition = (
-                    merged_data["z_std_diff"].abs() > z_std_diff_threshold
-                ) & (merged_data["r_abs"] > r_threshold)
+                    (merged_data["z_std_diff"].abs() > z_std_diff_threshold)
+                    & (merged_data["r_abs"] > r_threshold)
+                    & (merged_data["z"].abs() < z_threshold)
+                )
 
                 # Collect C1 and C2 SNPs
                 c1_hits = merged_data[ld_mismatch_condition.values]["SNPID"].tolist()

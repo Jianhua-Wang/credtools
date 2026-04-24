@@ -1650,6 +1650,149 @@ class TestIdentifyOutliersEdgeCases:
         assert len(result) == 0
 
 
+class TestIdentifyOutliersC2Semantics:
+    """C2 must require all three conditions per its docstring:
+
+    |z| < z_threshold  AND  |z_std_diff| > z_std_diff_threshold
+    AND  |r_to_lead| > r_threshold.
+
+    Prior bug: the |z| < z_threshold guard was missing, so any SNP with large
+    |z_std_diff| and high LD with the lead was flagged — including causal /
+    lead SNPs themselves (|z| very large). This class pins the intended
+    semantics.
+    """
+
+    @staticmethod
+    def _make_qc_metrics(rows):
+        """Build minimal qc_metrics from a list of per-SNP records.
+
+        Each record is a dict with keys: SNPID, z, z_std_diff, r_to_lead.
+        Everything else is filled with neutral values so only C2 can fire.
+        """
+        cohort = "EUR_UKB"
+        expected_z = pd.DataFrame(
+            {
+                "SNPID": [r["SNPID"] for r in rows],
+                "cohort": [cohort] * len(rows),
+                "z": [r["z"] for r in rows],
+                "condmean": [0.0] * len(rows),
+                "condvar": [1.0] * len(rows),
+                # logLR kept small so C1 never triggers
+                "logLR": [0.0] * len(rows),
+                "z_std_diff": [r["z_std_diff"] for r in rows],
+                "lambda_s": [1e-3] * len(rows),
+            }
+        )
+        dentist_s = pd.DataFrame(
+            {
+                "SNPID": [r["SNPID"] for r in rows],
+                "cohort": [cohort] * len(rows),
+                # r2 = r_to_lead**2 so r_abs = |r_to_lead|
+                "r2": [r["r_to_lead"] ** 2 for r in rows],
+                # -log10p kept low so C3 never triggers
+                "-log10p_dentist_s": [0.0] * len(rows),
+            }
+        )
+        return {"expected_z": expected_z, "dentist_s": dentist_s}
+
+    def test_large_z_high_ld_not_flagged_as_c2(self):
+        """A lead-like SNP with |z|=15 must NOT be flagged as C2, even if
+        |z_std_diff| and |r_to_lead| both exceed their thresholds.
+
+        This is the regression test for the causal-SNP-removal bug.
+        """
+        from credtools.qc import identify_outliers
+
+        qc_metrics = self._make_qc_metrics(
+            [{"SNPID": "causal", "z": 15.0, "z_std_diff": 4.2, "r_to_lead": 1.0}]
+        )
+        outliers = identify_outliers(
+            qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=2.0,
+            z_threshold=2.0,
+            z_std_diff_threshold=3.0,
+            r_threshold=0.8,
+            dentist_s_pvalue_threshold=4.0,
+            dentist_s_r2_threshold=0.6,
+        )
+        # Causal SNP should not appear in outliers at all
+        assert "causal" not in set(outliers["SNPID"]), (
+            "Causal SNP with |z|=15 was flagged — C2 is missing the "
+            "|z| < z_threshold guard."
+        )
+
+    def test_small_z_high_ld_big_zdiff_is_flagged_as_c2(self):
+        """A truly marginally-non-significant SNP (small |z|, high LD with
+        lead, large |z_std_diff|) must still be flagged as C2."""
+        from credtools.qc import identify_outliers
+
+        qc_metrics = self._make_qc_metrics(
+            [{"SNPID": "flip", "z": 1.0, "z_std_diff": 4.2, "r_to_lead": 0.95}]
+        )
+        outliers = identify_outliers(
+            qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=2.0,
+            z_threshold=2.0,
+            z_std_diff_threshold=3.0,
+            r_threshold=0.8,
+            dentist_s_pvalue_threshold=4.0,
+            dentist_s_r2_threshold=0.6,
+        )
+        row = outliers[outliers["SNPID"] == "flip"]
+        assert len(row) == 1, "Marginal-non-significant SNP was not flagged"
+        assert bool(row["C2_marginal"].iloc[0]) is True
+
+    def test_small_z_low_ld_not_flagged_as_c2(self):
+        """Small |z| alone isn't enough: without high LD to lead, no C2."""
+        from credtools.qc import identify_outliers
+
+        qc_metrics = self._make_qc_metrics(
+            [{"SNPID": "nolink", "z": 1.0, "z_std_diff": 4.2, "r_to_lead": 0.5}]
+        )
+        outliers = identify_outliers(
+            qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=2.0,
+            z_threshold=2.0,
+            z_std_diff_threshold=3.0,
+            r_threshold=0.8,
+            dentist_s_pvalue_threshold=4.0,
+            dentist_s_r2_threshold=0.6,
+        )
+        assert "nolink" not in set(outliers["SNPID"])
+
+    def test_mixed_snps_only_true_marginals_flagged(self):
+        """In a mixed set, only SNPs satisfying all three C2 conditions fire."""
+        from credtools.qc import identify_outliers
+
+        qc_metrics = self._make_qc_metrics(
+            [
+                # Causal / lead-like: big z, high LD, big zdiff -> NOT C2
+                {"SNPID": "causal", "z": 14.9, "z_std_diff": 4.2, "r_to_lead": 1.0},
+                # True marginal flip: small z, high LD, big zdiff -> C2
+                {"SNPID": "flip", "z": 0.8, "z_std_diff": 5.0, "r_to_lead": 0.9},
+                # Quiet variant: small z, low LD, small zdiff -> not flagged
+                {"SNPID": "quiet", "z": 0.5, "z_std_diff": 1.0, "r_to_lead": 0.2},
+                # Strong neighbor: big z, high LD, small zdiff -> not flagged
+                {"SNPID": "neighbor", "z": 8.0, "z_std_diff": 1.5, "r_to_lead": 0.9},
+            ]
+        )
+        outliers = identify_outliers(
+            qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=2.0,
+            z_threshold=2.0,
+            z_std_diff_threshold=3.0,
+            r_threshold=0.8,
+            dentist_s_pvalue_threshold=4.0,
+            dentist_s_r2_threshold=0.6,
+        )
+        c2_snps = set(outliers[outliers["C2_marginal"]]["SNPID"])
+        assert c2_snps == {"flip"}, f"Expected only 'flip' as C2, got {c2_snps}"
+
+
 # ---------------------------------------------------------------------------
 # Supplementary tests: remove_snps_from_locus
 # ---------------------------------------------------------------------------
