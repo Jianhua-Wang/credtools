@@ -110,6 +110,10 @@ credtools qc [OPTIONS] INPUTS OUTDIR
 | `--r-threshold` | | Correlation threshold with lead SNP for marginal SNP detection | `0.8` |
 | `--dentist-pvalue-threshold` | | −log10 p-value threshold for Dentist-S outlier detection | `4.0` |
 | `--dentist-r2-threshold` | | r² threshold for Dentist-S outlier detection | `0.6` |
+| `--enable-c1b` / `--no-enable-c1b` | | Enable the opt-in C1b high-z anomalous-residual rule (see below) | `False` |
+| `--c1b-z-std-diff-threshold` | | `\|z_std_diff\|` threshold for the C1b rule | `10.0` |
+| `--adaptive-qc` / `--no-adaptive-qc` | | Two-stage adaptive QC: baseline C1+C2+C3, then C1b augmentation if cleaned-locus lambda_s remains elevated | `False` |
+| `--adaptive-lambda-threshold` | | lambda_s trigger for the adaptive Stage B C1b augmentation | `0.05` |
 | `--log-file` | `-l` | Write log output to a file | `None` |
 
 ## QC Methods
@@ -169,9 +173,72 @@ The thresholds in the table above are the defaults. Each can be adjusted via CLI
 !!! note "z-threshold plays a dual role"
     The `--z-threshold` parameter serves as a boundary between C1 and C2: SNPs with `|z| > threshold` are evaluated for LD mismatch (C1), while SNPs with `|z| < threshold` are evaluated as marginal outliers (C2). This ensures every SNP is checked by the appropriate criterion based on its signal strength.
 
+### C1b — High-z anomalous residual (opt-in, since 0.5.5)
+
+C1, C2, and C3 leave a gap: significant SNPs (`|z| > z_threshold`) whose kriging
+residual `|z_std_diff|` is extreme but whose `logLR` does not clear the C1 gate
+slip through unflagged, because C2 was deliberately gated to `|z| < z_threshold`.
+
+**C1b** is an opt-in fourth criterion that fills this gap:
+
+| Criterion | Condition | Description |
+|-----------|-----------|-------------|
+| **C1b — High-z anomalous residual** | `\|z_std_diff\| > 10` AND `\|z\| > 1` | Significant SNPs whose observed z disagrees with its LD-implied expected z by ≥10 SDs. Captures effect-magnitude perturbations and allele-coding slips that escape both C1 (logLR gate) and C2 (`\|z\| <` gate). |
+
+C1b shares C1's `|z| >` direction (so it only fires on signal), but drops the
+`logLR` requirement and replaces the LD-mismatch test with a much harder
+`|z_std_diff|` threshold (`10` is intentionally conservative — empirically it
+catches anomalies without removing true causals).
+
+Enable per-locus with `--enable-c1b` and tune the threshold with
+`--c1b-z-std-diff-threshold`. The result file gains a `C1b_high_z_residual`
+boolean column inserted between `C1_ld_mismatch` and `C2_marginal`.
+
 ### Outlier Removal
 
-The `--remove-outlier` flag triggers automatic outlier removal: SNPs flagged by any of C1, C2, or C3 are removed, and QC is re-run on the cleaned data. Both the original and cleaned summaries are saved for comparison.
+The `--remove-outlier` flag triggers automatic outlier removal: SNPs flagged by
+any of C1, C2, or C3 (plus C1b when `--enable-c1b` is set) are removed, and QC
+is re-run on the cleaned data. Both the original and cleaned summaries are
+saved for comparison.
+
+### Adaptive QC (since 0.5.5)
+
+C1b is intentionally aggressive at sites it does fire on, so applying it
+unconditionally can over-remove on well-behaved loci. The `--adaptive-qc` mode
+solves this with a two-stage flow:
+
+1. **Stage A — baseline**: run C1+C2+C3 with the supplied thresholds and
+   compute `lambda_s` on the cleaned locus.
+2. **Stage B — adaptive trigger**: if the cleaned-locus `lambda_s` still
+   exceeds `--adaptive-lambda-threshold` (default 0.05), apply C1b
+   (`|z_std_diff| > c1b_z_std_diff_threshold AND |z| > z_threshold`) to the
+   **original** locus's expected_z (residual diagnostics for to-be-removed
+   SNPs are most informative before removal). Union the Stage A and C1b SNP
+   sets and remove from the original locus in a single call.
+
+```
+                 ┌────────────────────┐
+        original │ baseline C1+C2+C3 │ ── λ_s ≤ 0.05 ─────────► cleaned (Stage A)
+        locus ──►│   identify+remove │
+                 └────────────────────┘
+                          │ λ_s > 0.05
+                          ▼
+                 ┌────────────────────┐
+                 │ C1b on original    │
+                 │ expected_z; union  │── single removal ─────► cleaned (Stage B)
+                 │ with Stage A SNPs  │
+                 └────────────────────┘
+```
+
+When `--adaptive-qc` is set the per-locus path persists
+`cleaned/{locus_id}/adaptive_qc_meta.json` containing `adaptive_triggered`,
+the three `lambda_s_*` values, baseline / C1b counts, the union outlier list
+and the threshold values used. Downstream tooling can use this to verify
+whether the adaptive branch fired for a given locus.
+
+`--adaptive-qc` always implies `--remove-outlier`; passing it with
+`--no-remove-outlier` will emit a warning and proceed as if removal were
+requested.
 
 ## Output Format
 

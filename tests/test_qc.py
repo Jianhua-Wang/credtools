@@ -1088,6 +1088,172 @@ class TestIdentifyOutliers:
 
 
 # ===================================================================
+# TestIdentifyOutliersC1b
+# ===================================================================
+
+
+class TestIdentifyOutliersC1b:
+    """Tests for the C1b high-z anomalous-residual criterion in identify_outliers()."""
+
+    @staticmethod
+    def _inject_high_residual_row(qc_metrics, snpid, z, z_std_diff, cohort="EUR_UKB"):
+        """Append a synthetic high-residual row to expected_z for the given cohort."""
+        import copy
+
+        out = copy.deepcopy(qc_metrics)
+        expz = out["expected_z"]
+        # Build a row matching the existing schema, taking lambda_s from the cohort.
+        cohort_rows = expz[expz["cohort"] == cohort]
+        lambda_s_val = (
+            float(cohort_rows["lambda_s"].iloc[0]) if not cohort_rows.empty else 0.0
+        )
+        new_row = {col: 0.0 for col in expz.columns}
+        new_row["SNPID"] = snpid
+        new_row["z"] = z
+        new_row["z_std_diff"] = z_std_diff
+        new_row["logLR"] = 0.0  # so C1 does not fire
+        new_row["lambda_s"] = lambda_s_val
+        new_row["cohort"] = cohort
+        out["expected_z"] = pd.concat(
+            [expz, pd.DataFrame([new_row])], ignore_index=True
+        )
+        return out
+
+    def test_c1b_disabled_by_default(self, precomputed_qc_metrics):
+        """Verify C1b column is absent when enable_c1b is False (default)."""
+        from credtools.qc import identify_outliers
+
+        outliers = identify_outliers(
+            precomputed_qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=0,
+            z_threshold=0,
+            z_std_diff_threshold=0,
+            r_threshold=0,
+            dentist_s_pvalue_threshold=0,
+            dentist_s_r2_threshold=0,
+        )
+        assert "C1b_high_z_residual" not in outliers.columns
+        assert (
+            set(outliers.columns)
+            == {
+                "SNPID",
+                "C1_ld_mismatch",
+                "C2_marginal",
+                "C3_dentist_s",
+            }
+            or outliers.empty
+        )
+
+    def test_c1b_flags_synthetic_high_residual(self, precomputed_qc_metrics):
+        """Inject a row with |z|=5, |z_std_diff|=12 and confirm C1b flags it."""
+        from credtools.qc import identify_outliers
+
+        synthetic_id = "1-9999999-A-G"
+        qc = self._inject_high_residual_row(
+            precomputed_qc_metrics, synthetic_id, z=5.0, z_std_diff=12.0
+        )
+
+        outliers = identify_outliers(
+            qc,
+            cohort="EUR_UKB",
+            logLR_threshold=100,  # disable C1
+            z_threshold=1.0,
+            z_std_diff_threshold=100,  # disable C2 numerator
+            r_threshold=2.0,  # disable C2 r gate
+            dentist_s_pvalue_threshold=100,  # disable C3
+            dentist_s_r2_threshold=2.0,
+            enable_c1b=True,
+            c1b_z_std_diff_threshold=10.0,
+        )
+        assert "C1b_high_z_residual" in outliers.columns
+        assert synthetic_id in set(outliers["SNPID"])
+        row = outliers[outliers["SNPID"] == synthetic_id].iloc[0]
+        assert bool(row["C1b_high_z_residual"]) is True
+        assert bool(row["C1_ld_mismatch"]) is False
+        assert bool(row["C2_marginal"]) is False
+        assert bool(row["C3_dentist_s"]) is False
+
+    def test_c1b_respects_z_threshold_floor(self, precomputed_qc_metrics):
+        """High z_std_diff but |z| below z_threshold must not trigger C1b."""
+        from credtools.qc import identify_outliers
+
+        synthetic_id = "1-9999998-A-G"
+        qc = self._inject_high_residual_row(
+            precomputed_qc_metrics, synthetic_id, z=0.5, z_std_diff=12.0
+        )
+
+        outliers = identify_outliers(
+            qc,
+            cohort="EUR_UKB",
+            logLR_threshold=100,
+            z_threshold=1.0,  # synthetic z=0.5 < 1.0
+            z_std_diff_threshold=100,
+            r_threshold=2.0,
+            dentist_s_pvalue_threshold=100,
+            dentist_s_r2_threshold=2.0,
+            enable_c1b=True,
+            c1b_z_std_diff_threshold=10.0,
+        )
+        assert synthetic_id not in set(outliers["SNPID"])
+
+    def test_c1b_column_present_when_enabled_no_hits(self, precomputed_qc_metrics):
+        """When enabled with an unreachable threshold, schema still includes C1b column."""
+        from credtools.qc import identify_outliers
+
+        outliers = identify_outliers(
+            precomputed_qc_metrics,
+            cohort="EUR_UKB",
+            logLR_threshold=100,
+            z_threshold=1.0,
+            z_std_diff_threshold=100,
+            r_threshold=2.0,
+            dentist_s_pvalue_threshold=100,
+            dentist_s_r2_threshold=2.0,
+            enable_c1b=True,
+            c1b_z_std_diff_threshold=999.0,  # un-trippable
+        )
+        # Empty DataFrame must still expose the 5-col schema.
+        expected_cols = [
+            "SNPID",
+            "C1_ld_mismatch",
+            "C1b_high_z_residual",
+            "C2_marginal",
+            "C3_dentist_s",
+        ]
+        assert list(outliers.columns) == expected_cols
+        assert outliers.empty
+
+    def test_c1b_column_order_when_enabled(self, precomputed_qc_metrics):
+        """Verify C1b column sits between C1 and C2 when present in non-empty output."""
+        from credtools.qc import identify_outliers
+
+        synthetic_id = "1-9999997-A-G"
+        qc = self._inject_high_residual_row(
+            precomputed_qc_metrics, synthetic_id, z=5.0, z_std_diff=12.0
+        )
+        outliers = identify_outliers(
+            qc,
+            cohort="EUR_UKB",
+            logLR_threshold=100,
+            z_threshold=1.0,
+            z_std_diff_threshold=100,
+            r_threshold=2.0,
+            dentist_s_pvalue_threshold=100,
+            dentist_s_r2_threshold=2.0,
+            enable_c1b=True,
+            c1b_z_std_diff_threshold=10.0,
+        )
+        assert list(outliers.columns) == [
+            "SNPID",
+            "C1_ld_mismatch",
+            "C1b_high_z_residual",
+            "C2_marginal",
+            "C3_dentist_s",
+        ]
+
+
+# ===================================================================
 # TestRemoveSnpsFromLocus
 # ===================================================================
 
@@ -1324,6 +1490,136 @@ class TestRemoveOutliersAndRerunQc:
             "cohort",
         }
         assert expected_cols.issubset(set(df.columns))
+
+
+# ===================================================================
+# TestAdaptiveQc
+# ===================================================================
+
+
+class TestAdaptiveQc:
+    """Tests for adaptive_qc() two-stage orchestrator."""
+
+    REQUIRED_META_KEYS = {
+        "lambda_s_before",
+        "lambda_s_after_baseline",
+        "lambda_s_after_final",
+        "n_outliers_baseline",
+        "n_outliers_c1b_extra",
+        "outlier_snpids",
+        "adaptive_triggered",
+        "baseline_thresholds",
+        "adaptive_lambda_threshold",
+        "c1b_z_std_diff_threshold",
+    }
+
+    def test_returns_locus_and_meta_dict(self, single_locus, precomputed_qc_metrics):
+        """Smoke: adaptive_qc returns (Locus, dict)."""
+        from credtools.qc import adaptive_qc
+
+        cleaned, meta = adaptive_qc(single_locus, precomputed_qc_metrics)
+        assert isinstance(cleaned, Locus)
+        assert isinstance(meta, dict)
+
+    def test_meta_has_required_keys(self, single_locus, precomputed_qc_metrics):
+        """Meta dict exposes the 10 documented keys."""
+        from credtools.qc import adaptive_qc
+
+        _, meta = adaptive_qc(single_locus, precomputed_qc_metrics)
+        assert self.REQUIRED_META_KEYS.issubset(set(meta.keys()))
+
+    def test_baseline_only_when_lambda_s_below_threshold(
+        self, single_locus, precomputed_qc_metrics
+    ):
+        """If adaptive_lambda_threshold is unreachable, Stage B never fires."""
+        from credtools.qc import adaptive_qc
+
+        _, meta = adaptive_qc(
+            single_locus,
+            precomputed_qc_metrics,
+            adaptive_lambda_threshold=10.0,  # un-trippable
+        )
+        assert meta["adaptive_triggered"] is False
+        assert meta["n_outliers_c1b_extra"] == 0
+
+    def test_triggers_c1b_when_high_residual_snp_present(
+        self, single_locus, precomputed_qc_metrics
+    ):
+        """Inject a high-residual SNP at an existing locus SNP and force a Stage B trigger."""
+        import copy
+
+        from credtools.qc import adaptive_qc
+
+        target_snpid = single_locus.sumstats[ColName.SNPID].iloc[0]
+        qc = copy.deepcopy(precomputed_qc_metrics)
+        expz = qc["expected_z"].copy()
+        mask = expz["SNPID"] == target_snpid
+        expz.loc[mask, "z"] = 5.0
+        expz.loc[mask, "z_std_diff"] = 12.0
+        expz.loc[mask, "logLR"] = 0.0
+        qc["expected_z"] = expz
+
+        cleaned, meta = adaptive_qc(
+            single_locus,
+            qc,
+            logLR_threshold=100.0,  # baseline C1 off
+            z_threshold=1.0,
+            z_std_diff_threshold=100.0,  # baseline C2 z_std_diff gate off
+            r_threshold=2.0,  # baseline C2 r gate off
+            dentist_s_pvalue_threshold=100.0,  # baseline C3 off
+            dentist_s_r2_threshold=2.0,
+            c1b_z_std_diff_threshold=10.0,
+            adaptive_lambda_threshold=-1.0,  # always trigger Stage B
+        )
+        assert meta["adaptive_triggered"] is True
+        assert target_snpid in meta["outlier_snpids"]
+        assert meta["n_outliers_c1b_extra"] >= 1
+        assert cleaned.n_snps == single_locus.n_snps - len(meta["outlier_snpids"])
+
+    def test_does_not_chain_remove_calls(self, single_locus, precomputed_qc_metrics):
+        """SNP count of returned locus equals original minus union outlier set."""
+        import copy
+
+        from credtools.qc import adaptive_qc
+
+        # Force two distinct SNPs into the union: one for baseline (C2-marginal-like),
+        # one for C1b (high z & high z_std_diff).
+        snp_baseline = single_locus.sumstats[ColName.SNPID].iloc[1]
+        snp_c1b = single_locus.sumstats[ColName.SNPID].iloc[2]
+
+        qc = copy.deepcopy(precomputed_qc_metrics)
+        expz = qc["expected_z"].copy()
+
+        # Make snp_baseline trip C1: large logLR + |z| > z_threshold.
+        mask_b = expz["SNPID"] == snp_baseline
+        expz.loc[mask_b, "z"] = 3.0
+        expz.loc[mask_b, "logLR"] = 10.0
+        expz.loc[mask_b, "z_std_diff"] = 0.5  # below C1b threshold
+
+        # Make snp_c1b trip only C1b.
+        mask_c = expz["SNPID"] == snp_c1b
+        expz.loc[mask_c, "z"] = 5.0
+        expz.loc[mask_c, "z_std_diff"] = 12.0
+        expz.loc[mask_c, "logLR"] = 0.0
+        qc["expected_z"] = expz
+
+        cleaned, meta = adaptive_qc(
+            single_locus,
+            qc,
+            logLR_threshold=1.0,  # baseline C1 catches snp_baseline
+            z_threshold=1.0,
+            z_std_diff_threshold=100.0,  # disable baseline C2
+            r_threshold=2.0,
+            dentist_s_pvalue_threshold=100.0,
+            dentist_s_r2_threshold=2.0,
+            c1b_z_std_diff_threshold=10.0,
+            adaptive_lambda_threshold=-1.0,  # always trigger
+        )
+        assert meta["adaptive_triggered"] is True
+        union = set(meta["outlier_snpids"])
+        assert snp_baseline in union
+        assert snp_c1b in union
+        assert cleaned.n_snps == single_locus.n_snps - len(union)
 
 
 # ===================================================================

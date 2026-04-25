@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.5] (2026-04-25)
+
+### Added
+- New opt-in **C1b** outlier criterion in `identify_outliers`: flags SNPs with `|z_std_diff| > c1b_z_std_diff_threshold` AND `|z| > z_threshold`. Fills the gap left by C1's logLR gate and C2's `|z| < z_threshold` ceiling, catching anomalous-residual SNPs at significant z-scores. Default off; enable via `--enable-c1b` (threshold default 10.0). Result schema gains a `C1b_high_z_residual` column only when enabled, so existing downstream consumers see no change.
+- New `adaptive_qc` orchestrator (`credtools.qc.adaptive_qc`): two-stage QC that first runs baseline C1+C2+C3 and only augments with C1b on the original locus's expected_z when the cleaned-locus λ_s still exceeds `adaptive_lambda_threshold` (default 0.05). The union of baseline + C1b outliers is removed in a single pass to avoid chained removal artifacts. Returns the cleaned locus plus a meta dict (`lambda_s_before/after_baseline/after_final`, `n_outliers_baseline/c1b_extra`, `outlier_snpids`, `adaptive_triggered`, etc.).
+- CLI options on `credtools qc`: `--enable-c1b/--no-enable-c1b`, `--c1b-z-std-diff-threshold` (default 10.0), `--adaptive-qc/--no-adaptive-qc`, `--adaptive-lambda-threshold` (default 0.05). Adaptive mode persists per-locus `cleaned/{locus_id}/adaptive_qc_meta.json`. `--adaptive-qc` implies outlier removal (warning emitted if combined with `--no-remove-outlier`).
+- Documentation: new "C1b — High-z anomalous residual" and "Adaptive QC" subsections in `docs/qc.md`, including the two-stage flowchart and meta artifact schema.
+
 ## [0.5.4] (2026-04-23)
 
 ### Fixed

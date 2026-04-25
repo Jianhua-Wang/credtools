@@ -1009,6 +1009,33 @@ def run_qc(
         "--dentist-r2-threshold",
         help="R² threshold for Dentist-S outlier detection.",
     ),
+    enable_c1b: bool = typer.Option(
+        False,
+        "--enable-c1b/--no-enable-c1b",
+        help=(
+            "Enable the C1b high-z anomalous-residual rule "
+            "(|z_std_diff| > c1b_z_std_diff_threshold AND |z| > z_threshold)."
+        ),
+    ),
+    c1b_z_std_diff_threshold: float = typer.Option(
+        10.0,
+        "--c1b-z-std-diff-threshold",
+        help="Threshold on |z_std_diff| for the C1b rule.",
+    ),
+    adaptive_qc_flag: bool = typer.Option(
+        False,
+        "--adaptive-qc/--no-adaptive-qc",
+        help=(
+            "Run two-stage adaptive QC: baseline C1+C2+C3, then augment with "
+            "C1b on the original locus if cleaned-locus lambda_s exceeds "
+            "--adaptive-lambda-threshold."
+        ),
+    ),
+    adaptive_lambda_threshold: float = typer.Option(
+        0.05,
+        "--adaptive-lambda-threshold",
+        help="lambda_s trigger for the adaptive QC C1b augmentation stage.",
+    ),
     log_file: Optional[str] = typer.Option(
         None, "--log-file", "-l", help="Log output to specified file."
     ),
@@ -1017,6 +1044,15 @@ def run_qc(
     from credtools.qc import loci_qc
 
     setup_file_logging(log_file)
+
+    if adaptive_qc_flag and not remove_outlier:
+        # Adaptive mode always removes outliers — surface this to the user.
+        Console().print(
+            "[yellow]--adaptive-qc implies outlier removal; "
+            "proceeding as if --remove-outlier had been passed.[/yellow]"
+        )
+        remove_outlier = True
+
     run_summary = loci_qc(
         inputs,
         outdir,
@@ -1028,6 +1064,10 @@ def run_qc(
         r_threshold=r_threshold,
         dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
         dentist_s_r2_threshold=dentist_s_r2_threshold,
+        enable_c1b=enable_c1b,
+        c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
+        adaptive_qc_flag=adaptive_qc_flag,
+        adaptive_lambda_threshold=adaptive_lambda_threshold,
     )
 
     console = Console()

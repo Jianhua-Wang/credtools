@@ -988,6 +988,8 @@ def identify_outliers(
     r_threshold: float = 0.8,
     dentist_s_pvalue_threshold: float = 4,
     dentist_s_r2_threshold: float = 0.6,
+    enable_c1b: bool = False,
+    c1b_z_std_diff_threshold: float = 10.0,
 ) -> pd.DataFrame:
     """
     Identify outlier SNPs based on QC metrics.
@@ -1010,26 +1012,46 @@ def identify_outliers(
         -log10 p-value threshold for Dentist-S outlier detection, by default 4.
     dentist_s_r2_threshold : float, optional
         R² threshold for Dentist-S outlier detection, by default 0.6.
+    enable_c1b : bool, optional
+        If True, also evaluate the C1b "high-z anomalous-residual" rule
+        (``|z_std_diff| > c1b_z_std_diff_threshold AND |z| > z_threshold``)
+        and emit a ``C1b_high_z_residual`` column. Defaults to False to
+        preserve pre-0.5.5 behavior.
+    c1b_z_std_diff_threshold : float, optional
+        Threshold on ``|z_std_diff|`` for the C1b rule, by default 10.0
+        (intentionally conservative).
 
     Returns
     -------
     pd.DataFrame
-        DataFrame of outlier SNPs with columns: SNPID, C1_ld_mismatch,
-        C2_marginal, C3_dentist_s. Each row represents a SNP that triggered
-        at least one outlier criterion.
+        DataFrame of outlier SNPs. When ``enable_c1b=False`` (default) the
+        columns are ``[SNPID, C1_ld_mismatch, C2_marginal, C3_dentist_s]``;
+        when ``enable_c1b=True`` the column ``C1b_high_z_residual`` is
+        inserted between ``C1_ld_mismatch`` and ``C2_marginal``. Each row
+        represents a SNP that triggered at least one criterion.
     """
-    empty_result = pd.DataFrame(
-        columns=["SNPID", "C1_ld_mismatch", "C2_marginal", "C3_dentist_s"]
-    )
+    if enable_c1b:
+        empty_columns = [
+            "SNPID",
+            "C1_ld_mismatch",
+            "C1b_high_z_residual",
+            "C2_marginal",
+            "C3_dentist_s",
+        ]
+    else:
+        empty_columns = ["SNPID", "C1_ld_mismatch", "C2_marginal", "C3_dentist_s"]
+    empty_result = pd.DataFrame(columns=empty_columns)
 
     # Collect all SNPIDs and their criterion flags
     all_snpids: set = set()
     c1_snps: set = set()
+    c1b_snps: set = set()
     c2_snps: set = set()
     c3_snps: set = set()
 
     # Get expected_z metrics for this cohort
     expected_z = qc_metrics.get("expected_z", pd.DataFrame())
+    cohort_expected_z = pd.DataFrame()
     if not expected_z.empty:
         cohort_expected_z = expected_z[expected_z["cohort"] == cohort]
 
@@ -1075,6 +1097,17 @@ def identify_outliers(
                 all_snpids.update(c1_hits)
                 all_snpids.update(c2_hits)
 
+    # C1b: high-z anomalous-residual rule. Complements C1 by dropping the
+    # logLR gate; complements C2 by flipping the |z| direction. Operates only
+    # on the kriging residual, no DENTIST-S merge needed.
+    if enable_c1b and not cohort_expected_z.empty:
+        c1b_condition = (
+            cohort_expected_z["z_std_diff"].abs() > c1b_z_std_diff_threshold
+        ) & (cohort_expected_z["z"].abs() > z_threshold)
+        c1b_hits = cohort_expected_z[c1b_condition]["SNPID"].tolist()
+        c1b_snps.update(c1b_hits)
+        all_snpids.update(c1b_hits)
+
     # C3: Dentist-S outliers
     dentist_s = qc_metrics.get("dentist_s", pd.DataFrame())
     if not dentist_s.empty:
@@ -1095,6 +1128,8 @@ def identify_outliers(
     # Build result DataFrame
     result = pd.DataFrame({"SNPID": sorted(all_snpids)})
     result["C1_ld_mismatch"] = result["SNPID"].isin(c1_snps)
+    if enable_c1b:
+        result["C1b_high_z_residual"] = result["SNPID"].isin(c1b_snps)
     result["C2_marginal"] = result["SNPID"].isin(c2_snps)
     result["C3_dentist_s"] = result["SNPID"].isin(c3_snps)
 
@@ -1221,6 +1256,8 @@ def remove_outliers_and_rerun_qc(
     r_threshold: float = 0.8,
     dentist_s_pvalue_threshold: float = 4,
     dentist_s_r2_threshold: float = 0.6,
+    enable_c1b: bool = False,
+    c1b_z_std_diff_threshold: float = 10.0,
 ) -> Tuple[LocusSet, Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
     Remove outliers from locus set and re-run QC.
@@ -1266,6 +1303,8 @@ def remove_outliers_and_rerun_qc(
             r_threshold=r_threshold,
             dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
             dentist_s_r2_threshold=dentist_s_r2_threshold,
+            enable_c1b=enable_c1b,
+            c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
         )
         outlier_snps = outlier_df["SNPID"].tolist() if not outlier_df.empty else []
 
@@ -1342,17 +1381,13 @@ def remove_outliers_and_rerun_qc(
     if all_outlier_details:
         outlier_detail_df = pd.concat(all_outlier_details, ignore_index=True)
     else:
-        outlier_detail_df = pd.DataFrame(
-            columns=[
-                "SNPID",
-                "C1_ld_mismatch",
-                "C2_marginal",
-                "C3_dentist_s",
-                "locus_id",
-                "popu",
-                "cohort",
-            ]
+        empty_outlier_cols = ["SNPID", "C1_ld_mismatch"]
+        if enable_c1b:
+            empty_outlier_cols.append("C1b_high_z_residual")
+        empty_outlier_cols.extend(
+            ["C2_marginal", "C3_dentist_s", "locus_id", "popu", "cohort"]
         )
+        outlier_detail_df = pd.DataFrame(columns=empty_outlier_cols)
 
     # Save outlier detail file per locus
     outlier_detail_path = os.path.join(cleaned_dir, "outlier_snps.txt.gz")
@@ -1367,6 +1402,172 @@ def remove_outliers_and_rerun_qc(
     return cleaned_locus_set, cleaned_qc_metrics, outlier_summary_df, outlier_detail_df
 
 
+def adaptive_qc(
+    locus: Locus,
+    qc_metrics: Dict[str, pd.DataFrame],
+    *,
+    logLR_threshold: float = 1.0,
+    z_threshold: float = 1.0,
+    z_std_diff_threshold: float = 3.0,
+    r_threshold: float = 0.1,
+    dentist_s_pvalue_threshold: float = 4.0,
+    dentist_s_r2_threshold: float = 0.6,
+    c1b_z_std_diff_threshold: float = 10.0,
+    adaptive_lambda_threshold: float = 0.05,
+) -> Tuple[Locus, Dict[str, Any]]:
+    """Two-stage adaptive QC.
+
+    Stage A — baseline C1+C2+C3 outlier removal at the supplied thresholds.
+    Stage B — if ``lambda_s`` on the cleaned locus still exceeds
+    ``adaptive_lambda_threshold``, augment with C1b
+    (``|z_std_diff| > c1b_z_std_diff_threshold & |z| > z_threshold``)
+    applied to the ORIGINAL locus's expected_z. Union the two outlier sets,
+    remove from the original locus once, and recompute ``lambda_s``.
+
+    The C1b augmentation is applied to the original locus's qc_metrics, NOT
+    to the cleaned locus's metrics, because the residual diagnostics for the
+    flipped/perturbed SNPs are most informative before they are removed.
+
+    Parameters
+    ----------
+    locus : Locus
+        Input locus (unmodified).
+    qc_metrics : Dict[str, pd.DataFrame]
+        Output of ``locus_qc(LocusSet([locus]))``. Reused as-is; no
+        recomputation.
+    logLR_threshold, z_threshold, z_std_diff_threshold, r_threshold,
+    dentist_s_pvalue_threshold, dentist_s_r2_threshold : float
+        Baseline (Stage A) thresholds, passed through to ``identify_outliers``.
+    c1b_z_std_diff_threshold : float, optional
+        Threshold on ``|z_std_diff|`` for the Stage B C1b rule, by default 10.0.
+    adaptive_lambda_threshold : float, optional
+        Trigger for Stage B; if cleaned-locus lambda_s exceeds this value,
+        the C1b augmentation runs. Default 0.05.
+
+    Returns
+    -------
+    cleaned_locus : Locus
+        Locus with the union outlier set removed.
+    meta : dict with keys
+        ``lambda_s_before``, ``lambda_s_after_baseline``,
+        ``lambda_s_after_final``, ``n_outliers_baseline``,
+        ``n_outliers_c1b_extra``, ``outlier_snpids`` (final union),
+        ``adaptive_triggered`` (bool), ``baseline_thresholds`` (dict),
+        ``adaptive_lambda_threshold``, ``c1b_z_std_diff_threshold``.
+    """
+    cohort = f"{locus.popu}_{locus.cohort}"
+
+    baseline_thresholds = {
+        "logLR_threshold": logLR_threshold,
+        "z_threshold": z_threshold,
+        "z_std_diff_threshold": z_std_diff_threshold,
+        "r_threshold": r_threshold,
+        "dentist_s_pvalue_threshold": dentist_s_pvalue_threshold,
+        "dentist_s_r2_threshold": dentist_s_r2_threshold,
+    }
+
+    try:
+        lambda_s_before: Optional[float] = float(estimate_s_rss(locus))
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning(f"adaptive_qc: estimate_s_rss(locus) failed: {exc}")
+        lambda_s_before = None
+
+    # Stage A: baseline outlier identification (no C1b).
+    outlier_df = identify_outliers(
+        qc_metrics,
+        cohort,
+        logLR_threshold=logLR_threshold,
+        z_threshold=z_threshold,
+        z_std_diff_threshold=z_std_diff_threshold,
+        r_threshold=r_threshold,
+        dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+        dentist_s_r2_threshold=dentist_s_r2_threshold,
+        enable_c1b=False,
+    )
+    baseline_snps: List[str] = (
+        outlier_df["SNPID"].tolist() if not outlier_df.empty else []
+    )
+
+    if baseline_snps:
+        cleaned_baseline = remove_snps_from_locus(locus, baseline_snps)
+        try:
+            lambda_s_after_baseline: Optional[float] = float(
+                estimate_s_rss(cleaned_baseline)
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(
+                f"adaptive_qc: estimate_s_rss(cleaned_baseline) failed: {exc}"
+            )
+            lambda_s_after_baseline = None
+    else:
+        cleaned_baseline = locus
+        lambda_s_after_baseline = lambda_s_before
+
+    # Stage B: trigger C1b augmentation if lambda_s remains elevated.
+    triggered = (
+        lambda_s_after_baseline is not None
+        and lambda_s_after_baseline > adaptive_lambda_threshold
+    )
+    c1b_extra: List[str] = []
+    cleaned_locus = cleaned_baseline
+    lambda_s_after_final: Optional[float] = lambda_s_after_baseline
+
+    if triggered:
+        expected_z = qc_metrics.get("expected_z", pd.DataFrame())
+        if not expected_z.empty:
+            cohort_expected_z = expected_z[expected_z["cohort"] == cohort]
+            if not cohort_expected_z.empty:
+                mask = (
+                    cohort_expected_z["z_std_diff"].abs() > c1b_z_std_diff_threshold
+                ) & (cohort_expected_z["z"].abs() > z_threshold)
+                baseline_set = set(baseline_snps)
+                c1b_extra = [
+                    snp
+                    for snp in cohort_expected_z.loc[mask, "SNPID"].tolist()
+                    if snp not in baseline_set
+                ]
+
+        if c1b_extra:
+            union = baseline_snps + c1b_extra
+            cleaned_locus = remove_snps_from_locus(locus, union)
+            try:
+                lambda_s_after_final = float(estimate_s_rss(cleaned_locus))
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    f"adaptive_qc: estimate_s_rss(cleaned_locus) failed: {exc}"
+                )
+                lambda_s_after_final = None
+        else:
+            # No new SNPs from C1b — Stage B was a no-op.
+            triggered = False
+
+    final_outliers: List[str] = baseline_snps + c1b_extra
+
+    ls_before_str = f"{lambda_s_before:.4f}" if lambda_s_before is not None else "N/A"
+    ls_final_str = (
+        f"{lambda_s_after_final:.4f}" if lambda_s_after_final is not None else "N/A"
+    )
+    logger.info(
+        f"adaptive_qc[{locus.locus_id}] "
+        f"baseline={len(baseline_snps)} c1b_extra={len(c1b_extra)} "
+        f"triggered={triggered} lambda_s {ls_before_str} -> {ls_final_str}"
+    )
+
+    meta: Dict[str, Any] = {
+        "lambda_s_before": lambda_s_before,
+        "lambda_s_after_baseline": lambda_s_after_baseline,
+        "lambda_s_after_final": lambda_s_after_final,
+        "n_outliers_baseline": len(baseline_snps),
+        "n_outliers_c1b_extra": len(c1b_extra),
+        "outlier_snpids": final_outliers,
+        "adaptive_triggered": triggered,
+        "baseline_thresholds": baseline_thresholds,
+        "adaptive_lambda_threshold": adaptive_lambda_threshold,
+        "c1b_z_std_diff_threshold": c1b_z_std_diff_threshold,
+    }
+    return cleaned_locus, meta
+
+
 def locus_qc_summary(
     qc_metrics: Dict[str, pd.DataFrame],
     logLR_threshold: float = 2,
@@ -1375,6 +1576,8 @@ def locus_qc_summary(
     r_threshold: float = 0.8,
     dentist_s_pvalue_threshold: float = 4,
     dentist_s_r2_threshold: float = 0.6,
+    enable_c1b: bool = False,
+    c1b_z_std_diff_threshold: float = 10.0,
 ) -> pd.DataFrame:
     """
     Generate summary QC statistics for a locus across all cohorts.
@@ -1395,12 +1598,18 @@ def locus_qc_summary(
         -log10 p-value threshold for Dentist-S outlier detection, by default 4.
     dentist_s_r2_threshold : float, optional
         R² threshold for Dentist-S outlier detection, by default 0.6.
+    enable_c1b : bool, optional
+        If True, also tabulate the C1b "high-z anomalous-residual" rule into
+        a ``n_c1b_outlier`` column. Defaults to False (column omitted).
+    c1b_z_std_diff_threshold : float, optional
+        Threshold on ``|z_std_diff|`` for the C1b rule, by default 10.0.
 
     Returns
     -------
     pd.DataFrame
         Summary QC statistics with columns: popu, cohort, n_snps, n_1e-5, n_5e-8,
-        maf_corr, lambda_s, n_lambda_s_outlier, n_dentist_s_outlier.
+        maf_corr, lambda_s, n_lambda_s_outlier, n_dentist_s_outlier. When
+        ``enable_c1b=True``, an additional ``n_c1b_outlier`` column is appended.
     """
     summary_rows = []
 
@@ -1528,25 +1737,194 @@ def locus_qc_summary(
         else:
             n_dentist_s_outlier = 0
 
-        summary_rows.append(
-            {
-                "popu": popu,
-                "cohort": cohort_name,
-                "n_snps": n_snps,
-                "n_1e-5": n_1e_5,
-                "n_5e-8": n_5e_8,
-                "maf_corr": maf_corr,
-                "lambda_s": lambda_s,
-                "n_lambda_s_outlier": n_lambda_s_outlier,
-                "n_dentist_s_outlier": n_dentist_s_outlier,
-            }
-        )
+        row: Dict[str, Any] = {
+            "popu": popu,
+            "cohort": cohort_name,
+            "n_snps": n_snps,
+            "n_1e-5": n_1e_5,
+            "n_5e-8": n_5e_8,
+            "maf_corr": maf_corr,
+            "lambda_s": lambda_s,
+            "n_lambda_s_outlier": n_lambda_s_outlier,
+            "n_dentist_s_outlier": n_dentist_s_outlier,
+        }
+        if enable_c1b:
+            if not cohort_expected_z.empty:
+                c1b_condition = (
+                    cohort_expected_z["z_std_diff"].abs() > c1b_z_std_diff_threshold
+                ) & (cohort_expected_z["z"].abs() > z_threshold)
+                row["n_c1b_outlier"] = int(c1b_condition.sum())
+            else:
+                row["n_c1b_outlier"] = 0
+        summary_rows.append(row)
 
     return pd.DataFrame(summary_rows)
 
 
+QcLocusArgs = Tuple[
+    str,
+    pd.DataFrame,
+    str,
+    bool,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    bool,
+    float,
+    bool,
+    float,
+]
+
+
+def _coerce_qc_locus_args(args: tuple) -> QcLocusArgs:
+    """Pad legacy 10-tuple args with defaults for the four new C1b/adaptive fields."""
+    if len(args) == 10:
+        return (*args, False, 10.0, False, 0.05)  # type: ignore[return-value]
+    if len(args) != 14:
+        raise ValueError(
+            f"qc_locus_cli expects a 10- or 14-tuple, got length {len(args)}"
+        )
+    return args  # type: ignore[return-value]
+
+
+def _adaptive_qc_for_locus_set(
+    locus_set: LocusSet,
+    qc_metrics: Dict[str, pd.DataFrame],
+    base_out_dir: str,
+    locus_id: str,
+    *,
+    logLR_threshold: float,
+    z_threshold: float,
+    z_std_diff_threshold: float,
+    r_threshold: float,
+    dentist_s_pvalue_threshold: float,
+    dentist_s_r2_threshold: float,
+    c1b_z_std_diff_threshold: float,
+    adaptive_lambda_threshold: float,
+    enable_c1b_summary: bool,
+) -> Tuple[LocusSet, Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
+    """Run :func:`adaptive_qc` per-locus and persist outputs.
+
+    Mirrors the return shape of :func:`remove_outliers_and_rerun_qc` so the
+    calling pipeline can stay agnostic. Persists
+    ``cleaned/{locus_id}/adaptive_qc_meta.json`` per locus.
+    """
+    import json
+
+    cleaned_dir = os.path.join(base_out_dir, "cleaned", locus_id)
+    os.makedirs(cleaned_dir, exist_ok=True)
+
+    cleaned_loci: List[Locus] = []
+    outlier_summary_rows: List[Dict[str, Any]] = []
+    outlier_detail_frames: List[pd.DataFrame] = []
+    meta_payload: Dict[str, Dict[str, Any]] = {}
+
+    for locus in locus_set.loci:
+        cleaned_locus, meta = adaptive_qc(
+            locus,
+            qc_metrics,
+            logLR_threshold=logLR_threshold,
+            z_threshold=z_threshold,
+            z_std_diff_threshold=z_std_diff_threshold,
+            r_threshold=r_threshold,
+            dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+            dentist_s_r2_threshold=dentist_s_r2_threshold,
+            c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
+            adaptive_lambda_threshold=adaptive_lambda_threshold,
+        )
+        save_cleaned_locus(cleaned_locus, cleaned_dir, locus.prefix)
+
+        cleaned_loci.append(cleaned_locus)
+        cohort_label = f"{locus.popu}_{locus.cohort}"
+        meta_payload[cohort_label] = meta
+
+        outlier_summary_rows.append(
+            {
+                "locus_id": locus_id,
+                "popu": locus.popu,
+                "cohort": locus.cohort,
+                "original_snps": locus.n_snps,
+                "outliers_removed": len(meta["outlier_snpids"]),
+                "cleaned_snps": cleaned_locus.n_snps,
+                "retention_rate": (
+                    cleaned_locus.n_snps / locus.n_snps if locus.n_snps > 0 else 0
+                ),
+            }
+        )
+
+        if meta["outlier_snpids"]:
+            outlier_df = identify_outliers(
+                qc_metrics,
+                cohort_label,
+                logLR_threshold=logLR_threshold,
+                z_threshold=z_threshold,
+                z_std_diff_threshold=z_std_diff_threshold,
+                r_threshold=r_threshold,
+                dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+                dentist_s_r2_threshold=dentist_s_r2_threshold,
+                enable_c1b=True,
+                c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
+            )
+            kept_mask = outlier_df["SNPID"].isin(meta["outlier_snpids"])
+            outlier_df = outlier_df[kept_mask].copy()
+            outlier_df["locus_id"] = locus_id
+            outlier_df["popu"] = locus.popu
+            outlier_df["cohort"] = locus.cohort
+            outlier_detail_frames.append(outlier_df)
+
+    cleaned_locus_set = LocusSet(cleaned_loci)
+    cleaned_qc_metrics = locus_qc(
+        cleaned_locus_set,
+        out_dir=cleaned_dir,
+        logLR_threshold=logLR_threshold,
+        z_threshold=z_threshold,
+        z_std_diff_threshold=z_std_diff_threshold,
+        r_threshold=r_threshold,
+        dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+        dentist_s_r2_threshold=dentist_s_r2_threshold,
+    )
+
+    outlier_summary_df = pd.DataFrame(outlier_summary_rows)
+    if outlier_detail_frames:
+        outlier_detail_df = pd.concat(outlier_detail_frames, ignore_index=True)
+    else:
+        cols = ["SNPID", "C1_ld_mismatch"]
+        if enable_c1b_summary:
+            cols.append("C1b_high_z_residual")
+        cols.extend(["C2_marginal", "C3_dentist_s", "locus_id", "popu", "cohort"])
+        outlier_detail_df = pd.DataFrame(columns=cols)
+
+    outlier_detail_df.to_csv(
+        os.path.join(cleaned_dir, "outlier_snps.txt.gz"),
+        sep="\t",
+        index=False,
+        compression="gzip",
+    )
+
+    # Persist adaptive meta — JSON keyed by cohort label.
+    meta_path = os.path.join(cleaned_dir, "adaptive_qc_meta.json")
+    with open(meta_path, "w") as fh:
+        json.dump(meta_payload, fh, indent=2, default=_json_default)
+
+    return cleaned_locus_set, cleaned_qc_metrics, outlier_summary_df, outlier_detail_df
+
+
+def _json_default(value: Any) -> Any:
+    """JSON-encoder fallback for numpy scalars / sets used by adaptive meta."""
+    if isinstance(value, (np.floating, np.integer)):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, set):
+        return sorted(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
 def qc_locus_cli(
-    args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float],
+    args: tuple,
 ) -> Tuple[
     str,
     pd.DataFrame,
@@ -1559,28 +1937,22 @@ def qc_locus_cli(
 
     Parameters
     ----------
-    args : Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float]
-        Tuple containing:
+    args : tuple
+        14-tuple (legacy 10-tuple is auto-padded with defaults). Fields:
         - locus_id : str
-            Locus identifier
         - locus_info : pd.DataFrame
-            DataFrame with locus information
         - base_out_dir : str
-            Base output directory
         - remove_outlier : bool
-            Whether to remove outliers and re-run QC
         - logLR_threshold : float
-            LogLR threshold for LD mismatch detection
         - z_threshold : float
-            Z-score threshold for both LD mismatch and marginal SNP detection
         - z_std_diff_threshold : float
-            Z_std_diff threshold for marginal SNP outlier detection
         - r_threshold : float
-            Correlation threshold with lead SNP for marginal SNP detection
         - dentist_s_pvalue_threshold : float
-            -log10 p-value threshold for Dentist-S outlier detection
         - dentist_s_r2_threshold : float
-            R² threshold for Dentist-S outlier detection
+        - enable_c1b : bool
+        - c1b_z_std_diff_threshold : float
+        - adaptive_qc_flag : bool
+        - adaptive_lambda_threshold : float
 
     Returns
     -------
@@ -1591,18 +1963,9 @@ def qc_locus_cli(
 
     Notes
     -----
-    This function is designed for multiprocessing and:
-
-    1. Loads the locus set from the provided information
-    2. Performs comprehensive QC analysis
-    3. Creates locus-specific output directory
-    4. Saves all QC results as compressed files
-    5. Generates and saves locus-level summary QC statistics
-    6. Returns the processed locus_id and summary for global aggregation
-
-    Output files are saved as:
-    {base_out_dir}/{locus_id}/{qc_metric}.txt.gz
-    {base_out_dir}/{locus_id}/qc.txt.gz
+    Designed for multiprocessing. When ``adaptive_qc_flag=True``, routes the
+    per-locus removal path through :func:`adaptive_qc` and persists
+    ``cleaned/{locus_id}/adaptive_qc_meta.json``.
     """
     (
         locus_id,
@@ -1615,7 +1978,15 @@ def qc_locus_cli(
         r_threshold,
         dentist_s_pvalue_threshold,
         dentist_s_r2_threshold,
-    ) = args
+        enable_c1b,
+        c1b_z_std_diff_threshold,
+        adaptive_qc_flag,
+        adaptive_lambda_threshold,
+    ) = _coerce_qc_locus_args(args)
+
+    # Adaptive mode always removes outliers regardless of the remove_outlier flag.
+    effective_remove_outlier = remove_outlier or adaptive_qc_flag
+
     locus_set = load_locus_set(locus_info)
     qc_metrics = locus_qc(
         locus_set,
@@ -1639,6 +2010,9 @@ def qc_locus_cli(
             float_format="%.6f",
         )
 
+    # Adaptive mode summary uses C1b column; otherwise stays backward-compatible.
+    summary_enable_c1b = enable_c1b or adaptive_qc_flag
+
     # Generate and save locus-level summary
     summary = locus_qc_summary(
         qc_metrics,
@@ -1648,6 +2022,8 @@ def qc_locus_cli(
         r_threshold=r_threshold,
         dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
         dentist_s_r2_threshold=dentist_s_r2_threshold,
+        enable_c1b=summary_enable_c1b,
+        c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
     )
     if not summary.empty:
         summary.to_csv(
@@ -1664,25 +2040,50 @@ def qc_locus_cli(
     outlier_summary = None
     cleaned_summary = None
     outlier_detail = None
-    if remove_outlier:
-        logger.info(f"Removing outliers and re-running QC for locus {locus_id}")
-        (
-            _,
-            cleaned_qc_metrics,
-            outlier_summary,
-            outlier_detail,
-        ) = remove_outliers_and_rerun_qc(
-            locus_set,
-            qc_metrics,
-            base_out_dir,
-            locus_id,
-            logLR_threshold=logLR_threshold,
-            z_threshold=z_threshold,
-            z_std_diff_threshold=z_std_diff_threshold,
-            r_threshold=r_threshold,
-            dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
-            dentist_s_r2_threshold=dentist_s_r2_threshold,
-        )
+    if effective_remove_outlier:
+        if adaptive_qc_flag:
+            logger.info(f"Running adaptive QC for locus {locus_id}")
+            (
+                _,
+                cleaned_qc_metrics,
+                outlier_summary,
+                outlier_detail,
+            ) = _adaptive_qc_for_locus_set(
+                locus_set,
+                qc_metrics,
+                base_out_dir,
+                locus_id,
+                logLR_threshold=logLR_threshold,
+                z_threshold=z_threshold,
+                z_std_diff_threshold=z_std_diff_threshold,
+                r_threshold=r_threshold,
+                dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+                dentist_s_r2_threshold=dentist_s_r2_threshold,
+                c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
+                adaptive_lambda_threshold=adaptive_lambda_threshold,
+                enable_c1b_summary=summary_enable_c1b,
+            )
+        else:
+            logger.info(f"Removing outliers and re-running QC for locus {locus_id}")
+            (
+                _,
+                cleaned_qc_metrics,
+                outlier_summary,
+                outlier_detail,
+            ) = remove_outliers_and_rerun_qc(
+                locus_set,
+                qc_metrics,
+                base_out_dir,
+                locus_id,
+                logLR_threshold=logLR_threshold,
+                z_threshold=z_threshold,
+                z_std_diff_threshold=z_std_diff_threshold,
+                r_threshold=r_threshold,
+                dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
+                dentist_s_r2_threshold=dentist_s_r2_threshold,
+                enable_c1b=enable_c1b,
+                c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
+            )
 
         # Generate and save cleaned QC summary
         cleaned_summary = locus_qc_summary(
@@ -1693,6 +2094,8 @@ def qc_locus_cli(
             r_threshold=r_threshold,
             dentist_s_pvalue_threshold=dentist_s_pvalue_threshold,
             dentist_s_r2_threshold=dentist_s_r2_threshold,
+            enable_c1b=summary_enable_c1b,
+            c1b_z_std_diff_threshold=c1b_z_std_diff_threshold,
         )
         if not cleaned_summary.empty:
             cleaned_locus_dir = os.path.join(base_out_dir, "cleaned", locus_id)
@@ -1719,7 +2122,7 @@ def qc_locus_cli(
 
 
 def safe_qc_locus_cli(
-    args: Tuple[str, pd.DataFrame, str, bool, float, float, float, float, float, float],
+    args: tuple,
 ) -> Tuple[
     str,
     Optional[pd.DataFrame],
@@ -1765,6 +2168,10 @@ def loci_qc(
     r_threshold: float = 0.8,
     dentist_s_pvalue_threshold: float = 4,
     dentist_s_r2_threshold: float = 0.6,
+    enable_c1b: bool = False,
+    c1b_z_std_diff_threshold: float = 10.0,
+    adaptive_qc_flag: bool = False,
+    adaptive_lambda_threshold: float = 0.05,
 ) -> Dict[str, Any]:
     """
     Perform quality control analysis on multiple loci in parallel.
@@ -1792,6 +2199,16 @@ def loci_qc(
         -log10 p-value threshold for Dentist-S outlier detection, by default 4.
     dentist_s_r2_threshold : float, optional
         R² threshold for Dentist-S outlier detection, by default 0.6.
+    enable_c1b : bool, optional
+        Enable the C1b "high-z anomalous-residual" criterion, by default False.
+    c1b_z_std_diff_threshold : float, optional
+        Threshold on ``|z_std_diff|`` for the C1b rule, by default 10.0.
+    adaptive_qc_flag : bool, optional
+        Route the per-locus removal step through :func:`adaptive_qc` (Stage A
+        baseline + Stage B C1b augmentation when lambda_s remains elevated),
+        by default False.
+    adaptive_lambda_threshold : float, optional
+        Trigger lambda_s threshold for Stage B C1b augmentation, by default 0.05.
 
     Returns
     -------
@@ -1852,6 +2269,10 @@ def loci_qc(
             r_threshold,
             dentist_s_pvalue_threshold,
             dentist_s_r2_threshold,
+            enable_c1b,
+            c1b_z_std_diff_threshold,
+            adaptive_qc_flag,
+            adaptive_lambda_threshold,
         )
         for locus_id, locus_info in loci_info.groupby("locus_id")
     ]
@@ -1881,6 +2302,10 @@ def loci_qc(
             "r_threshold": r_threshold,
             "dentist_s_pvalue_threshold": dentist_s_pvalue_threshold,
             "dentist_s_r2_threshold": dentist_s_r2_threshold,
+            "enable_c1b": enable_c1b,
+            "c1b_z_std_diff_threshold": c1b_z_std_diff_threshold,
+            "adaptive_qc_flag": adaptive_qc_flag,
+            "adaptive_lambda_threshold": adaptive_lambda_threshold,
         },
     }
     logger.info(f"QC run started at {start_time.isoformat()}")
