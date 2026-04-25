@@ -571,9 +571,27 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#c1b-high-z-anomalous-residual-opt-in-since-055" class="md-nav__link">
+    <span class="md-ellipsis">
+      C1b — High-z anomalous residual (opt-in, since 0.5.5)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#outlier-removal" class="md-nav__link">
     <span class="md-ellipsis">
       Outlier Removal
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptive-qc-since-055" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptive QC (since 0.5.5)
     </span>
   </a>
   
@@ -1335,9 +1353,27 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#c1b-high-z-anomalous-residual-opt-in-since-055" class="md-nav__link">
+    <span class="md-ellipsis">
+      C1b — High-z anomalous residual (opt-in, since 0.5.5)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#outlier-removal" class="md-nav__link">
     <span class="md-ellipsis">
       Outlier Removal
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptive-qc-since-055" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptive QC (since 0.5.5)
     </span>
   </a>
   
@@ -1584,6 +1620,30 @@
 <td><code>0.6</code></td>
 </tr>
 <tr>
+<td><code>--enable-c1b</code> / <code>--no-enable-c1b</code></td>
+<td></td>
+<td>Enable the opt-in C1b high-z anomalous-residual rule (see below)</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--c1b-z-std-diff-threshold</code></td>
+<td></td>
+<td><code>\|z_std_diff\|</code> threshold for the C1b rule</td>
+<td><code>10.0</code></td>
+</tr>
+<tr>
+<td><code>--adaptive-qc</code> / <code>--no-adaptive-qc</code></td>
+<td></td>
+<td>Two-stage adaptive QC: baseline C1+C2+C3, then C1b augmentation if cleaned-locus lambda_s remains elevated</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--adaptive-lambda-threshold</code></td>
+<td></td>
+<td>lambda_s trigger for the adaptive Stage B C1b augmentation</td>
+<td><code>0.05</code></td>
+</tr>
+<tr>
 <td><code>--log-file</code></td>
 <td><code>-l</code></td>
 <td>Write log output to a file</td>
@@ -1710,30 +1770,95 @@
 <p class="admonition-title">z-threshold plays a dual role</p>
 <p>The <code>--z-threshold</code> parameter serves as a boundary between C1 and C2: SNPs with <code>|z| &gt; threshold</code> are evaluated for LD mismatch (C1), while SNPs with <code>|z| &lt; threshold</code> are evaluated as marginal outliers (C2). This ensures every SNP is checked by the appropriate criterion based on its signal strength.</p>
 </div>
+<h3 id="c1b-high-z-anomalous-residual-opt-in-since-055">C1b — High-z anomalous residual (opt-in, since 0.5.5)<a class="headerlink" href="#c1b-high-z-anomalous-residual-opt-in-since-055" title="Permanent link">&para;</a></h3>
+<p>C1, C2, and C3 leave a gap: significant SNPs (<code>|z| &gt; z_threshold</code>) whose kriging
+residual <code>|z_std_diff|</code> is extreme but whose <code>logLR</code> does not clear the C1 gate
+slip through unflagged, because C2 was deliberately gated to <code>|z| &lt; z_threshold</code>.</p>
+<p><strong>C1b</strong> is an opt-in fourth criterion that fills this gap:</p>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Condition</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>C1b — High-z anomalous residual</strong></td>
+<td><code>\|z_std_diff\| &gt; 10</code> AND <code>\|z\| &gt; 1</code></td>
+<td>Significant SNPs whose observed z disagrees with its LD-implied expected z by ≥10 SDs. Captures effect-magnitude perturbations and allele-coding slips that escape both C1 (logLR gate) and C2 (<code>\|z\| &lt;</code> gate).</td>
+</tr>
+</tbody>
+</table>
+<p>C1b shares C1's <code>|z| &gt;</code> direction (so it only fires on signal), but drops the
+<code>logLR</code> requirement and replaces the LD-mismatch test with a much harder
+<code>|z_std_diff|</code> threshold (<code>10</code> is intentionally conservative — empirically it
+catches anomalies without removing true causals).</p>
+<p>Enable per-locus with <code>--enable-c1b</code> and tune the threshold with
+<code>--c1b-z-std-diff-threshold</code>. The result file gains a <code>C1b_high_z_residual</code>
+boolean column inserted between <code>C1_ld_mismatch</code> and <code>C2_marginal</code>.</p>
 <h3 id="outlier-removal">Outlier Removal<a class="headerlink" href="#outlier-removal" title="Permanent link">&para;</a></h3>
-<p>The <code>--remove-outlier</code> flag triggers automatic outlier removal: SNPs flagged by any of C1, C2, or C3 are removed, and QC is re-run on the cleaned data. Both the original and cleaned summaries are saved for comparison.</p>
+<p>The <code>--remove-outlier</code> flag triggers automatic outlier removal: SNPs flagged by
+any of C1, C2, or C3 (plus C1b when <code>--enable-c1b</code> is set) are removed, and QC
+is re-run on the cleaned data. Both the original and cleaned summaries are
+saved for comparison.</p>
+<h3 id="adaptive-qc-since-055">Adaptive QC (since 0.5.5)<a class="headerlink" href="#adaptive-qc-since-055" title="Permanent link">&para;</a></h3>
+<p>C1b is intentionally aggressive at sites it does fire on, so applying it
+unconditionally can over-remove on well-behaved loci. The <code>--adaptive-qc</code> mode
+solves this with a two-stage flow:</p>
+<ol>
+<li><strong>Stage A — baseline</strong>: run C1+C2+C3 with the supplied thresholds and
+   compute <code>lambda_s</code> on the cleaned locus.</li>
+<li><strong>Stage B — adaptive trigger</strong>: if the cleaned-locus <code>lambda_s</code> still
+   exceeds <code>--adaptive-lambda-threshold</code> (default 0.05), apply C1b
+   (<code>|z_std_diff| &gt; c1b_z_std_diff_threshold AND |z| &gt; z_threshold</code>) to the
+   <strong>original</strong> locus's expected_z (residual diagnostics for to-be-removed
+   SNPs are most informative before removal). Union the Stage A and C1b SNP
+   sets and remove from the original locus in a single call.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>                 ┌────────────────────┐
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>        original │ baseline C1+C2+C3 │ ── λ_s ≤ 0.05 ─────────► cleaned (Stage A)
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>        locus ──►│   identify+remove │
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>                 └────────────────────┘
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>                          │ λ_s &gt; 0.05
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>                          ▼
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>                 ┌────────────────────┐
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>                 │ C1b on original    │
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>                 │ expected_z; union  │── single removal ─────► cleaned (Stage B)
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>                 │ with Stage A SNPs  │
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>                 └────────────────────┘
+</code></pre></div>
+<p>When <code>--adaptive-qc</code> is set the per-locus path persists
+<code>cleaned/{locus_id}/adaptive_qc_meta.json</code> containing <code>adaptive_triggered</code>,
+the three <code>lambda_s_*</code> values, baseline / C1b counts, the union outlier list
+and the threshold values used. Downstream tooling can use this to verify
+whether the adaptive branch fired for a given locus.</p>
+<p><code>--adaptive-qc</code> always implies <code>--remove-outlier</code>; passing it with
+<code>--no-remove-outlier</code> will emit a warning and proceed as if removal were
+requested.</p>
 <h2 id="output-format">Output Format<a class="headerlink" href="#output-format" title="Permanent link">&para;</a></h2>
 <h3 id="directory-structure">Directory Structure<a class="headerlink" href="#directory-structure" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>qc_output/
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>├── qc.txt.gz                           # Global QC summary across all loci
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>├── qc_run_summary.log                   # Run metadata (timing, errors)
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>├── chr1_1000_50000/                     # Per-locus directory
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>│   ├── expected_z.txt.gz               # Kriging RSS results
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>│   ├── dentist_s.txt.gz                # Dentist-S results
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>│   ├── compare_maf.txt.gz             # MAF comparison
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>│   └── qc.txt.gz                       # Locus-level QC summary
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>└── cleaned/                             # Only with --remove-outlier
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    ├── qc_cleaned.txt.gz               # Global cleaned QC summary
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    ├── outlier_removal_summary.txt.gz  # Outlier removal statistics
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    ├── cleaned_loci_info.txt.gz        # Loci info for cleaned data
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    └── chr1_1000_50000/                # Per-locus cleaned files
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        ├── EUR_UKB.sumstats.gz
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        ├── EUR_UKB.ld.npz
-<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>        ├── EUR_UKB.ldmap.gz
-<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>        ├── expected_z.txt.gz
-<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        ├── dentist_s.txt.gz
-<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>        ├── compare_maf.txt.gz
-<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>        └── qc.txt.gz
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>qc_output/
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>├── qc.txt.gz                           # Global QC summary across all loci
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>├── qc_run_summary.log                   # Run metadata (timing, errors)
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>├── chr1_1000_50000/                     # Per-locus directory
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>│   ├── expected_z.txt.gz               # Kriging RSS results
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>│   ├── dentist_s.txt.gz                # Dentist-S results
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>│   ├── compare_maf.txt.gz             # MAF comparison
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>│   └── qc.txt.gz                       # Locus-level QC summary
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>└── cleaned/                             # Only with --remove-outlier
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    ├── qc_cleaned.txt.gz               # Global cleaned QC summary
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    ├── outlier_removal_summary.txt.gz  # Outlier removal statistics
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    ├── cleaned_loci_info.txt.gz        # Loci info for cleaned data
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    └── chr1_1000_50000/                # Per-locus cleaned files
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>        ├── EUR_UKB.sumstats.gz
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>        ├── EUR_UKB.ld.npz
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>        ├── EUR_UKB.ldmap.gz
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>        ├── expected_z.txt.gz
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>        ├── dentist_s.txt.gz
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        ├── compare_maf.txt.gz
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>        └── qc.txt.gz
 </code></pre></div>
 <h3 id="output-columns">Output Columns<a class="headerlink" href="#output-columns" title="Permanent link">&para;</a></h3>
 <p><strong><code>expected_z.txt.gz</code></strong> — Kriging RSS results</p>
@@ -1895,16 +2020,16 @@
     C --&gt;|qc results| D[credtools finemap]
     C --&gt;|"--remove-outlier"| E[cleaned data]
     E --&gt; D</code></pre>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Full pipeline</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>population_config.txt<span class="w"> </span>munged/
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/sumstat_info_updated.txt<span class="w"> </span>chunked/
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>credtools<span class="w"> </span>meta<span class="w"> </span>chunked/loci_list.txt<span class="w"> </span>meta/<span class="w"> </span>--meta-method<span class="w"> </span>meta_all
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>credtools<span class="w"> </span>qc<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>qc/<span class="w"> </span>--threads<span class="w"> </span><span class="m">8</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>finemap_results/
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># With outlier removal</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>credtools<span class="w"> </span>qc<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>qc/<span class="w"> </span>--threads<span class="w"> </span><span class="m">8</span><span class="w"> </span>--remove-outlier
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc/cleaned/cleaned_loci_info.txt.gz<span class="w"> </span>finemap_results/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Full pipeline</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>credtools<span class="w"> </span>munge<span class="w"> </span>population_config.txt<span class="w"> </span>munged/
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>credtools<span class="w"> </span>chunk<span class="w"> </span>munged/sumstat_info_updated.txt<span class="w"> </span>chunked/
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>credtools<span class="w"> </span>meta<span class="w"> </span>chunked/loci_list.txt<span class="w"> </span>meta/<span class="w"> </span>--meta-method<span class="w"> </span>meta_all
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>credtools<span class="w"> </span>qc<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>qc/<span class="w"> </span>--threads<span class="w"> </span><span class="m">8</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>finemap_results/
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># With outlier removal</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>credtools<span class="w"> </span>qc<span class="w"> </span>meta/meta_all/loci_list.txt<span class="w"> </span>qc/<span class="w"> </span>--threads<span class="w"> </span><span class="m">8</span><span class="w"> </span>--remove-outlier
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc/cleaned/cleaned_loci_info.txt.gz<span class="w"> </span>finemap_results/
 </code></pre></div>
 <div class="admonition info">
 <p class="admonition-title">Heterogeneity metrics</p>
