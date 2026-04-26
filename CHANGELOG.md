@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0] (2026-04-26)
+
+### Added
+- `converged` and `n_iter` fields on `CredibleSet`, populated by SuSiE / MultiSuSiE / MESuSiE / RSparsePro wrappers. Both round-trip through `to_dict` / `from_dict`; older serialized payloads load with `None` defaults.
+- New `empty_on_nonconvergence` parameter on `run_susie`, `run_multisusie`, `run_mesusie`, `run_rsparsepro`. When True and the underlying algorithm fails to converge, the wrapper returns an empty credible set (`n_cs=0`, zeroed PIPs, `converged=False`) instead of unreliable partial results.
+
+### Changed
+- `_adaptive_fine_map` and `_adaptive_fine_map_multi` now treat a non-converged empty result (`n_cs=0` with `converged=False`) as a retryable failure: Phase 2 keeps decrementing L instead of returning the empty result. Genuine no-signal results (n_cs=0 with `converged=True`) still return immediately.
+- `fine_map` automatically defaults `empty_on_nonconvergence=True` when `adaptive_max_causal=True`, so non-converged runs naturally trigger Phase-2 L decrement. User-provided `empty_on_nonconvergence` is respected.
+
 ## [0.5.5] (2026-04-25)
 
 ### Added
