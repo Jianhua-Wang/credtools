@@ -1917,9 +1917,7 @@ class TestAdaptiveFinemapNonConvergence:
 
     def test_nonconverged_at_all_L_returns_empty(self):
         """Non-converged at every L from initial down to 1 → empty result."""
-        tool_func = MagicMock(
-            side_effect=lambda *a, **kw: self._empty_nonconverged()
-        )
+        tool_func = MagicMock(side_effect=lambda *a, **kw: self._empty_nonconverged())
         locus = MagicMock()
         result = _adaptive_fine_map(locus, "susie", 3, tool_func, {})
         assert result.n_cs == 0
@@ -1991,22 +1989,16 @@ class TestAdaptiveFineMapMultiNonConvergence:
         tool_func = MagicMock(side_effect=side_effect)
         locus_set = MagicMock()
         locus_set.n_loci = 2
-        result = _adaptive_fine_map_multi(
-            locus_set, "multisusie", 5, tool_func, {}
-        )
+        result = _adaptive_fine_map_multi(locus_set, "multisusie", 5, tool_func, {})
         assert result.n_cs == 2
         assert result.converged is True
 
     def test_nonconverged_at_all_L_returns_empty(self):
         """Non-converged at every L → return empty result."""
-        tool_func = MagicMock(
-            side_effect=lambda *a, **kw: self._empty_nonconverged()
-        )
+        tool_func = MagicMock(side_effect=lambda *a, **kw: self._empty_nonconverged())
         locus_set = MagicMock()
         locus_set.n_loci = 2
-        result = _adaptive_fine_map_multi(
-            locus_set, "multisusie", 3, tool_func, {}
-        )
+        result = _adaptive_fine_map_multi(locus_set, "multisusie", 3, tool_func, {})
         assert result.n_cs == 0
 
 

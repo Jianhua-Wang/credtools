@@ -356,16 +356,12 @@ class TestRunRsparseproConvergence:
         assert result.converged is False
         assert result.n_cs == 1  # CS preserved by default
 
-    def test_empty_on_nonconvergence_zeros_cs(
-        self, locus_significant, monkeypatch
-    ):
+    def test_empty_on_nonconvergence_zeros_cs(self, locus_significant, monkeypatch):
         monkeypatch.setattr(
             "credtools.wrappers.RSparsePro.rsparsepro_main",
             _mock_rsparsepro_main_with_converged(False),
         )
-        result = run_rsparsepro(
-            locus_significant, empty_on_nonconvergence=True
-        )
+        result = run_rsparsepro(locus_significant, empty_on_nonconvergence=True)
         assert result.converged is False
         assert result.n_cs == 0
         assert result.snps == []

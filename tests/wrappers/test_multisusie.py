@@ -249,9 +249,7 @@ class TestRunMultisusieConvergence:
         assert result.n_iter == 100
         assert result.n_cs == 1  # CS preserved by default
 
-    def test_empty_on_nonconvergence_zeros_cs(
-        self, locus_set_two_pop, monkeypatch
-    ):
+    def test_empty_on_nonconvergence_zeros_cs(self, locus_set_two_pop, monkeypatch):
         n = 20
         monkeypatch.setattr(
             "credtools.wrappers.multisusie.multisusie_rss",
@@ -263,9 +261,7 @@ class TestRunMultisusieConvergence:
                 niter=100,
             ),
         )
-        result = run_multisusie(
-            locus_set_two_pop, empty_on_nonconvergence=True
-        )
+        result = run_multisusie(locus_set_two_pop, empty_on_nonconvergence=True)
         assert result.converged is False
         assert result.n_cs == 0
         assert result.snps == []
@@ -285,9 +281,7 @@ class TestRunMultisusieConvergence:
                 niter=10,
             ),
         )
-        result = run_multisusie(
-            locus_set_two_pop, empty_on_nonconvergence=True
-        )
+        result = run_multisusie(locus_set_two_pop, empty_on_nonconvergence=True)
         assert result.converged is True
         assert result.n_cs == 1
 

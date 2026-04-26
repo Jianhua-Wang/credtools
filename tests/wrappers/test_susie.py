@@ -223,16 +223,12 @@ class TestRunSusieConvergence:
         assert result.n_iter == 100
         assert result.n_cs == 1  # CS still returned by default
 
-    def test_empty_on_nonconvergence_zeros_cs(
-        self, locus_significant, monkeypatch
-    ):
+    def test_empty_on_nonconvergence_zeros_cs(self, locus_significant, monkeypatch):
         """With empty_on_nonconvergence=True, non-converged run returns n_cs=0."""
         monkeypatch.setattr(
             "credtools.wrappers.susie.susie_rss", _mock_susie_rss_not_converged
         )
-        result = run_susie(
-            locus_significant, empty_on_nonconvergence=True
-        )
+        result = run_susie(locus_significant, empty_on_nonconvergence=True)
         assert result.converged is False
         assert result.n_cs == 0
         assert result.snps == []
@@ -246,9 +242,7 @@ class TestRunSusieConvergence:
         monkeypatch.setattr(
             "credtools.wrappers.susie.susie_rss", _mock_susie_rss_with_cs
         )
-        result = run_susie(
-            locus_significant, empty_on_nonconvergence=True
-        )
+        result = run_susie(locus_significant, empty_on_nonconvergence=True)
         assert result.converged is True
         assert result.n_cs == 1
 
