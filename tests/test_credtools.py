@@ -1860,3 +1860,276 @@ class TestPipelineQCMetrics:
         # QC metric file should be saved
         qc_file = tmp_path / "ld_check.txt"
         assert qc_file.exists()
+
+
+# ---------------------------------------------------------------------------
+# TestAdaptiveFinemapNonConvergence
+# ---------------------------------------------------------------------------
+class TestAdaptiveFinemapNonConvergence:
+    """Non-convergence handling in _adaptive_fine_map (empty_on_nonconvergence)."""
+
+    def _empty_nonconverged(self, tool="susie") -> CredibleSet:
+        """Empty CS with converged=False, mimicking empty_on_nonconvergence=True."""
+        return CredibleSet(
+            tool=tool,
+            parameters={},
+            coverage=0.95,
+            n_cs=0,
+            cs_sizes=[],
+            lead_snps=[],
+            snps=[],
+            pips=pd.Series(dtype=float),
+            converged=False,
+        )
+
+    def _ok_cs(self, n_cs, tool="susie") -> CredibleSet:
+        """Successful credible set with converged=True."""
+        return CredibleSet(
+            tool=tool,
+            parameters={},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[2] * n_cs,
+            lead_snps=[f"s{i}" for i in range(n_cs)],
+            snps=[[f"s{i}"] for i in range(n_cs)],
+            pips=pd.Series({f"s{i}": 0.8 for i in range(n_cs)}),
+            converged=True,
+        )
+
+    def test_nonconverged_initial_then_decrement_succeeds(self):
+        """Initial non-converged → decrement L → smaller L converges with signal."""
+        call_count = 0
+
+        def side_effect(locus, max_causal=5, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if max_causal >= 4:
+                return self._empty_nonconverged()
+            return self._ok_cs(2)
+
+        tool_func = MagicMock(side_effect=side_effect)
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "susie", 5, tool_func, {})
+        assert result.n_cs == 2
+        assert result.converged is True
+        # initial=5 (nc), then phase2: 4 (nc), 3 (ok)
+        assert call_count == 3
+
+    def test_nonconverged_at_all_L_returns_empty(self):
+        """Non-converged at every L from initial down to 1 → empty result."""
+        tool_func = MagicMock(
+            side_effect=lambda *a, **kw: self._empty_nonconverged()
+        )
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "susie", 3, tool_func, {})
+        assert result.n_cs == 0
+        # Phase 1 (L=3) + Phase 2 (L=2, 1) = 3 attempts
+        assert tool_func.call_count == 3
+
+    def test_genuine_zero_n_cs_with_converged_true_does_not_keep_retrying(self):
+        """n_cs=0 with converged=True (no signal) returns at first Phase-2 success."""
+        empty_converged = CredibleSet(
+            tool="susie",
+            parameters={},
+            coverage=0.95,
+            n_cs=0,
+            cs_sizes=[],
+            lead_snps=[],
+            snps=[],
+            pips=pd.Series(dtype=float),
+            converged=True,
+        )
+        tool_func = MagicMock(return_value=empty_converged)
+        locus = MagicMock()
+        result = _adaptive_fine_map(locus, "susie", 3, tool_func, {})
+        assert result.n_cs == 0
+        # Phase 1 + first Phase-2 iteration should suffice (no infinite retry).
+        # Phase 1 (L=3) + Phase 2 (L=2) = 2 calls; Phase 2 returns since converged.
+        assert tool_func.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# TestAdaptiveFineMapMultiNonConvergence
+# ---------------------------------------------------------------------------
+class TestAdaptiveFineMapMultiNonConvergence:
+    """Non-convergence handling in _adaptive_fine_map_multi."""
+
+    def _empty_nonconverged(self, tool="multisusie") -> CredibleSet:
+        return CredibleSet(
+            tool=tool,
+            parameters={},
+            coverage=0.95,
+            n_cs=0,
+            cs_sizes=[],
+            lead_snps=[],
+            snps=[],
+            pips=pd.Series(dtype=float),
+            converged=False,
+        )
+
+    def _ok_cs(self, n_cs, tool="multisusie") -> CredibleSet:
+        return CredibleSet(
+            tool=tool,
+            parameters={},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[2] * n_cs,
+            lead_snps=[f"s{i}" for i in range(n_cs)],
+            snps=[[f"s{i}"] for i in range(n_cs)],
+            pips=pd.Series({f"s{i}": 0.8 for i in range(n_cs)}),
+            converged=True,
+        )
+
+    def test_nonconverged_initial_then_decrement_succeeds(self):
+        """Initial non-converged → decrement L → smaller L converges."""
+
+        def side_effect(locus_set, max_causal=5, **kwargs):
+            if max_causal >= 4:
+                return self._empty_nonconverged()
+            return self._ok_cs(2)
+
+        tool_func = MagicMock(side_effect=side_effect)
+        locus_set = MagicMock()
+        locus_set.n_loci = 2
+        result = _adaptive_fine_map_multi(
+            locus_set, "multisusie", 5, tool_func, {}
+        )
+        assert result.n_cs == 2
+        assert result.converged is True
+
+    def test_nonconverged_at_all_L_returns_empty(self):
+        """Non-converged at every L → return empty result."""
+        tool_func = MagicMock(
+            side_effect=lambda *a, **kw: self._empty_nonconverged()
+        )
+        locus_set = MagicMock()
+        locus_set.n_loci = 2
+        result = _adaptive_fine_map_multi(
+            locus_set, "multisusie", 3, tool_func, {}
+        )
+        assert result.n_cs == 0
+
+
+# ---------------------------------------------------------------------------
+# TestFineMapInjectsEmptyOnNonconvergence
+# ---------------------------------------------------------------------------
+class TestFineMapInjectsEmptyOnNonconvergence:
+    """fine_map should inject empty_on_nonconvergence=True when adaptive_max_causal=True."""
+
+    def _make_cs(self, n_cs=1, tool="susie") -> CredibleSet:
+        snp_ids = ["1-100-A-G", "1-200-A-G", "1-300-A-G"]
+        return CredibleSet(
+            tool=tool,
+            parameters={"max_causal": 5},
+            coverage=0.95,
+            n_cs=n_cs,
+            cs_sizes=[2] * n_cs,
+            lead_snps=snp_ids[:n_cs],
+            snps=[snp_ids[:2]] * n_cs,
+            pips=pd.Series({"1-100-A-G": 0.8, "1-200-A-G": 0.15, "1-300-A-G": 0.05}),
+            converged=True,
+        )
+
+    @patch("credtools.credtools._adaptive_fine_map")
+    def test_susie_adaptive_injects_empty_on_nonconvergence(self, mock_adaptive):
+        """Test that susie + adaptive injects empty_on_nonconvergence=True."""
+        mock_adaptive.return_value = self._make_cs(2, "susie")
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        fine_map(
+            locus_set,
+            tool="susie",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=True,
+        )
+        args, kwargs = mock_adaptive.call_args
+        params = args[4] if len(args) > 4 else kwargs.get("params")
+        assert params.get("empty_on_nonconvergence") is True
+
+    @patch("credtools.credtools._adaptive_fine_map")
+    def test_rsparsepro_adaptive_injects_empty_on_nonconvergence(self, mock_adaptive):
+        """Test that rsparsepro + adaptive injects empty_on_nonconvergence=True."""
+        mock_adaptive.return_value = self._make_cs(2, "rsparsepro")
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        fine_map(
+            locus_set,
+            tool="rsparsepro",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=True,
+        )
+        args, kwargs = mock_adaptive.call_args
+        params = args[4] if len(args) > 4 else kwargs.get("params")
+        assert params.get("empty_on_nonconvergence") is True
+
+    @patch("credtools.credtools._adaptive_fine_map_multi")
+    def test_multisusie_adaptive_injects_empty_on_nonconvergence(self, mock_adaptive):
+        """Test that multisusie + adaptive injects empty_on_nonconvergence=True."""
+        mock_adaptive.return_value = self._make_cs(2, "multisusie")
+        locus1 = _make_test_locus("EUR", "c1", 1.0)
+        locus2 = _make_test_locus("AFR", "c2", 0.8)
+        locus_set = LocusSet([locus1, locus2])
+        fine_map(
+            locus_set,
+            tool="multisusie",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=True,
+        )
+        args, kwargs = mock_adaptive.call_args
+        params = args[4] if len(args) > 4 else kwargs.get("params")
+        assert params.get("empty_on_nonconvergence") is True
+
+    @patch("credtools.credtools._adaptive_fine_map_multi")
+    def test_mesusie_adaptive_injects_empty_on_nonconvergence(self, mock_adaptive):
+        """Test that mesusie + adaptive injects empty_on_nonconvergence=True."""
+        mock_adaptive.return_value = self._make_cs(2, "mesusie")
+        locus1 = _make_test_locus("EUR", "c1", 1.0)
+        locus2 = _make_test_locus("AFR", "c2", 0.8)
+        locus_set = LocusSet([locus1, locus2])
+        fine_map(
+            locus_set,
+            tool="mesusie",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=True,
+        )
+        args, kwargs = mock_adaptive.call_args
+        params = args[4] if len(args) > 4 else kwargs.get("params")
+        assert params.get("empty_on_nonconvergence") is True
+
+    @patch("credtools.credtools.run_susie")
+    def test_susie_non_adaptive_does_not_inject(self, mock_run):
+        """Test that susie + non-adaptive does NOT inject empty_on_nonconvergence."""
+        mock_run.return_value = self._make_cs(2, "susie")
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        fine_map(
+            locus_set,
+            tool="susie",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=False,
+        )
+        call_kwargs = mock_run.call_args[1]
+        assert "empty_on_nonconvergence" not in call_kwargs
+
+    @patch("credtools.credtools._adaptive_fine_map")
+    def test_user_override_empty_on_nonconvergence_false_respected(self, mock_adaptive):
+        """User-provided empty_on_nonconvergence=False overrides adaptive default."""
+        mock_adaptive.return_value = self._make_cs(2, "susie")
+        locus = _make_test_locus("EUR", "c1", 1.0)
+        locus_set = LocusSet([locus])
+        fine_map(
+            locus_set,
+            tool="susie",
+            max_causal=5,
+            set_L_by_cojo=False,
+            adaptive_max_causal=True,
+            empty_on_nonconvergence=False,
+        )
+        args, kwargs = mock_adaptive.call_args
+        params = args[4] if len(args) > 4 else kwargs.get("params")
+        assert params.get("empty_on_nonconvergence") is False

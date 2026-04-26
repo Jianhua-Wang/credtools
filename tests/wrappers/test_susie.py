@@ -24,6 +24,25 @@ def _mock_susie_rss_with_cs(**kwargs):
             "cs": {"L1": [0, 1, 2]},
             "purity": {"min_abs_corr": [0.85]},
         },
+        "converged": True,
+        "niter": 12,
+    }
+
+
+def _mock_susie_rss_not_converged(**kwargs):
+    """Mock susie_rss that did not converge but still returned a CS."""
+    n = len(kwargs["bhat"])
+    pip = np.zeros(n)
+    pip[0] = 0.6
+    pip[1] = 0.3
+    return {
+        "pip": pip,
+        "sets": {
+            "cs": {"L1": [0, 1]},
+            "purity": {"min_abs_corr": [0.5]},
+        },
+        "converged": False,
+        "niter": 100,
     }
 
 
@@ -181,3 +200,60 @@ class TestRunSusieCS:
         cs_snps = result.snps[0]
         lead_snp = result.lead_snps[0]
         assert lead_snp == result.pips[cs_snps].idxmax()
+
+
+class TestRunSusieConvergence:
+    """Tests for convergence reporting and empty-on-nonconvergence."""
+
+    def test_converged_propagated_when_true(self, locus_significant, monkeypatch):
+        monkeypatch.setattr(
+            "credtools.wrappers.susie.susie_rss", _mock_susie_rss_with_cs
+        )
+        result = run_susie(locus_significant)
+        assert result.converged is True
+        assert result.n_iter == 12
+
+    def test_converged_propagated_when_false(self, locus_significant, monkeypatch):
+        """Without empty_on_nonconvergence the CS is preserved but converged=False."""
+        monkeypatch.setattr(
+            "credtools.wrappers.susie.susie_rss", _mock_susie_rss_not_converged
+        )
+        result = run_susie(locus_significant)
+        assert result.converged is False
+        assert result.n_iter == 100
+        assert result.n_cs == 1  # CS still returned by default
+
+    def test_empty_on_nonconvergence_zeros_cs(
+        self, locus_significant, monkeypatch
+    ):
+        """With empty_on_nonconvergence=True, non-converged run returns n_cs=0."""
+        monkeypatch.setattr(
+            "credtools.wrappers.susie.susie_rss", _mock_susie_rss_not_converged
+        )
+        result = run_susie(
+            locus_significant, empty_on_nonconvergence=True
+        )
+        assert result.converged is False
+        assert result.n_cs == 0
+        assert result.snps == []
+        assert result.lead_snps == []
+        assert (result.pips == 0).all()
+
+    def test_empty_on_nonconvergence_keeps_converged_cs(
+        self, locus_significant, monkeypatch
+    ):
+        """When converged=True the flag has no effect — CS preserved."""
+        monkeypatch.setattr(
+            "credtools.wrappers.susie.susie_rss", _mock_susie_rss_with_cs
+        )
+        result = run_susie(
+            locus_significant, empty_on_nonconvergence=True
+        )
+        assert result.converged is True
+        assert result.n_cs == 1
+
+    def test_no_significant_keeps_converged_none(self, locus_no_significant):
+        """Early-return path (no significant SNPs) leaves converged=None."""
+        result = run_susie(locus_no_significant)
+        assert result.converged is None
+        assert result.n_iter is None

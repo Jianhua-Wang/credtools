@@ -22,6 +22,8 @@ def _make_credset(
     tool="susie",
     purity=None,
     per_locus_results=None,
+    converged=None,
+    n_iter=None,
 ):
     """Create a CredibleSet for testing."""
     snps = [[f"snp_{i}_{j}" for j in range(3)] for i in range(n_cs)]
@@ -43,6 +45,8 @@ def _make_credset(
         pips=pips,
         purity=purity,
         per_locus_results=per_locus_results,
+        converged=converged,
+        n_iter=n_iter,
     )
 
 
@@ -88,6 +92,63 @@ class TestCredibleSetCopy:
 
 
 # ---------------------------------------------------------------------------
+# TestCredibleSetConvergence
+# ---------------------------------------------------------------------------
+class TestCredibleSetConvergence:
+    """Tests for converged / n_iter fields on CredibleSet."""
+
+    def test_default_converged_is_none(self):
+        cs = _make_credset()
+        assert cs.converged is None
+        assert cs.n_iter is None
+
+    def test_converged_true_with_iter(self):
+        cs = _make_credset(converged=True, n_iter=42)
+        assert cs.converged is True
+        assert cs.n_iter == 42
+
+    def test_converged_false_with_iter(self):
+        cs = _make_credset(converged=False, n_iter=100)
+        assert cs.converged is False
+        assert cs.n_iter == 100
+
+    def test_copy_preserves_convergence(self):
+        cs = _make_credset(converged=False, n_iter=100)
+        copied = cs.copy()
+        assert copied.converged is False
+        assert copied.n_iter == 100
+
+    def test_to_dict_includes_convergence(self):
+        cs = _make_credset(converged=False, n_iter=99)
+        d = cs.to_dict()
+        assert d["converged"] is False
+        assert d["n_iter"] == 99
+
+    def test_to_dict_omits_when_none(self):
+        cs = _make_credset()
+        d = cs.to_dict()
+        assert d["converged"] is None
+        assert d["n_iter"] is None
+
+    def test_from_dict_roundtrip_convergence(self):
+        cs = _make_credset(converged=True, n_iter=15)
+        d = cs.to_dict()
+        restored = CredibleSet.from_dict(d, cs.pips)
+        assert restored.converged is True
+        assert restored.n_iter == 15
+
+    def test_from_dict_legacy_dict_without_keys(self):
+        """from_dict must tolerate older payloads missing converged/n_iter."""
+        cs = _make_credset()
+        d = cs.to_dict()
+        d.pop("converged")
+        d.pop("n_iter")
+        restored = CredibleSet.from_dict(d, cs.pips)
+        assert restored.converged is None
+        assert restored.n_iter is None
+
+
+# ---------------------------------------------------------------------------
 # TestCredibleSetToDict
 # ---------------------------------------------------------------------------
 class TestCredibleSetToDict:
@@ -105,6 +166,8 @@ class TestCredibleSetToDict:
             "cs_sizes",
             "parameters",
             "purity",
+            "converged",
+            "n_iter",
         }
         assert set(d.keys()) == expected_keys
 

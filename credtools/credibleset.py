@@ -72,6 +72,8 @@ class CredibleSet:
         pips: pd.Series,
         per_locus_results: Optional[Dict[str, "CredibleSet"]] = None,
         purity: Optional[List[Optional[float]]] = None,
+        converged: Optional[bool] = None,
+        n_iter: Optional[int] = None,
     ) -> None:
         """
         Initialize CredibleSet object.
@@ -100,6 +102,13 @@ class CredibleSet:
             List of purity values for each credible set. Purity is the minimum
             absolute LD R value between all SNP pairs in a credible set.
             None if LD matrix is not available.
+        converged : Optional[bool], optional
+            Whether the underlying iterative algorithm converged. None when
+            the producing tool is non-iterative or convergence is not
+            tracked (e.g., ABF, FINEMAP).
+        n_iter : Optional[int], optional
+            Number of iterations performed by the underlying algorithm.
+            None when not tracked.
         """
         self._tool = tool
         self._parameters = parameters
@@ -111,7 +120,8 @@ class CredibleSet:
         self._pips = pips
         self._per_locus_results: Dict[str, "CredibleSet"] = per_locus_results or {}
         self._purity = purity
-        # TODO: add results data like, if it is converged, etc.
+        self._converged = converged
+        self._n_iter = n_iter
 
     @property
     def tool(self) -> str:
@@ -164,6 +174,16 @@ class CredibleSet:
         """Get the purity values for each credible set."""
         return self._purity
 
+    @property
+    def converged(self) -> Optional[bool]:
+        """Get convergence status of the underlying iterative algorithm."""
+        return self._converged
+
+    @property
+    def n_iter(self) -> Optional[int]:
+        """Get the number of iterations performed by the underlying algorithm."""
+        return self._n_iter
+
     def set_per_locus_results(
         self, per_locus_results: Dict[str, "CredibleSet"]
     ) -> None:
@@ -203,6 +223,8 @@ class CredibleSet:
             snps=[list(snp) for snp in self.snps],
             pips=self.pips.copy(),
             purity=self.purity.copy() if self.purity is not None else None,
+            converged=self.converged,
+            n_iter=self.n_iter,
         )
         if self.per_locus_results:
             per_locus_copy = {}
@@ -232,6 +254,8 @@ class CredibleSet:
             "cs_sizes": self.cs_sizes,
             "parameters": self.parameters,
             "purity": self.purity,
+            "converged": self.converged,
+            "n_iter": self.n_iter,
         }
 
     def create_enhanced_pips_df(self, locus_set) -> pd.DataFrame:
@@ -417,6 +441,8 @@ class CredibleSet:
             snps=data["snps"],
             pips=pips,
             purity=data.get("purity"),
+            converged=data.get("converged"),
+            n_iter=data.get("n_iter"),
         )
 
 

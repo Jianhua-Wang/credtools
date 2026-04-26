@@ -32,6 +32,7 @@ def run_multisusie(
     max_iter: int = 100,
     tol: float = 1e-3,
     purity: float = 0.1,
+    empty_on_nonconvergence: bool = False,
 ) -> CredibleSet:
     """
     Run MultiSuSiE for multi-ancestry fine-mapping analysis.
@@ -106,6 +107,10 @@ def run_multisusie(
         Minimum purity threshold for credible sets, by default 0.1.
         Credible sets with purity below this threshold will be filtered out by MultiSuSiE.
         The purity values are calculated and stored in the CredibleSet object.
+    empty_on_nonconvergence : bool, optional
+        When True and the IBSS algorithm did not converge, return an empty
+        credible set (``n_cs=0``, all PIPs zeroed) instead of the unreliable
+        partially-fit results. Defaults to False (preserve legacy behavior).
 
     Returns
     -------
@@ -224,6 +229,7 @@ def run_multisusie(
         "max_iter": max_iter,
         "tol": tol,
         "purity": purity,
+        "empty_on_nonconvergence": empty_on_nonconvergence,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
 
@@ -303,6 +309,30 @@ def run_multisusie(
         multi_population_maf_thresh=0,
         maf_list=None,
     )
+    converged = getattr(ss_fit, "converged", None)
+    n_iter = getattr(ss_fit, "niter", None)
+    if converged is False and empty_on_nonconvergence:
+        logger.error(
+            "MultiSuSiE did not converge in %d iterations; returning empty "
+            "credible set because empty_on_nonconvergence=True.",
+            max_iter,
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(all_variants), dtype=float),
+            index=all_variants[ColName.SNPID].tolist(),
+        )
+        return CredibleSet(
+            tool=Method.MULTISUSIE,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+            converged=False,
+            n_iter=n_iter,
+        )
     pip = pd.Series(index=all_variants[ColName.SNPID].tolist(), data=ss_fit.pip)
     cs_snp = []
     # Extract purity values from MultiSuSiE results
@@ -340,4 +370,6 @@ def run_multisusie(
         pips=pip,
         parameters=parameters,
         purity=purity_list if len(purity_list) > 0 else None,
+        converged=converged,
+        n_iter=n_iter,
     )

@@ -13,7 +13,13 @@ from credtools.wrappers.multisusie import run_multisusie
 from .conftest import _make_locus, _make_locus_set
 
 
-def _make_mock_multisusie_rss(n_variants, cs_indices=None, purity_values=None):
+def _make_mock_multisusie_rss(
+    n_variants,
+    cs_indices=None,
+    purity_values=None,
+    converged=True,
+    niter=10,
+):
     """Factory to create mock multisusie_rss functions.
 
     Parameters
@@ -24,6 +30,10 @@ def _make_mock_multisusie_rss(n_variants, cs_indices=None, purity_values=None):
         Credible set variant indices. None for no CS.
     purity_values : list of float or None
         Purity values for each CS.
+    converged : bool
+        Convergence status to expose on the returned object.
+    niter : int
+        Number of iterations to expose on the returned object.
     """
 
     def mock_fn(**kwargs):
@@ -46,6 +56,8 @@ def _make_mock_multisusie_rss(n_variants, cs_indices=None, purity_values=None):
         return SimpleNamespace(
             pip=pip,
             sets=(cs_list, purity_arr, [0.95] * len(cs_list), include_mask),
+            converged=converged,
+            niter=niter,
         )
 
     return mock_fn
@@ -199,6 +211,85 @@ class TestRunMultisusieCS:
                 for snp in snp_list:
                     assert isinstance(snp, str)
                     assert "-" in snp  # SNPID format is "1-BP-A-G"
+
+
+class TestRunMultisusieConvergence:
+    """Tests for convergence reporting and empty-on-nonconvergence."""
+
+    def test_converged_propagated_when_true(self, locus_set_two_pop, monkeypatch):
+        n = 20
+        monkeypatch.setattr(
+            "credtools.wrappers.multisusie.multisusie_rss",
+            _make_mock_multisusie_rss(
+                n,
+                cs_indices=[[0, 1]],
+                purity_values=[0.9],
+                converged=True,
+                niter=20,
+            ),
+        )
+        result = run_multisusie(locus_set_two_pop)
+        assert result.converged is True
+        assert result.n_iter == 20
+
+    def test_converged_propagated_when_false(self, locus_set_two_pop, monkeypatch):
+        n = 20
+        monkeypatch.setattr(
+            "credtools.wrappers.multisusie.multisusie_rss",
+            _make_mock_multisusie_rss(
+                n,
+                cs_indices=[[0, 1]],
+                purity_values=[0.5],
+                converged=False,
+                niter=100,
+            ),
+        )
+        result = run_multisusie(locus_set_two_pop)
+        assert result.converged is False
+        assert result.n_iter == 100
+        assert result.n_cs == 1  # CS preserved by default
+
+    def test_empty_on_nonconvergence_zeros_cs(
+        self, locus_set_two_pop, monkeypatch
+    ):
+        n = 20
+        monkeypatch.setattr(
+            "credtools.wrappers.multisusie.multisusie_rss",
+            _make_mock_multisusie_rss(
+                n,
+                cs_indices=[[0, 1]],
+                purity_values=[0.5],
+                converged=False,
+                niter=100,
+            ),
+        )
+        result = run_multisusie(
+            locus_set_two_pop, empty_on_nonconvergence=True
+        )
+        assert result.converged is False
+        assert result.n_cs == 0
+        assert result.snps == []
+        assert (result.pips == 0).all()
+
+    def test_empty_on_nonconvergence_keeps_converged_cs(
+        self, locus_set_two_pop, monkeypatch
+    ):
+        n = 20
+        monkeypatch.setattr(
+            "credtools.wrappers.multisusie.multisusie_rss",
+            _make_mock_multisusie_rss(
+                n,
+                cs_indices=[[0, 1]],
+                purity_values=[0.9],
+                converged=True,
+                niter=10,
+            ),
+        )
+        result = run_multisusie(
+            locus_set_two_pop, empty_on_nonconvergence=True
+        )
+        assert result.converged is True
+        assert result.n_cs == 1
 
 
 class TestRunMultisusieThreePop:

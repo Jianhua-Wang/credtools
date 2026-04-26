@@ -19,6 +19,7 @@ def _make_mock_mesusie_subprocess(
     n_cs=1,
     has_purity=True,
     no_cs=False,
+    converged=True,
 ):
     """Create a mock subprocess.run that writes MESuSiE output files.
 
@@ -102,7 +103,7 @@ def _make_mock_mesusie_subprocess(
 
         # Write converged file
         with open(f"{temp_dir}/mesusie_converged.txt", "w") as f:
-            f.write("TRUE")
+            f.write("TRUE" if converged else "FALSE")
 
         return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
 
@@ -287,6 +288,50 @@ class TestRunMesusieLeadSNP:
             cs_snps = result.snps[0]
             lead = result.lead_snps[0]
             assert lead == result.pips[result.pips.index.isin(cs_snps)].idxmax()
+
+
+class TestRunMesusieConvergence:
+    """Tests for convergence reporting and empty-on-nonconvergence."""
+
+    def test_converged_propagated_when_true(self, locus_set_two_pop, monkeypatch):
+        snpids = locus_set_two_pop.loci[0].sumstats[ColName.SNPID].tolist()
+        monkeypatch.setattr(
+            "credtools.wrappers.mesusie.subprocess.run",
+            _make_mock_mesusie_subprocess(snpids, n_cs=1, converged=True),
+        )
+        monkeypatch.setattr(
+            "credtools.wrappers.mesusie._check_r_and_mesusie", lambda: None
+        )
+        result = run_mesusie(locus_set_two_pop)
+        assert result.converged is True
+
+    def test_converged_propagated_when_false(self, locus_set_two_pop, monkeypatch):
+        snpids = locus_set_two_pop.loci[0].sumstats[ColName.SNPID].tolist()
+        monkeypatch.setattr(
+            "credtools.wrappers.mesusie.subprocess.run",
+            _make_mock_mesusie_subprocess(snpids, n_cs=1, converged=False),
+        )
+        monkeypatch.setattr(
+            "credtools.wrappers.mesusie._check_r_and_mesusie", lambda: None
+        )
+        result = run_mesusie(locus_set_two_pop)
+        assert result.converged is False
+        assert result.n_cs == 1  # CS preserved by default
+
+    def test_empty_on_nonconvergence_zeros_cs(self, locus_set_two_pop, monkeypatch):
+        snpids = locus_set_two_pop.loci[0].sumstats[ColName.SNPID].tolist()
+        monkeypatch.setattr(
+            "credtools.wrappers.mesusie.subprocess.run",
+            _make_mock_mesusie_subprocess(snpids, n_cs=1, converged=False),
+        )
+        monkeypatch.setattr(
+            "credtools.wrappers.mesusie._check_r_and_mesusie", lambda: None
+        )
+        result = run_mesusie(locus_set_two_pop, empty_on_nonconvergence=True)
+        assert result.converged is False
+        assert result.n_cs == 0
+        assert result.snps == []
+        assert (result.pips == 0).all()
 
 
 class TestRunMesusieErrorHandling:

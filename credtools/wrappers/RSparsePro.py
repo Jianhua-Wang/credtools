@@ -421,6 +421,7 @@ def adaptive_train(
     Dict[int, np.ndarray],
     np.ndarray,
     np.ndarray,
+    bool,
 ]:
     """
     Adaptively train the RSparsePro model with error parameter optimization.
@@ -468,6 +469,8 @@ def adaptive_train(
         Posterior inclusion probabilities for all variants.
     ztilde : np.ndarray
         Corrected effect size estimates.
+    converged : bool
+        Convergence status of the final fitted model.
 
     Notes
     -----
@@ -522,7 +525,7 @@ def adaptive_train(
     ztilde = model.get_ztilde()
     # resz = model.get_resz(zscore, ld, eff)
     PIP = model.get_PIP()
-    return eff, eff_gamma, eff_mu, PIP, ztilde  # resz
+    return eff, eff_gamma, eff_mu, PIP, ztilde, mc
 
 
 def rsparsepro_main(
@@ -581,7 +584,7 @@ def rsparsepro_main(
         - z_estimated: Corrected Z-score estimates
         - cs: Credible set assignment (0 for not in any set)
     """
-    eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+    eff, eff_gamma, eff_mu, PIP, ztilde, converged = adaptive_train(
         zfile["Z"].to_numpy(),
         ld,
         K,
@@ -605,6 +608,7 @@ def rsparsepro_main(
         logger.info(f"variant probabilities for this effect group: {eff_gamma[e]}")
         logger.info(f"zscore for this effect group: {eff_mu[e]}\n")
         zfile.loc[list(eff[e]), "cs"] = e + 1
+    zfile.attrs["converged"] = bool(converged)
     # zfile.to_csv("{}.rsparsepro.txt".format(save), sep="\t", header=True, index=False)
     return zfile
 
@@ -622,6 +626,7 @@ def run_rsparsepro(
     varemax: float = 100.0,
     varemin: float = 1e-3,
     significant_threshold: float = 5e-8,
+    empty_on_nonconvergence: bool = False,
 ) -> CredibleSet:
     """
     Run RSparsePro fine-mapping analysis on a genomic locus.
@@ -672,6 +677,11 @@ def run_rsparsepro(
         Minimum p-value required for a variant to be considered significant. If no
         variants cross this threshold, returns an empty credible set with zero
         posterior probabilities. Defaults to 5e-8.
+    empty_on_nonconvergence : bool, optional
+        When True and the adaptive RSparsePro algorithm did not converge, return
+        an empty credible set (``n_cs=0``, all PIPs zeroed) instead of the
+        unreliable partially-fit results. Defaults to False (preserve legacy
+        behavior).
 
     Returns
     -------
@@ -779,6 +789,7 @@ def run_rsparsepro(
         "varemax": varemax,
         "varemin": varemin,
         "significant_threshold": significant_threshold,
+        "empty_on_nonconvergence": empty_on_nonconvergence,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
     if not (locus.sumstats[ColName.P] <= significant_threshold).any():
@@ -820,6 +831,34 @@ def run_rsparsepro(
         varemin=varemin,
     )
 
+    converged_attr = zfile.attrs.get("converged")
+    converged: Optional[bool] = (
+        bool(converged_attr) if converged_attr is not None else None
+    )
+    if converged is False:
+        logger.warning("RSparsePro did not converge. Results may be unreliable.")
+
+    if converged is False and empty_on_nonconvergence:
+        logger.error(
+            "RSparsePro did not converge; returning empty credible set because "
+            "empty_on_nonconvergence=True."
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(zfile), dtype=float),
+            index=zfile["SNPID"].to_numpy().tolist(),
+        )
+        return CredibleSet(
+            tool=Method.RSparsePro,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+            converged=False,
+        )
+
     pips = pd.Series(data=zfile["PIP"].to_numpy(), index=zfile["SNPID"].to_numpy())
     cs_snps: List[List[str]] = []
     lead_snps: List[str] = []
@@ -847,4 +886,5 @@ def run_rsparsepro(
         pips=pips,
         parameters=parameters,
         purity=purity,
+        converged=converged,
     )

@@ -316,6 +316,62 @@ class TestRunRsparsepro:
         assert result.parameters["coverage"] == 0.99
 
 
+def _mock_rsparsepro_main_with_converged(converged: bool):
+    """Factory: mock rsparsepro_main that sets df.attrs['converged']."""
+
+    def _inner(zfile, ld, **kwargs):
+        n = len(zfile)
+        zfile = zfile.copy()
+        pip_vals = np.zeros(n)
+        pip_vals[0] = 0.7
+        pip_vals[1] = 0.2
+        zfile["PIP"] = pip_vals
+        zfile["z_estimated"] = np.zeros(n)
+        zfile["cs"] = 0
+        zfile.loc[0, "cs"] = 1
+        zfile.loc[1, "cs"] = 1
+        zfile.attrs["converged"] = converged
+        return zfile
+
+    return _inner
+
+
+class TestRunRsparseproConvergence:
+    """Tests for convergence reporting and empty-on-nonconvergence."""
+
+    def test_converged_propagated_when_true(self, locus_significant, monkeypatch):
+        monkeypatch.setattr(
+            "credtools.wrappers.RSparsePro.rsparsepro_main",
+            _mock_rsparsepro_main_with_converged(True),
+        )
+        result = run_rsparsepro(locus_significant)
+        assert result.converged is True
+
+    def test_converged_propagated_when_false(self, locus_significant, monkeypatch):
+        monkeypatch.setattr(
+            "credtools.wrappers.RSparsePro.rsparsepro_main",
+            _mock_rsparsepro_main_with_converged(False),
+        )
+        result = run_rsparsepro(locus_significant)
+        assert result.converged is False
+        assert result.n_cs == 1  # CS preserved by default
+
+    def test_empty_on_nonconvergence_zeros_cs(
+        self, locus_significant, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "credtools.wrappers.RSparsePro.rsparsepro_main",
+            _mock_rsparsepro_main_with_converged(False),
+        )
+        result = run_rsparsepro(
+            locus_significant, empty_on_nonconvergence=True
+        )
+        assert result.converged is False
+        assert result.n_cs == 0
+        assert result.snps == []
+        assert (result.pips == 0).all()
+
+
 # ============================================================
 # Helpers for synthetic data used in adaptive_train / rsparsepro_main tests
 # ============================================================
@@ -409,7 +465,7 @@ class TestAdaptiveTrain:
         zscore = rng.normal(0, 0.3, size=n)
         zscore[0] = 5.0
 
-        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+        eff, eff_gamma, eff_mu, PIP, ztilde, converged = adaptive_train(
             zscore=zscore,
             ld=ld,
             K=3,
@@ -428,6 +484,7 @@ class TestAdaptiveTrain:
         assert ztilde.shape == (n,)
         # With identity LD and one strong signal the model should find <= 1 group
         assert len(eff) <= 1
+        assert isinstance(converged, bool)
 
     def test_vare_increments_before_converging(self):
         """Verify vare increments when initial pass fails quality constraints.
@@ -446,7 +503,7 @@ class TestAdaptiveTrain:
         zscore[0] = 5.5
         zscore[3] = 4.0
 
-        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+        eff, eff_gamma, eff_mu, PIP, ztilde, _ = adaptive_train(
             zscore=zscore,
             ld=ld,
             K=3,
@@ -480,7 +537,7 @@ class TestAdaptiveTrain:
         zscore[0] = 6.0
         zscore[3] = 4.5
 
-        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+        eff, eff_gamma, eff_mu, PIP, ztilde, _ = adaptive_train(
             zscore=zscore,
             ld=ld,
             K=4,
@@ -512,7 +569,7 @@ class TestAdaptiveTrain:
         ld = np.eye(n)
         zscore = np.array([5.0, 0.1, 0.05, -0.1, 0.02])
 
-        eff, eff_gamma, eff_mu, PIP, ztilde = adaptive_train(
+        eff, eff_gamma, eff_mu, PIP, ztilde, _ = adaptive_train(
             zscore=zscore,
             ld=ld,
             K=5,

@@ -56,6 +56,7 @@ def run_mesusie(
     tol: float = 1e-3,
     purity: float = 0.0,
     estimate_residual_variance: bool = False,
+    empty_on_nonconvergence: bool = False,
     temp_dir: Optional[str] = None,
 ) -> CredibleSet:
     """
@@ -82,6 +83,10 @@ def run_mesusie(
         Minimum purity threshold for credible sets, by default 0.0.
     estimate_residual_variance : bool, optional
         Whether to estimate residual variance, by default False.
+    empty_on_nonconvergence : bool, optional
+        When True and the IBSS algorithm did not converge, return an empty
+        credible set (``n_cs=0``, all PIPs zeroed) instead of the unreliable
+        partially-fit results. Defaults to False (preserve legacy behavior).
     temp_dir : Optional[str], optional
         Temporary directory for intermediate files, by default None.
 
@@ -106,6 +111,7 @@ def run_mesusie(
         "tol": tol,
         "purity": purity,
         "estimate_residual_variance": estimate_residual_variance,
+        "empty_on_nonconvergence": empty_on_nonconvergence,
     }
     logger.info(f"Parameters: {parameters}")
 
@@ -227,11 +233,34 @@ def run_mesusie(
 
     # Read convergence status
     converged_file = f"{temp_dir}/mesusie_converged.txt"
+    converged: Optional[bool] = None
     if os.path.exists(converged_file):
         with open(converged_file) as f:
             converged = f.read().strip() == "TRUE"
         if not converged:
             logger.warning("MESuSiE did not converge. Results may be unreliable.")
+
+    if converged is False and empty_on_nonconvergence:
+        logger.error(
+            "MESuSiE did not converge in %d iterations; returning empty "
+            "credible set because empty_on_nonconvergence=True.",
+            max_iter,
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(common_snps_list), dtype=float),
+            index=common_snps_list,
+        )
+        return CredibleSet(
+            tool=Method.MESUSIE,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+            converged=False,
+        )
 
     # Build PIP series
     pip = pd.Series(
@@ -283,4 +312,5 @@ def run_mesusie(
         pips=pip,
         parameters=parameters,
         purity=purity_list if len(purity_list) > 0 else None,
+        converged=converged,
     )

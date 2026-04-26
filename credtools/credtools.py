@@ -99,6 +99,28 @@ def _is_success(credible_set: CredibleSet, max_causal: int) -> bool:
     return 0 < credible_set.n_cs < max_causal
 
 
+def _is_nonconverged_empty(credible_set: CredibleSet) -> bool:
+    """
+    Detect a non-converged empty credible set.
+
+    Wrappers invoked with ``empty_on_nonconvergence=True`` return ``n_cs=0`` and
+    ``converged=False`` when the underlying algorithm fails to converge. This
+    helper distinguishes that retryable failure from a genuine no-signal result
+    (n_cs=0 with converged=True or unknown).
+
+    Parameters
+    ----------
+    credible_set : CredibleSet
+        The result from a fine-mapping tool.
+
+    Returns
+    -------
+    bool
+        True if ``n_cs == 0`` and ``converged is False``, False otherwise.
+    """
+    return credible_set.n_cs == 0 and credible_set.converged is False
+
+
 def _empty_credible_set(tool: str) -> CredibleSet:
     """
     Create an empty CredibleSet when all attempts fail.
@@ -215,6 +237,12 @@ def _adaptive_fine_map(
         logger.info(f"Trying reduced max_causal={max_causal}")
         try:
             result = _run(max_causal)
+            if _is_nonconverged_empty(result):
+                logger.info(
+                    f"Non-converged at max_causal={max_causal}, decreasing further"
+                )
+                max_causal -= 1
+                continue
             logger.info(
                 f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
             )
@@ -324,6 +352,12 @@ def _adaptive_fine_map_multi(
         logger.info(f"Trying reduced max_causal={max_causal}")
         try:
             result = _run(max_causal)
+            if _is_nonconverged_empty(result):
+                logger.info(
+                    f"Non-converged at max_causal={max_causal}, decreasing further"
+                )
+                max_causal -= 1
+                continue
             logger.info(
                 f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
             )
@@ -417,6 +451,12 @@ def fine_map(
         )
 
     kwargs.setdefault("significant_threshold", significant_threshold)
+
+    # When adaptive_max_causal is enabled, default empty_on_nonconvergence=True so
+    # non-converged runs return n_cs=0 and naturally trigger Phase-2 L decrement.
+    # User-provided empty_on_nonconvergence overrides this default.
+    if adaptive_max_causal:
+        kwargs.setdefault("empty_on_nonconvergence", True)
 
     # Extract purity parameter for centralized filtering
     purity_threshold = kwargs.get("purity", 0.0)

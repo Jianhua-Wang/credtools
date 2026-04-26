@@ -24,6 +24,7 @@ def run_susie(
     purity: float = 0.0,
     convergence_tol: float = 1e-3,
     significant_threshold: float = 5e-8,
+    empty_on_nonconvergence: bool = False,
 ) -> CredibleSet:
     """
     Run SuSiE (Sum of Single Effects) fine-mapping with shotgun stochastic search.
@@ -63,6 +64,12 @@ def run_susie(
         Minimum p-value required for a variant to be considered significant. If no
         variants cross this threshold, the function returns an empty credible set
         with all posterior probabilities set to zero. Defaults to 5e-8.
+        Useful for adaptive max_causal pipelines: the Phase-2 decrement loop
+        treats ``n_cs == 0`` as a signal to retry with smaller L.
+    empty_on_nonconvergence : bool, optional
+        When True and the IBSS algorithm did not converge, return an empty
+        credible set (``n_cs=0``, all PIPs zeroed) instead of the unreliable
+        partially-fit results. Defaults to False (preserve legacy behavior).
 
     Returns
     -------
@@ -178,6 +185,7 @@ def run_susie(
         "min_abs_corr": purity,
         "convergence_tol": convergence_tol,
         "significant_threshold": significant_threshold,
+        "empty_on_nonconvergence": empty_on_nonconvergence,
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
     if not (locus.sumstats[ColName.P] <= significant_threshold).any():
@@ -211,6 +219,30 @@ def run_susie(
         min_abs_corr=purity,
         tol=convergence_tol,
     )
+    converged = s.get("converged")
+    n_iter = s.get("niter")
+    if converged is False and empty_on_nonconvergence:
+        logger.error(
+            "SuSiE did not converge in %d iterations; returning empty credible "
+            "set because empty_on_nonconvergence=True.",
+            max_iter,
+        )
+        zero_pips = pd.Series(
+            data=np.zeros(len(locus.sumstats), dtype=float),
+            index=locus.sumstats[ColName.SNPID].tolist(),
+        )
+        return CredibleSet(
+            tool=Method.SUSIE,
+            n_cs=0,
+            coverage=coverage,
+            lead_snps=[],
+            snps=[],
+            cs_sizes=[],
+            pips=zero_pips,
+            parameters=parameters,
+            converged=False,
+            n_iter=n_iter,
+        )
     pip = s["pip"]
     if s["sets"]["cs"]:
         cs_idx = list(s["sets"]["cs"].values())
@@ -242,4 +274,6 @@ def run_susie(
         pips=pips,
         parameters=parameters,
         purity=purity_list,
+        converged=converged,
+        n_iter=n_iter,
     )
