@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.0] (2026-05-04)
+
+### Added
+- New `run_carma` wrapper integrating CARMA (Yang et al., Nat. Genet. 2023), an R-based Bayesian fine-mapping method with explicit modeling of LD / summary-statistic outliers. Calls the upstream `ZikunY/CARMA` R package via `Rscript` subprocess following the MESuSiE wrapper pattern.
+- `Method.CARMA` enum value and `Tool.carma` CLI option, exposing CARMA through both `credtools finemap` and `credtools pipeline`.
+- CLI options `--outlier-switch / --no-outlier-switch` (toggle CARMA's outlier detection step) and `--effect-size-prior / -esp` (`Spike-slab` or `Cauchy`), in a dedicated CARMA help panel.
+- Bundled `credtools/wrappers/carma_wrapper.R` to drive CARMA from Python via temp-dir CSV / binary LD I/O.
+- Detected outliers are persisted in `CredibleSet.parameters["outliers"]` for downstream inspection.
+- Documentation: new CARMA install section in `docs/installation.md` and tool description / parameter table / when-to-use guidance in `docs/finemap.md`.
+- 13 wrapper unit tests in `tests/wrappers/test_carma.py` covering basic call, output structure, parameter passthrough, significance short-circuit, no-CS path, multi-CS path, lead-SNP extraction, outlier reporting, unmatched LD/sumstats path, and error handling (missing R / missing CARMA / subprocess error).
+
 ## [0.6.0] (2026-04-26)
 
 ### Added
