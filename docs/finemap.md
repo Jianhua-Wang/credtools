@@ -81,6 +81,14 @@ Use `credtools finemap` when you have:
 - R-based tool called via subprocess (requires R + MESuSiE package)
 - See [Installation](installation.md#mesusie) for setup instructions
 
+### CARMA
+**CAusal Robust Mapping method with Annotations**
+- Bayesian fine-mapping with explicit modelling of summary-statistic / LD outliers
+- Robust when in-sample LD is unavailable; flags suspect SNPs via Bayes factors
+- Single-input tool, processes each locus independently
+- R-based tool called via subprocess (requires R + CARMA package, MKL recommended)
+- See [Installation](installation.md#carma) for setup instructions
+
 ## How Fine-Mapping Works
 
 ### Automatic Strategy Selection
@@ -178,6 +186,14 @@ credtools finemap qc/passed_loci.txt results/ \
 | `--eps` / `-e` | Convergence criterion | 1e-5 |
 | `--ubound` / `-ub` | Upper bound for convergence | 100000 |
 | `--cthres` / `-ct` | Coverage threshold | 0.7 |
+
+#### CARMA Parameters
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--outlier-switch` / `--no-outlier-switch` | Toggle CARMA outlier detection | True |
+| `--effect-size-prior` / `-esp` | Effect-size prior (`Spike-slab` or `Cauchy`) | Spike-slab |
+
+> CARMA's outlier detection is its key advantage when in-sample LD is unavailable. Disable it with `--no-outlier-switch` only when LD is known to match the GWAS sample exactly.
 
 ## Expected Output
 
@@ -329,6 +345,12 @@ credtools finemap qc/passed_loci.txt finemap_results/ \
 - Multi-ancestry data with potentially distinct causal architectures
 - Need explicit identification of population-specific signals
 - R is available in your environment
+
+### Use CARMA when:
+- Reference-panel LD may not match the GWAS sample (e.g., meta-analysis)
+- You want explicit detection / down-weighting of inconsistent SNPs
+- R is available in your environment
+- High-resolution single-locus fine-mapping with robustness is the priority
 
 ## Interpreting Results
 

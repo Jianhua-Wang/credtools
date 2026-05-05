@@ -210,6 +210,31 @@ Rscript -e 'library(MESuSiE); cat("OK\n")'
 
 If either command fails, CREDTOOLS will provide a clear error message with installation instructions when you try to run MESuSiE.
 
+### CARMA
+
+CARMA (CAusal Robust Mapping method with Annotations) is an R-based fine-mapping
+tool that explicitly models LD / summary-statistic outliers. It requires **R**
+and the **CARMA R package**. The Intel **MKL** library is recommended by the
+upstream authors for performance.
+
+```bash
+# Verify Rscript exists
+which Rscript
+
+# Install CARMA from GitHub (after installing R + devtools as above)
+Rscript -e 'devtools::install_github("ZikunY/CARMA")'
+
+# Verify the install
+Rscript -e 'library(CARMA); cat("CARMA installed successfully\n")'
+```
+
+If you do not have Intel MKL available, CARMA still runs against the default
+BLAS/LAPACK shipped with R, but expect longer per-locus runtimes.
+
+CREDTOOLS calls CARMA via `Rscript`. If either Rscript or the CARMA package is
+missing, the wrapper raises a `FileNotFoundError` with the install command
+above.
+
 
 ## Troubleshooting
 

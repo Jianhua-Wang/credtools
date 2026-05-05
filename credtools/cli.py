@@ -49,6 +49,7 @@ class Tool(str, Enum):
 
     abf = "abf"
     abf_cojo = "abf_cojo"
+    carma = "carma"
     finemap = "finemap"
     rsparsepro = "rsparsepro"
     susie = "susie"
@@ -110,6 +111,7 @@ def setup_file_logging(log_file: Optional[str], verbose: bool = False) -> None:
             "MULTISUSIE",
             "SUSIEX",
             "MESUSIE",
+            "CARMA",
             "ABF",
             "ABF_COJO",
             "Locus",
@@ -158,6 +160,7 @@ def main(
             "MULTISUSIE",
             "SUSIEX",
             "MESUSIE",
+            "CARMA",
             "ABF",
             "ABF_COJO",
             "Locus",
@@ -1256,6 +1259,21 @@ def run_fine_map(
     convergence_tol: float = typer.Option(
         1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."
     ),
+    # CARMA parameters
+    outlier_switch: bool = typer.Option(
+        True,
+        "--outlier-switch/--no-outlier-switch",
+        help="Enable CARMA's outlier detection step that flags SNPs whose marginal "
+        "association is inconsistent with the LD-implied joint model.",
+        rich_help_panel="CARMA",
+    ),
+    effect_size_prior: str = typer.Option(
+        "Spike-slab",
+        "--effect-size-prior",
+        "-esp",
+        help="Effect-size prior for CARMA. One of {Spike-slab, Cauchy}.",
+        rich_help_panel="CARMA",
+    ),
     calculate_lambda_s: bool = typer.Option(
         False,
         "--calculate-lambda-s",
@@ -1348,6 +1366,8 @@ def run_fine_map(
         "purity": purity,
         "convergence_tol": convergence_tol,
         "significant_threshold": significant_threshold,
+        "outlier_switch": outlier_switch,
+        "effect_size_prior": effect_size_prior,
     }
 
     tasks: List[Dict[str, Any]] = []
@@ -1658,6 +1678,21 @@ def run_pipeline(
     tol: float = typer.Option(
         1e-3, "--tol", "-t", help="Convergence tolerance.", rich_help_panel="SuSiEx"
     ),
+    # CARMA parameters
+    outlier_switch: bool = typer.Option(
+        True,
+        "--outlier-switch/--no-outlier-switch",
+        help="Enable CARMA's outlier detection step that flags SNPs whose marginal "
+        "association is inconsistent with the LD-implied joint model.",
+        rich_help_panel="CARMA",
+    ),
+    effect_size_prior: str = typer.Option(
+        "Spike-slab",
+        "--effect-size-prior",
+        "-esp",
+        help="Effect-size prior for CARMA. One of {Spike-slab, Cauchy}.",
+        rich_help_panel="CARMA",
+    ),
     # MULTISUSIE parameters
     rho: float = typer.Option(
         0.75,
@@ -1802,6 +1837,9 @@ def run_pipeline(
                 maxldthres=maxldthres,
                 varemax=varemax,
                 varemin=varemin,
+                # CARMA parameters
+                outlier_switch=outlier_switch,
+                effect_size_prior=effect_size_prior,
                 # SuSiEx parameters
                 mult_step=mult_step,
                 keep_ambig=keep_ambig,

@@ -25,6 +25,7 @@ from credtools.qc import locus_qc
 from credtools.wrappers import (
     run_abf,
     run_abf_cojo,
+    run_carma,
     run_finemap,
     run_mesusie,
     run_multisusie,
@@ -471,13 +472,14 @@ def fine_map(
         kwargs["timeout_minutes"] = timeout_minutes
 
     # Define tool categories
-    single_input_tools = ["abf", "abf_cojo", "finemap", "rsparsepro", "susie"]
+    single_input_tools = ["abf", "abf_cojo", "carma", "finemap", "rsparsepro", "susie"]
     multi_input_tools = ["multisusie", "susiex", "mesusie"]
 
     # Tool function mapping
     tool_func_dict: Dict[str, Callable[..., Any]] = {
         "abf": run_abf,
         "abf_cojo": run_abf_cojo,
+        "carma": run_carma,
         "finemap": run_finemap,
         "rsparsepro": run_rsparsepro,
         "susie": run_susie,
@@ -490,6 +492,7 @@ def fine_map(
     inspect_dict = {
         "abf": set(inspect.signature(run_abf).parameters),
         "abf_cojo": set(inspect.signature(run_abf_cojo).parameters),
+        "carma": set(inspect.signature(run_carma).parameters),
         "finemap": set(inspect.signature(run_finemap).parameters),
         "rsparsepro": set(inspect.signature(run_rsparsepro).parameters),
         "susie": set(inspect.signature(run_susie).parameters),

@@ -65,6 +65,7 @@ class Method:
     SUSIEX = "SUSIEX"
     MULTISUSIE = "MULTISUSIE"
     MESUSIE = "MESUSIE"
+    CARMA = "CARMA"
 
 
 chrom_len = {
