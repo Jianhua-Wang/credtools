@@ -407,6 +407,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#carma" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1316,6 +1325,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#carma" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1523,6 +1541,25 @@
 <a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;library(MESuSiE); cat(&quot;OK\n&quot;)&#39;</span>
 </code></pre></div>
 <p>If either command fails, CREDTOOLS will provide a clear error message with installation instructions when you try to run MESuSiE.</p>
+<h3 id="carma">CARMA<a class="headerlink" href="#carma" title="Permanent link">&para;</a></h3>
+<p>CARMA (CAusal Robust Mapping method with Annotations) is an R-based fine-mapping
+tool that explicitly models LD / summary-statistic outliers. It requires <strong>R</strong>
+and the <strong>CARMA R package</strong>. The Intel <strong>MKL</strong> library is recommended by the
+upstream authors for performance.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Verify Rscript exists</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>which<span class="w"> </span>Rscript
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1"># Install CARMA from GitHub (after installing R + devtools as above)</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;devtools::install_github(&quot;ZikunY/CARMA&quot;)&#39;</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="c1"># Verify the install</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;library(CARMA); cat(&quot;CARMA installed successfully\n&quot;)&#39;</span>
+</code></pre></div>
+<p>If you do not have Intel MKL available, CARMA still runs against the default
+BLAS/LAPACK shipped with R, but expect longer per-locus runtimes.</p>
+<p>CREDTOOLS calls CARMA via <code>Rscript</code>. If either Rscript or the CARMA package is
+missing, the wrapper raises a <code>FileNotFoundError</code> with the install command
+above.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <p>If you encounter any issues during installation, please check:</p>
 <ol>
@@ -1534,7 +1571,7 @@
 <p><strong><code>Rscript not found</code></strong>: Ensure R is installed and <code>Rscript</code> is on your <code>PATH</code>. Run <code>which Rscript</code> to verify.</p>
 <p><strong><code>library 'gfortran' not found</code> (macOS)</strong>: Install gfortran via <code>brew install gcc</code> and create <code>~/.R/Makevars</code> as described above.</p>
 <p><strong><code>ggrepel</code> not available for this version of R</strong>: Install an older compatible version:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">devtools</span><span class="o">::</span><span class="nf">install_version</span><span class="p">(</span><span class="s">&quot;ggrepel&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0.9.6&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">repos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;https://cran.r-project.org&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">devtools</span><span class="o">::</span><span class="nf">install_version</span><span class="p">(</span><span class="s">&quot;ggrepel&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0.9.6&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">repos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;https://cran.r-project.org&quot;</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong><code>RcppArmadillo</code> compilation errors</strong>: Ensure you have a C++ compiler and Fortran compiler available. On macOS, install Xcode Command Line Tools (<code>xcode-select --install</code>) and gcc (<code>brew install gcc</code>).</p>
 <h2 id="links">Links<a class="headerlink" href="#links" title="Permanent link">&para;</a></h2>

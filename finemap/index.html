@@ -596,6 +596,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#carma" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -745,6 +754,15 @@
   <a href="#rsparsepro-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       RSparsePro Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#carma-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA Parameters
     </span>
   </a>
   
@@ -930,6 +948,15 @@
   <a href="#use-mesusie-when" class="md-nav__link">
     <span class="md-ellipsis">
       Use MESuSiE when:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-carma-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use CARMA when:
     </span>
   </a>
   
@@ -1694,6 +1721,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#carma" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1843,6 +1879,15 @@
   <a href="#rsparsepro-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       RSparsePro Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#carma-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      CARMA Parameters
     </span>
   </a>
   
@@ -2033,6 +2078,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#use-carma-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use CARMA when:
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2211,6 +2265,13 @@
 - Classifies each credible set as shared or population-specific
 - R-based tool called via subprocess (requires R + MESuSiE package)
 - See <a href="../installation/#mesusie">Installation</a> for setup instructions</p>
+<h3 id="carma">CARMA<a class="headerlink" href="#carma" title="Permanent link">&para;</a></h3>
+<p><strong>CAusal Robust Mapping method with Annotations</strong>
+- Bayesian fine-mapping with explicit modelling of summary-statistic / LD outliers
+- Robust when in-sample LD is unavailable; flags suspect SNPs via Bayes factors
+- Single-input tool, processes each locus independently
+- R-based tool called via subprocess (requires R + CARMA package, MKL recommended)
+- See <a href="../installation/#carma">Installation</a> for setup instructions</p>
 <h2 id="how-fine-mapping-works">How Fine-Mapping Works<a class="headerlink" href="#how-fine-mapping-works" title="Permanent link">&para;</a></h2>
 <h3 id="automatic-strategy-selection">Automatic Strategy Selection<a class="headerlink" href="#automatic-strategy-selection" title="Permanent link">&para;</a></h3>
 <p>Credtools automatically selects the appropriate fine-mapping strategy based on:</p>
@@ -2428,6 +2489,31 @@
 </tr>
 </tbody>
 </table>
+<h4 id="carma-parameters">CARMA Parameters<a class="headerlink" href="#carma-parameters" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--outlier-switch</code> / <code>--no-outlier-switch</code></td>
+<td>Toggle CARMA outlier detection</td>
+<td>True</td>
+</tr>
+<tr>
+<td><code>--effect-size-prior</code> / <code>-esp</code></td>
+<td>Effect-size prior (<code>Spike-slab</code> or <code>Cauchy</code>)</td>
+<td>Spike-slab</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>CARMA's outlier detection is its key advantage when in-sample LD is unavailable. Disable it with <code>--no-outlier-switch</code> only when LD is known to match the GWAS sample exactly.</p>
+</blockquote>
 <h2 id="expected-output">Expected Output<a class="headerlink" href="#expected-output" title="Permanent link">&para;</a></h2>
 <p>Fine-mapping generates comprehensive results for each locus:</p>
 <h3 id="standard-output-files">Standard Output Files<a class="headerlink" href="#standard-output-files" title="Permanent link">&para;</a></h3>
@@ -2556,6 +2642,13 @@
 <li>Multi-ancestry data with potentially distinct causal architectures</li>
 <li>Need explicit identification of population-specific signals</li>
 <li>R is available in your environment</li>
+</ul>
+<h3 id="use-carma-when">Use CARMA when:<a class="headerlink" href="#use-carma-when" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Reference-panel LD may not match the GWAS sample (e.g., meta-analysis)</li>
+<li>You want explicit detection / down-weighting of inconsistent SNPs</li>
+<li>R is available in your environment</li>
+<li>High-resolution single-locus fine-mapping with robustness is the priority</li>
 </ul>
 <h2 id="interpreting-results">Interpreting Results<a class="headerlink" href="#interpreting-results" title="Permanent link">&para;</a></h2>
 <h3 id="posterior-inclusion-probabilities-pips">Posterior Inclusion Probabilities (PIPs)<a class="headerlink" href="#posterior-inclusion-probabilities-pips" title="Permanent link">&para;</a></h3>
