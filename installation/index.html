@@ -416,6 +416,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#susie-ash" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-ash
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1334,6 +1343,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#susie-ash" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-ash
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1560,6 +1578,27 @@ BLAS/LAPACK shipped with R, but expect longer per-locus runtimes.</p>
 <p>CREDTOOLS calls CARMA via <code>Rscript</code>. If either Rscript or the CARMA package is
 missing, the wrapper raises a <code>FileNotFoundError</code> with the install command
 above.</p>
+<h3 id="susie-ash">SuSiE-ash<a class="headerlink" href="#susie-ash" title="Permanent link">&para;</a></h3>
+<p>SuSiE-ash is the SuSiE 2.0 model with an adaptive-shrinkage prior on the
+"unmappable" background effects. It is exposed by the <strong>susieR</strong> R package
+(version ≥ 0.16.1) through the <code>unmappable_effects = "ash"</code> argument of
+<code>susie_rss</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Verify Rscript exists</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>which<span class="w"> </span>Rscript
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1"># Install susieR from CRAN (preferred)</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;install.packages(&quot;susieR&quot;, repos = &quot;https://cloud.r-project.org&quot;)&#39;</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># Or the development version</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;remotes::install_github(&quot;stephenslab/susieR&quot;)&#39;</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="c1"># Verify the install</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;library(susieR); cat(as.character(packageVersion(&quot;susieR&quot;)), &quot;\n&quot;)&#39;</span>
+</code></pre></div>
+<p>CREDTOOLS calls susieR via <code>Rscript</code>. If either Rscript or the susieR
+package is missing (or the installed susieR is too old to expose
+<code>unmappable_effects</code>), the wrapper raises a clear <code>FileNotFoundError</code> /
+<code>RuntimeError</code> pointing at this section.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <p>If you encounter any issues during installation, please check:</p>
 <ol>
@@ -1571,7 +1610,7 @@ above.</p>
 <p><strong><code>Rscript not found</code></strong>: Ensure R is installed and <code>Rscript</code> is on your <code>PATH</code>. Run <code>which Rscript</code> to verify.</p>
 <p><strong><code>library 'gfortran' not found</code> (macOS)</strong>: Install gfortran via <code>brew install gcc</code> and create <code>~/.R/Makevars</code> as described above.</p>
 <p><strong><code>ggrepel</code> not available for this version of R</strong>: Install an older compatible version:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">devtools</span><span class="o">::</span><span class="nf">install_version</span><span class="p">(</span><span class="s">&quot;ggrepel&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0.9.6&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">repos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;https://cran.r-project.org&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">devtools</span><span class="o">::</span><span class="nf">install_version</span><span class="p">(</span><span class="s">&quot;ggrepel&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0.9.6&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">repos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;https://cran.r-project.org&quot;</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong><code>RcppArmadillo</code> compilation errors</strong>: Ensure you have a C++ compiler and Fortran compiler available. On macOS, install Xcode Command Line Tools (<code>xcode-select --install</code>) and gcc (<code>brew install gcc</code>).</p>
 <h2 id="links">Links<a class="headerlink" href="#links" title="Permanent link">&para;</a></h2>
