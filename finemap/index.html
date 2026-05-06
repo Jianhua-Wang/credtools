@@ -614,6 +614,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#susie-inf" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-inf
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -781,6 +790,15 @@
   <a href="#susie-ash-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       SuSiE-ash Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#susie-inf-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-inf Parameters
     </span>
   </a>
   
@@ -984,6 +1002,15 @@
   <a href="#use-susie-ash-when" class="md-nav__link">
     <span class="md-ellipsis">
       Use SuSiE-ash when:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-susie-inf-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use SuSiE-inf when:
     </span>
   </a>
   
@@ -1766,6 +1793,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#susie-inf" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-inf
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1933,6 +1969,15 @@
   <a href="#susie-ash-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       SuSiE-ash Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#susie-inf-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-inf Parameters
     </span>
   </a>
   
@@ -2141,6 +2186,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#use-susie-inf-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use SuSiE-inf when:
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2336,6 +2390,17 @@
 - Single-input tool, processes each locus independently
 - R-based tool called via subprocess (requires R + susieR ≥ 0.16.1)
 - See <a href="../installation/#susie-ash">Installation</a> for setup instructions</p>
+<h3 id="susie-inf">SuSiE-inf<a class="headerlink" href="#susie-inf" title="Permanent link">&para;</a></h3>
+<p><strong>SuSiE 2.0 with infinitesimal background</strong>
+- Layers a single-Gaussian "infinitesimal" prior on top of SuSiE's L sparse
+  single-effect components, capturing a broad polygenic background where
+  many variants contribute small effects of comparable magnitude
+- Best for loci where a strong peak rises out of a high plateau of background
+  signal (uniform background rather than the heterogeneous mixture SuSiE-ash
+  models)
+- Single-input tool, processes each locus independently
+- R-based tool called via subprocess (requires R + susieR ≥ 0.16.1)
+- See <a href="../installation/#susie-inf">Installation</a> for setup instructions</p>
 <h2 id="how-fine-mapping-works">How Fine-Mapping Works<a class="headerlink" href="#how-fine-mapping-works" title="Permanent link">&para;</a></h2>
 <h3 id="automatic-strategy-selection">Automatic Strategy Selection<a class="headerlink" href="#automatic-strategy-selection" title="Permanent link">&para;</a></h3>
 <p>Credtools automatically selects the appropriate fine-mapping strategy based on:</p>
@@ -2584,6 +2649,12 @@
 <code>unmappable_effects = "ash"</code> setting and the <code>optim</code> prior estimator are
 hardcoded by the wrapper because SuSiE-ash is incompatible with susieR's
 default <code>EM</code> estimator.</p>
+<h4 id="susie-inf-parameters">SuSiE-inf Parameters<a class="headerlink" href="#susie-inf-parameters" title="Permanent link">&para;</a></h4>
+<p>SuSiE-inf reuses the SuSiE knobs (<code>--max-iter</code>, <code>--estimate-residual-variance</code>,
+<code>--purity</code>, <code>--convergence-tol</code>) and adds no extra CLI options. The
+<code>unmappable_effects = "inf"</code> setting and the <code>optim</code> prior estimator are
+hardcoded by the wrapper for symmetry with SuSiE-ash; both extensions use the
+same <code>susieR::susie_rss</code> entry point in susieR ≥ 0.16.1.</p>
 <h2 id="expected-output">Expected Output<a class="headerlink" href="#expected-output" title="Permanent link">&para;</a></h2>
 <p>Fine-mapping generates comprehensive results for each locus:</p>
 <h3 id="standard-output-files">Standard Output Files<a class="headerlink" href="#standard-output-files" title="Permanent link">&para;</a></h3>
@@ -2729,6 +2800,16 @@ default <code>EM</code> estimator.</p>
 <li>R + susieR ≥ 0.16.1 is available in your environment</li>
 <li>You want SuSiE's interpretable credible sets without paying SuSiE-inf's
   full infinitesimal-background cost</li>
+</ul>
+<h3 id="use-susie-inf-when">Use SuSiE-inf when:<a class="headerlink" href="#use-susie-inf-when" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The locus looks like a strong peak rising out of a high, fairly uniform
+  plateau of background signal (broad polygenic background)</li>
+<li>Many variants contribute small effects of similar magnitude, so a single
+  Gaussian background captures the bulk better than ASH's mixture</li>
+<li>Vanilla SuSiE shrinks the background into the residual term and inflates
+  credible-set sizes for the sparse effects</li>
+<li>R + susieR ≥ 0.16.1 is available in your environment</li>
 </ul>
 <h2 id="interpreting-results">Interpreting Results<a class="headerlink" href="#interpreting-results" title="Permanent link">&para;</a></h2>
 <h3 id="posterior-inclusion-probabilities-pips">Posterior Inclusion Probabilities (PIPs)<a class="headerlink" href="#posterior-inclusion-probabilities-pips" title="Permanent link">&para;</a></h3>

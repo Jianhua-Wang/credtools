@@ -425,6 +425,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#susie-inf" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-inf
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1352,6 +1361,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#susie-inf" class="md-nav__link">
+    <span class="md-ellipsis">
+      SuSiE-inf
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1595,6 +1613,16 @@ above.</p>
 <a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="c1"># Verify the install</span>
 <a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;library(susieR); cat(as.character(packageVersion(&quot;susieR&quot;)), &quot;\n&quot;)&#39;</span>
 </code></pre></div>
+<p>CREDTOOLS calls susieR via <code>Rscript</code>. If either Rscript or the susieR
+package is missing (or the installed susieR is too old to expose
+<code>unmappable_effects</code>), the wrapper raises a clear <code>FileNotFoundError</code> /
+<code>RuntimeError</code> pointing at this section.</p>
+<h3 id="susie-inf">SuSiE-inf<a class="headerlink" href="#susie-inf" title="Permanent link">&para;</a></h3>
+<p>SuSiE-inf is the SuSiE 2.0 model with a single-Gaussian "infinitesimal" prior
+on the unmappable background effects. It uses the same <strong>susieR</strong> R package
+(version ≥ 0.16.1) entry point as SuSiE-ash, switched on by
+<code>unmappable_effects = "inf"</code> in <code>susie_rss</code>. Follow the SuSiE-ash install
+recipe above — a single susieR installation provides both extensions.</p>
 <p>CREDTOOLS calls susieR via <code>Rscript</code>. If either Rscript or the susieR
 package is missing (or the installed susieR is too old to expose
 <code>unmappable_effects</code>), the wrapper raises a clear <code>FileNotFoundError</code> /
