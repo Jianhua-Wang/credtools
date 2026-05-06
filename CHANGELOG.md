@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0] (2026-05-05)
+
+### Added
+- New `run_susie_ash` wrapper integrating **SuSiE-ash** (McCreight et al., bioRxiv 2025), the SuSiE 2.0 model that layers an adaptive-shrinkage (ASH) mixture-of-normals prior over the unmappable / background effects on top of L sparse single-effect components. Targets loci where one or a few strong signals coexist with a polygenic background of weak-to-moderate effects.
+- `Method.SUSIE_ASH` enum value and `Tool.susie_ash` CLI option, exposing SuSiE-ash through both `credtools finemap` and `credtools pipeline`.
+- Bundled `credtools/wrappers/susie_ash_wrapper.R` driving susieR ≥ 0.16.1 via `Rscript` subprocess; uses `unmappable_effects = "ash"` and the `optim` prior estimator (SuSiE-ash is incompatible with susieR's default `EM` estimator, so `optim` is hardcoded by the wrapper).
+- Convergence (`converged`, `n_iter`) and `empty_on_nonconvergence` semantics mirror the SuSiE wrapper, so SuSiE-ash plugs into the existing adaptive-`max_causal` machinery (`fine_map(..., adaptive_max_causal=True, tool="susie_ash")`).
+- Documentation: new SuSiE-ash install section in `docs/installation.md` (susieR install + version check) and tool description / when-to-use guidance / parameter table in `docs/finemap.md`.
+- 13 wrapper unit tests in `tests/wrappers/test_susie_ash.py` covering basic call, output structure, parameter passthrough, significance short-circuit, no-CS path, multi-CS path, lead-SNP extraction, converged metadata, non-converged-empty path, unmatched LD/sumstats path, and error handling (missing R / missing susieR / subprocess error).
+
 ## [0.7.0] (2026-05-04)
 
 ### Added

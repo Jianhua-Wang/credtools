@@ -31,6 +31,7 @@ from credtools.wrappers import (
     run_multisusie,
     run_rsparsepro,
     run_susie,
+    run_susie_ash,
     run_susiex,
 )
 
@@ -472,7 +473,15 @@ def fine_map(
         kwargs["timeout_minutes"] = timeout_minutes
 
     # Define tool categories
-    single_input_tools = ["abf", "abf_cojo", "carma", "finemap", "rsparsepro", "susie"]
+    single_input_tools = [
+        "abf",
+        "abf_cojo",
+        "carma",
+        "finemap",
+        "rsparsepro",
+        "susie",
+        "susie_ash",
+    ]
     multi_input_tools = ["multisusie", "susiex", "mesusie"]
 
     # Tool function mapping
@@ -483,6 +492,7 @@ def fine_map(
         "finemap": run_finemap,
         "rsparsepro": run_rsparsepro,
         "susie": run_susie,
+        "susie_ash": run_susie_ash,
         "multisusie": run_multisusie,
         "susiex": run_susiex,
         "mesusie": run_mesusie,
@@ -496,6 +506,7 @@ def fine_map(
         "finemap": set(inspect.signature(run_finemap).parameters),
         "rsparsepro": set(inspect.signature(run_rsparsepro).parameters),
         "susie": set(inspect.signature(run_susie).parameters),
+        "susie_ash": set(inspect.signature(run_susie_ash).parameters),
         "multisusie": set(inspect.signature(run_multisusie).parameters),
         "susiex": set(inspect.signature(run_susiex).parameters),
         "mesusie": set(inspect.signature(run_mesusie).parameters),
@@ -549,7 +560,7 @@ def fine_map(
                 )
 
             # Use adaptive logic if enabled
-            if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
+            if adaptive_max_causal and tool in ["finemap", "susie", "susie_ash", "rsparsepro"]:
                 result = _adaptive_fine_map(
                     locus,
                     tool,
@@ -602,7 +613,7 @@ def fine_map(
                     )
 
                 # Run fine-mapping for this locus
-                if adaptive_max_causal and tool in ["finemap", "susie", "rsparsepro"]:
+                if adaptive_max_causal and tool in ["finemap", "susie", "susie_ash", "rsparsepro"]:
                     creds = _adaptive_fine_map(
                         locus,
                         tool,

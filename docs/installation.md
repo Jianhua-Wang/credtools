@@ -235,6 +235,32 @@ CREDTOOLS calls CARMA via `Rscript`. If either Rscript or the CARMA package is
 missing, the wrapper raises a `FileNotFoundError` with the install command
 above.
 
+### SuSiE-ash
+
+SuSiE-ash is the SuSiE 2.0 model with an adaptive-shrinkage prior on the
+"unmappable" background effects. It is exposed by the **susieR** R package
+(version ≥ 0.16.1) through the `unmappable_effects = "ash"` argument of
+`susie_rss`.
+
+```bash
+# Verify Rscript exists
+which Rscript
+
+# Install susieR from CRAN (preferred)
+Rscript -e 'install.packages("susieR", repos = "https://cloud.r-project.org")'
+
+# Or the development version
+Rscript -e 'remotes::install_github("stephenslab/susieR")'
+
+# Verify the install
+Rscript -e 'library(susieR); cat(as.character(packageVersion("susieR")), "\n")'
+```
+
+CREDTOOLS calls susieR via `Rscript`. If either Rscript or the susieR
+package is missing (or the installed susieR is too old to expose
+`unmappable_effects`), the wrapper raises a clear `FileNotFoundError` /
+`RuntimeError` pointing at this section.
+
 
 ## Troubleshooting
 

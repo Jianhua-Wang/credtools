@@ -53,6 +53,7 @@ class Tool(str, Enum):
     finemap = "finemap"
     rsparsepro = "rsparsepro"
     susie = "susie"
+    susie_ash = "susie_ash"
     multisusie = "multisusie"
     susiex = "susiex"
     mesusie = "mesusie"
@@ -108,6 +109,7 @@ def setup_file_logging(log_file: Optional[str], verbose: bool = False) -> None:
             "RSparsePro",
             "COJO",
             "SuSiE",
+            "SUSIE_ASH",
             "MULTISUSIE",
             "SUSIEX",
             "MESUSIE",
@@ -157,6 +159,7 @@ def main(
             "RSparsePro",
             "COJO",
             "SuSiE",
+            "SUSIE_ASH",
             "MULTISUSIE",
             "SUSIEX",
             "MESUSIE",

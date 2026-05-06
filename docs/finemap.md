@@ -89,6 +89,17 @@ Use `credtools finemap` when you have:
 - R-based tool called via subprocess (requires R + CARMA package, MKL recommended)
 - See [Installation](installation.md#carma) for setup instructions
 
+### SuSiE-ash
+**SuSiE 2.0 with adaptive-shrinkage background**
+- Layers an ASH (adaptive shrinkage) mixture-of-normals prior on top of SuSiE's
+  L sparse single-effect components, modelling weak-to-moderate "background"
+  effects that vanilla SuSiE forces into the residual term
+- Best for loci where one or a few strong signals sit on top of many small
+  background effects (think "big peak + rolling hills")
+- Single-input tool, processes each locus independently
+- R-based tool called via subprocess (requires R + susieR ≥ 0.16.1)
+- See [Installation](installation.md#susie-ash) for setup instructions
+
 ## How Fine-Mapping Works
 
 ### Automatic Strategy Selection
@@ -194,6 +205,13 @@ credtools finemap qc/passed_loci.txt results/ \
 | `--effect-size-prior` / `-esp` | Effect-size prior (`Spike-slab` or `Cauchy`) | Spike-slab |
 
 > CARMA's outlier detection is its key advantage when in-sample LD is unavailable. Disable it with `--no-outlier-switch` only when LD is known to match the GWAS sample exactly.
+
+#### SuSiE-ash Parameters
+SuSiE-ash reuses the SuSiE knobs (`--max-iter`, `--estimate-residual-variance`,
+`--purity`, `--convergence-tol`) and adds no extra CLI options. The
+`unmappable_effects = "ash"` setting and the `optim` prior estimator are
+hardcoded by the wrapper because SuSiE-ash is incompatible with susieR's
+default `EM` estimator.
 
 ## Expected Output
 
@@ -351,6 +369,15 @@ credtools finemap qc/passed_loci.txt finemap_results/ \
 - You want explicit detection / down-weighting of inconsistent SNPs
 - R is available in your environment
 - High-resolution single-locus fine-mapping with robustness is the priority
+
+### Use SuSiE-ash when:
+- The locus shows a sparse strong signal sitting on top of many weak
+  background effects (heterogeneous effect-size distribution)
+- Vanilla SuSiE inflates credible-set sizes because the background is
+  absorbed into the residual term
+- R + susieR ≥ 0.16.1 is available in your environment
+- You want SuSiE's interpretable credible sets without paying SuSiE-inf's
+  full infinitesimal-background cost
 
 ## Interpreting Results
 
