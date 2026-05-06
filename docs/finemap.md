@@ -100,6 +100,18 @@ Use `credtools finemap` when you have:
 - R-based tool called via subprocess (requires R + susieR ≥ 0.16.1)
 - See [Installation](installation.md#susie-ash) for setup instructions
 
+### SuSiE-inf
+**SuSiE 2.0 with infinitesimal background**
+- Layers a single-Gaussian "infinitesimal" prior on top of SuSiE's L sparse
+  single-effect components, capturing a broad polygenic background where
+  many variants contribute small effects of comparable magnitude
+- Best for loci where a strong peak rises out of a high plateau of background
+  signal (uniform background rather than the heterogeneous mixture SuSiE-ash
+  models)
+- Single-input tool, processes each locus independently
+- R-based tool called via subprocess (requires R + susieR ≥ 0.16.1)
+- See [Installation](installation.md#susie-inf) for setup instructions
+
 ## How Fine-Mapping Works
 
 ### Automatic Strategy Selection
@@ -212,6 +224,13 @@ SuSiE-ash reuses the SuSiE knobs (`--max-iter`, `--estimate-residual-variance`,
 `unmappable_effects = "ash"` setting and the `optim` prior estimator are
 hardcoded by the wrapper because SuSiE-ash is incompatible with susieR's
 default `EM` estimator.
+
+#### SuSiE-inf Parameters
+SuSiE-inf reuses the SuSiE knobs (`--max-iter`, `--estimate-residual-variance`,
+`--purity`, `--convergence-tol`) and adds no extra CLI options. The
+`unmappable_effects = "inf"` setting and the `optim` prior estimator are
+hardcoded by the wrapper for symmetry with SuSiE-ash; both extensions use the
+same `susieR::susie_rss` entry point in susieR ≥ 0.16.1.
 
 ## Expected Output
 
@@ -378,6 +397,15 @@ credtools finemap qc/passed_loci.txt finemap_results/ \
 - R + susieR ≥ 0.16.1 is available in your environment
 - You want SuSiE's interpretable credible sets without paying SuSiE-inf's
   full infinitesimal-background cost
+
+### Use SuSiE-inf when:
+- The locus looks like a strong peak rising out of a high, fairly uniform
+  plateau of background signal (broad polygenic background)
+- Many variants contribute small effects of similar magnitude, so a single
+  Gaussian background captures the bulk better than ASH's mixture
+- Vanilla SuSiE shrinks the background into the residual term and inflates
+  credible-set sizes for the sparse effects
+- R + susieR ≥ 0.16.1 is available in your environment
 
 ## Interpreting Results
 

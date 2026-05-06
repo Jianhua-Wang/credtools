@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.0] (2026-05-05)
+
+### Added
+- New `run_susie_inf` wrapper integrating **SuSiE-inf** (McCreight et al., bioRxiv 2025), the SuSiE 2.0 model that layers a single-Gaussian "infinitesimal" prior over the unmappable / background effects on top of L sparse single-effect components. Targets loci that look like a strong peak rising out of a high, fairly uniform plateau of polygenic background — complementing SuSiE-ash, which models heterogeneous mixture-style backgrounds.
+- `Method.SUSIE_INF` enum value and `Tool.susie_inf` CLI option, exposing SuSiE-inf through both `credtools finemap` and `credtools pipeline`.
+- Bundled `credtools/wrappers/susie_inf_wrapper.R` driving susieR ≥ 0.16.1 via `Rscript` subprocess; uses `unmappable_effects = "inf"` and the `optim` prior estimator (hardcoded for symmetry with the SuSiE-ash wrapper, since `optim` is the only estimator supported across all `unmappable_effects` modes).
+- Convergence (`converged`, `n_iter`) and `empty_on_nonconvergence` semantics mirror the SuSiE / SuSiE-ash wrappers, so SuSiE-inf plugs into the existing adaptive-`max_causal` machinery (`fine_map(..., adaptive_max_causal=True, tool="susie_inf")`).
+- Documentation: new SuSiE-inf install section in `docs/installation.md` (cross-references the SuSiE-ash recipe, since one susieR install covers both extensions) and tool description / when-to-use guidance / parameter table in `docs/finemap.md`.
+- 13 wrapper unit tests in `tests/wrappers/test_susie_inf.py` covering basic call, output structure, parameter passthrough (including `unmappable_effects = "inf"`), significance short-circuit, no-CS path, multi-CS path, lead-SNP extraction, converged metadata, non-converged-empty path, unmatched LD/sumstats path, and error handling (missing R / missing susieR / subprocess error).
+
 ## [0.8.0] (2026-05-05)
 
 ### Added

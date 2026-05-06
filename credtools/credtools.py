@@ -12,28 +12,17 @@ import numpy as np
 import pandas as pd
 
 from credtools.cojo import conditional_selection
-from credtools.credibleset import CredibleSet, combine_creds, filter_credset_by_purity
+from credtools.credibleset import (CredibleSet, combine_creds,
+                                   filter_credset_by_purity)
 from credtools.locus import LocusSet, load_locus_set
-from credtools.meta import (
-    compute_heterogeneity,
-    compute_heterogeneity_by_population,
-    heterogeneity_summary,
-    meta,
-    save_heterogeneity,
-)
+from credtools.meta import (compute_heterogeneity,
+                            compute_heterogeneity_by_population,
+                            heterogeneity_summary, meta, save_heterogeneity)
 from credtools.qc import locus_qc
-from credtools.wrappers import (
-    run_abf,
-    run_abf_cojo,
-    run_carma,
-    run_finemap,
-    run_mesusie,
-    run_multisusie,
-    run_rsparsepro,
-    run_susie,
-    run_susie_ash,
-    run_susiex,
-)
+from credtools.wrappers import (run_abf, run_abf_cojo, run_carma, run_finemap,
+                                run_mesusie, run_multisusie, run_rsparsepro,
+                                run_susie, run_susie_ash, run_susie_inf,
+                                run_susiex)
 
 logger = logging.getLogger("CREDTOOLS")
 
@@ -481,6 +470,7 @@ def fine_map(
         "rsparsepro",
         "susie",
         "susie_ash",
+        "susie_inf",
     ]
     multi_input_tools = ["multisusie", "susiex", "mesusie"]
 
@@ -493,6 +483,7 @@ def fine_map(
         "rsparsepro": run_rsparsepro,
         "susie": run_susie,
         "susie_ash": run_susie_ash,
+        "susie_inf": run_susie_inf,
         "multisusie": run_multisusie,
         "susiex": run_susiex,
         "mesusie": run_mesusie,
@@ -507,6 +498,7 @@ def fine_map(
         "rsparsepro": set(inspect.signature(run_rsparsepro).parameters),
         "susie": set(inspect.signature(run_susie).parameters),
         "susie_ash": set(inspect.signature(run_susie_ash).parameters),
+        "susie_inf": set(inspect.signature(run_susie_inf).parameters),
         "multisusie": set(inspect.signature(run_multisusie).parameters),
         "susiex": set(inspect.signature(run_susiex).parameters),
         "mesusie": set(inspect.signature(run_mesusie).parameters),
@@ -560,7 +552,13 @@ def fine_map(
                 )
 
             # Use adaptive logic if enabled
-            if adaptive_max_causal and tool in ["finemap", "susie", "susie_ash", "rsparsepro"]:
+            if adaptive_max_causal and tool in [
+                "finemap",
+                "susie",
+                "susie_ash",
+                "susie_inf",
+                "rsparsepro",
+            ]:
                 result = _adaptive_fine_map(
                     locus,
                     tool,
@@ -613,7 +611,13 @@ def fine_map(
                     )
 
                 # Run fine-mapping for this locus
-                if adaptive_max_causal and tool in ["finemap", "susie", "susie_ash", "rsparsepro"]:
+                if adaptive_max_causal and tool in [
+                    "finemap",
+                    "susie",
+                    "susie_ash",
+                    "susie_inf",
+                    "rsparsepro",
+                ]:
                     creds = _adaptive_fine_map(
                         locus,
                         tool,

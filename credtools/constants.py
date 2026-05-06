@@ -61,6 +61,7 @@ class Method:
     FINEMAP = "FINEMAP"
     SUSIE = "SUSIE"
     SUSIE_ASH = "SUSIE_ASH"
+    SUSIE_INF = "SUSIE_INF"
     ABF = "ABF"
     RSparsePro = "RSparsePro"
     SUSIEX = "SUSIEX"

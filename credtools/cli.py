@@ -17,14 +17,8 @@ if TYPE_CHECKING:
 
 import typer
 from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
+                           SpinnerColumn, TextColumn, TimeRemainingColumn)
 
 from credtools import __version__
 
@@ -54,6 +48,7 @@ class Tool(str, Enum):
     rsparsepro = "rsparsepro"
     susie = "susie"
     susie_ash = "susie_ash"
+    susie_inf = "susie_inf"
     multisusie = "multisusie"
     susiex = "susiex"
     mesusie = "mesusie"
@@ -110,6 +105,7 @@ def setup_file_logging(log_file: Optional[str], verbose: bool = False) -> None:
             "COJO",
             "SuSiE",
             "SUSIE_ASH",
+            "SUSIE_INF",
             "MULTISUSIE",
             "SUSIEX",
             "MESUSIE",
@@ -160,6 +156,7 @@ def main(
             "COJO",
             "SuSiE",
             "SUSIE_ASH",
+            "SUSIE_INF",
             "MULTISUSIE",
             "SUSIEX",
             "MESUSIE",
@@ -413,10 +410,8 @@ def run_munge(
 
     try:
         from credtools.preprocessing import munge_sumstats
-        from credtools.preprocessing.munge import (
-            create_munge_config,
-            validate_munged_files,
-        )
+        from credtools.preprocessing.munge import (create_munge_config,
+                                                   validate_munged_files)
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing dependencies not found.[/red]")
@@ -772,8 +767,10 @@ def run_chunk(
     setup_file_logging(log_file)
 
     try:
-        from credtools.preprocessing import chunk_sumstats, identify_independent_loci
-        from credtools.preprocessing.chunk import create_loci_list_for_credtools
+        from credtools.preprocessing import (chunk_sumstats,
+                                             identify_independent_loci)
+        from credtools.preprocessing.chunk import \
+            create_loci_list_for_credtools
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing module not found.[/red]")

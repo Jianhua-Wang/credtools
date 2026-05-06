@@ -261,6 +261,19 @@ package is missing (or the installed susieR is too old to expose
 `unmappable_effects`), the wrapper raises a clear `FileNotFoundError` /
 `RuntimeError` pointing at this section.
 
+### SuSiE-inf
+
+SuSiE-inf is the SuSiE 2.0 model with a single-Gaussian "infinitesimal" prior
+on the unmappable background effects. It uses the same **susieR** R package
+(version ≥ 0.16.1) entry point as SuSiE-ash, switched on by
+`unmappable_effects = "inf"` in `susie_rss`. Follow the SuSiE-ash install
+recipe above — a single susieR installation provides both extensions.
+
+CREDTOOLS calls susieR via `Rscript`. If either Rscript or the susieR
+package is missing (or the installed susieR is too old to expose
+`unmappable_effects`), the wrapper raises a clear `FileNotFoundError` /
+`RuntimeError` pointing at this section.
+
 
 ## Troubleshooting
 
