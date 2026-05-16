@@ -1,5 +1,4 @@
-# credtools
-
+# CREDTOOLS
 
 [![pypi](https://img.shields.io/pypi/v/credtools.svg)](https://pypi.org/project/credtools/)
 [![python](https://img.shields.io/pypi/pyversions/credtools.svg)](https://pypi.org/project/credtools/)
@@ -7,84 +6,118 @@
 [![codecov](https://codecov.io/gh/Jianhua-Wang/credtools/branch/main/graphs/badge.svg)](https://codecov.io/github/Jianhua-Wang/credtools)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+CREDTOOLS is a command-line and Python toolkit for GWAS fine-mapping workflows.
+It helps you standardize summary statistics, define loci, prepare LD-backed
+locus files, run QC, combine cohorts, and run fine-mapping tools from one
+repeatable interface.
 
+Documentation: <https://Jianhua-Wang.github.io/credtools>
 
-Multi-ancestry fine-mapping pipeline.
+## What It Does
 
+- Standardizes raw GWAS summary statistics with `credtools munge`.
+- Finds and chunks loci from genome-wide summary statistics with
+  `credtools chunk`.
+- Prepares locus-level summary statistics, LD matrices, and LD maps.
+- Runs meta-analysis with `meta_all`, `meta_by_population`, or `no_meta`.
+- Runs QC for LD and summary-statistic consistency.
+- Runs fine-mapping with SuSiE, FINEMAP, ABF, CARMA, SuSiEx, MultiSuSiE,
+  MESuSiE, and RSparsePro wrappers.
+- Writes PIP tables, credible set summaries, causal-variant tables, logs, and
+  plots.
 
-* Documentation: <https://Jianhua-Wang.github.io/credtools>
-* GitHub: <https://github.com/Jianhua-Wang/credtools>
-* PyPI: <https://pypi.org/project/credtools/>
-* Free software: MIT
+## Install
 
-
-## Features
-
-- **Whole-genome preprocessing**: Start from raw GWAS summary statistics and genotype data
-  - Standardize and munge summary statistics from various formats
-  - Prepare LD matrices and fine-mapping inputs automatically
-- **Multi-ancestry fine-mapping**: Support for multiple fine-mapping tools (SuSiE, FINEMAP, etc.)
-- **Meta-analysis capabilities**: Combine results across populations and cohorts
-- **Quality control**: Built-in QC metrics and visualizations
-- **Command-line interface**: Easy-to-use CLI for all operations
-
-## Installation
-
-### Basic Installation
 ```bash
-pip install credtools
+python -m pip install credtools
+credtools --version
 ```
 
-### Install with uv
-```bash
-uv pip install credtools
-```
+CREDTOOLS supports Python `>=3.9,<3.13`.
+
+Some workflows need external tools:
+
+| Workflow | Extra dependency |
+| --- | --- |
+| LD extraction in `chunk` | PLINK |
+| `--tool finemap` | FINEMAP executable |
+| `--tool susiex` | SuSiEx executable |
+| `--tool susie_ash` or `susie_inf` | Rscript and `susieR >= 0.16.1` |
+| `--tool carma` | Rscript and `CARMA` |
+| `--tool mesusie` | Rscript and `MESuSiE` |
+
+See the [external tools guide](https://Jianhua-Wang.github.io/credtools/guides/external-tools/)
+for setup checks.
 
 ## Quick Start
 
-### Command Line Usage
+Start from a population config:
 
-```bash
-# Complete workflow: from whole-genome data to fine-mapping results
-# Step 1: Standardize summary statistics
-credtools munge population_config.txt output/munged/
-
-# Step 2: Identify loci, chunk data, and extract LD matrices
-credtools chunk output/munged/sumstat_info_updated.txt output/chunks/
-
-# Step 3: Run fine-mapping pipeline
-credtools pipeline output/chunks/loci_list.txt output/results/
+```text
+popu	cohort	sample_size	path	ld_ref
+EUR	UKBB	400000	/data/EUR.sumstats.gz	/ref/EUR
+AFR	MVP	90000	/data/AFR.sumstats.gz	/ref/AFR
 ```
 
-## Preprocessing Workflow
+Run the workflow:
 
-credtools now supports starting from whole-genome summary statistics and genotype data, eliminating the need for manual preprocessing:
+```bash
+credtools munge population_config.tsv work/munged
+credtools chunk work/munged/sumstat_info_updated.txt work/chunks
+credtools pipeline work/chunks/loci_list.txt work/results \
+  --tool susie \
+  --meta-method meta_all \
+  --max-causal 5
+```
 
-### Step 1: Munge Summary Statistics (`credtools munge`)
-- **Purpose**: Standardize and clean GWAS summary statistics from various formats
-- **Features**:
-  - Automatic header detection and mapping
-  - Data validation and quality control
-  - Support for multiple file formats
-- **Input**: Raw GWAS files with various column headers
-- **Output**: Standardized `.munged.txt.gz` files
+Before a full run, inspect `work/chunks/loci_list.txt`. If `chunk` wrote a
+placeholder `sample_size` or cohort label, edit it before fine-mapping.
 
-### Step 2: Chunk Loci (`credtools chunk`)
-- **Purpose**: Identify independent loci, create regional chunks, and extract LD matrices
-- **Features**:
-  - Distance-based independent SNP identification
-  - Cross-ancestry loci coordination
-  - Configurable significance thresholds
-  - Automatic LD matrix extraction when `ld_ref` is provided in population config
-- **Input**: Munged summary statistics files (or population config with `ld_ref`)
-- **Output**: Locus-specific chunked files, LD matrices, and credtools-ready input files
+## Main Commands
 
-### Multi-Ancestry Support
-- **Consistent loci definition**: Union approach across ancestries
-- **Flexible input formats**: Support for various GWAS summary statistics formats
-- **Coordinated processing**: Ensure compatibility across populations
+| Command | Use it for |
+| --- | --- |
+| `credtools munge` | clean and standardize summary statistics |
+| `credtools chunk` | find loci, create chunks, and prepare LD-backed files |
+| `credtools meta` | combine cohorts before QC or fine-mapping |
+| `credtools qc` | check summary-statistic and LD consistency |
+| `credtools finemap` | run fine-mapping only |
+| `credtools pipeline` | run meta-analysis, QC, and fine-mapping together |
+| `credtools plot` | create QC and fine-mapping plots |
 
-## Documentation
+## Key Input
 
-For detailed documentation, see <https://Jianhua-Wang.github.io/credtools>
+Most downstream commands use a `loci_list.txt`:
 
+```text
+locus_id	chr	start	end	popu	cohort	sample_size	prefix
+locus_1	1	50000000	50500000	EUR	UKBB	400000	data/EUR_UKBB_locus_1
+```
+
+Each `prefix` should point to:
+
+```text
+{prefix}.sumstats.gz
+{prefix}.ld.npz
+{prefix}.ldmap.gz
+```
+
+See the [file schema reference](https://Jianhua-Wang.github.io/credtools/reference/file-schemas/)
+for exact columns and accepted file names.
+
+## Development
+
+```bash
+git clone https://github.com/Jianhua-Wang/credtools.git
+cd credtools
+uv sync
+uv run pytest
+uv run mkdocs serve
+```
+
+## Links
+
+- Documentation: <https://Jianhua-Wang.github.io/credtools>
+- GitHub: <https://github.com/Jianhua-Wang/credtools>
+- PyPI: <https://pypi.org/project/credtools/>
+- License: MIT

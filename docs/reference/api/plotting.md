@@ -1,0 +1,3 @@
+# Plotting API
+
+::: credtools.plot

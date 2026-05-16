@@ -1,41 +1,61 @@
-site_name: credtools
+site_name: CREDTOOLS
 site_url: https://Jianhua-Wang.github.io/credtools
 repo_url: https://github.com/Jianhua-Wang/credtools
 repo_name: Jianhua-Wang/credtools
-#strict: true
+
 nav:
   - Home: index.md
-  - Installation: installation.md
-  - Usage: usage.md
-  - Commands:
-    - Munge: munge.md
-    - Chunk: chunk.md
-    - Meta-analysis: meta.md
-    - Quality Control: qc.md
-    - Fine-mapping: finemap.md
-    - Pipeline: pipeline.md
-  - Tutorial:
-    - Overview: tutorial.md
-    - Getting Started: tutorial/getting-started.md
-    - Quick Start: tutorial/quick-start.md
-    - Single-Input Fine-Mapping: tutorial/single-input.md
-    - Multi-Input Fine-Mapping: tutorial/multi-input.md
-    - Advanced Topics: tutorial/advanced.md
-  - API:
-    - credtools: API/credtools.md
-    - utils: API/utils.md
-    - locus: API/locus.md
-    - ldmatrix: API/ldmatrix.md
-    - meta: API/meta.md
-    - qc: API/qc.md
-    - sumstats: API/sumstats.md
-    - credibleset: API/credibleset.md
-    - cojo: API/cojo.md
+  - Getting Started:
+      - Overview: getting-started/index.md
+      - Core Concepts: getting-started/concepts.md
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+  - Tutorials:
+      - Overview: tutorials/index.md
+      - Raw GWAS to Results: tutorials/from-raw-gwas-to-results.md
+      - Existing Loci List: tutorials/run-an-existing-loci-list.md
+      - Single-Ancestry Fine-Mapping: tutorials/single-ancestry-finemapping.md
+      - Multi-Ancestry Fine-Mapping: tutorials/multi-ancestry-finemapping.md
+      - Visualize QC and Results: tutorials/visualize-qc-and-results.md
+  - Guides:
+      - Input Files: guides/input-files.md
+      - Output Files: guides/output-files.md
+      - Known Limitations: guides/known-limitations.md
+      - External Tools and Environment: guides/external-tools.md
+      - Choosing a Meta Method: guides/choosing-meta-method.md
+      - Choosing a Fine-Mapping Tool: guides/choosing-finemapping-tool.md
+      - Fine-Mapping Tool Requirements: guides/finemapping-tool-requirements.md
+      - Quality Control: guides/quality-control.md
+      - Plot Gallery: guides/plot-gallery.md
+      - Batch and HPC: guides/batch-hpc.md
+      - Troubleshooting: guides/troubleshooting.md
+  - Reference:
+      - File Schemas: reference/file-schemas.md
+      - QC Metrics Dictionary: reference/qc-metrics.md
+      - CLI:
+          - Overview: reference/cli/index.md
+          - munge: reference/cli/munge.md
+          - chunk: reference/cli/chunk.md
+          - meta: reference/cli/meta.md
+          - qc: reference/cli/qc.md
+          - finemap: reference/cli/finemap.md
+          - pipeline: reference/cli/pipeline.md
+          - plot: reference/cli/plot.md
+      - API:
+          - Overview: reference/api/index.md
+          - Core Objects: reference/api/core.md
+          - Preprocessing: reference/api/preprocessing.md
+          - Meta-Analysis: reference/api/meta.md
+          - Quality Control: reference/api/qc.md
+          - Fine-Mapping: reference/api/finemapping.md
+          - Plotting: reference/api/plotting.md
+          - Cookbook: reference/api/cookbook.md
   - Changelog: changelog.md
+  - Contributing: contributing.md
+
 theme:
   name: material
   language: en
-  #logo: assets/logo.png
   palette:
     scheme: preference
     primary: indigo
@@ -47,10 +67,21 @@ theme:
     - navigation.sections
     - navigation.expand
     - toc.follow
+    - content.code.copy
+
 markdown_extensions:
   - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - meta
+  - toc:
+      permalink: true
   - pymdownx.details
   - pymdownx.emoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
   - pymdownx.magiclink
   - pymdownx.snippets:
       check_paths: true
@@ -62,40 +93,19 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - admonition
-  - toc:
-      # baselevel: 2
-      permalink: true
-      # slugify: !!python/name:pymdownx.slugs.uslugify
-  - meta
-  - def_list
+
 plugins:
-  - include-markdown
   - search:
       lang: en
   - mkdocstrings:
       handlers:
-      python:
-        import:
-        - https://docs.python.org/3/objects.inv
-        - https://installer.readthedocs.io/en/stable/objects.inv  # demonstration purpose in the docs
-        - https://mkdocstrings.github.io/autorefs/objects.inv
-        options:
-          docstring_style: numpy
-          docstring_options:
-            ignore_init_summary: yes
-          merge_init_into_class: yes
-          show_submodules: yes
-      # watch:
-      #   - mafm
-extra:
-  social:
-  # to enable disqus, uncomment the following and put your disqus id below
-  # disqus: disqus_id
-# uncomment the following and put your google tracking id below to enable GA
-#google_analytics:
-  #- UA-xxx
-  #- auto
+        python:
+          inventories:
+            - https://docs.python.org/3/objects.inv
+            - https://mkdocstrings.github.io/autorefs/objects.inv
+          options:
+            docstring_style: numpy
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_submodules: true
