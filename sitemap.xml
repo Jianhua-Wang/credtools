@@ -2,106 +2,178 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://Jianhua-Wang.github.io/credtools/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
          <loc>https://Jianhua-Wang.github.io/credtools/changelog/</loc>
-         <lastmod>2026-05-06</lastmod>
-    </url>
-    <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/chunk/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
          <loc>https://Jianhua-Wang.github.io/credtools/contributing/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/finemap/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/getting-started/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/installation/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/getting-started/concepts/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/meta/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/getting-started/installation/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/munge/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/getting-started/quickstart/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/pipeline/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/batch-hpc/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/qc/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/choosing-finemapping-tool/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/tutorial/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/choosing-meta-method/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/usage/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/external-tools/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/cojo/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/finemapping-tool-requirements/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/credibleset/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/input-files/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/credtools/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/known-limitations/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/ldmatrix/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/output-files/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/locus/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/plot-gallery/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/meta/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/quality-control/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/qc/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/guides/troubleshooting/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/sumstats/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/file-schemas/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/API/utils/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/qc-metrics/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/tutorial/advanced/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/tutorial/getting-started/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/cookbook/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/tutorial/multi-input/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/core/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/tutorial/quick-start/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/finemapping/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
     <url>
-         <loc>https://Jianhua-Wang.github.io/credtools/tutorial/single-input/</loc>
-         <lastmod>2026-05-06</lastmod>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/meta/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/plotting/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/preprocessing/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/api/qc/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/chunk/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/finemap/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/meta/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/munge/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/pipeline/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/plot/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/prepare/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/reference/cli/qc/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/tutorials/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/tutorials/from-raw-gwas-to-results/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/tutorials/multi-ancestry-finemapping/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/tutorials/pre-generated-ld-ukb-1kg/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/tutorials/run-an-existing-loci-list/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/tutorials/single-ancestry-finemapping/</loc>
+         <lastmod>2026-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://Jianhua-Wang.github.io/credtools/tutorials/visualize-qc-and-results/</loc>
+         <lastmod>2026-05-23</lastmod>
     </url>
 </urlset>

@@ -8,22 +8,28 @@
       
       
       
+        <link rel="canonical" href="https://Jianhua-Wang.github.io/credtools/tutorials/from-raw-gwas-to-results/">
       
       
+        <link rel="prev" href="../">
       
-      <link rel="icon" href="/credtools/assets/images/favicon.png">
+      
+        <link rel="next" href="../run-an-existing-loci-list/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
-        <title>CREDTOOLS</title>
+        <title>Raw GWAS to Results - CREDTOOLS</title>
       
     
     
-      <link rel="stylesheet" href="/credtools/assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
       
         
-        <link rel="stylesheet" href="/credtools/assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -42,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="/credtools/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/credtools/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -67,6 +73,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#raw-gwas-to-results" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -79,7 +90,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/credtools/." title="CREDTOOLS" class="md-header__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
+    <a href="../.." title="CREDTOOLS" class="md-header__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -99,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Raw GWAS to Results
             
           </span>
         </div>
@@ -189,7 +200,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/credtools/." title="CREDTOOLS" class="md-nav__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
+    <a href="../.." title="CREDTOOLS" class="md-nav__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -219,7 +230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -272,7 +283,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/getting-started/" class="md-nav__link ">
+            <a href="../../getting-started/" class="md-nav__link ">
               
   
   
@@ -307,7 +318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/getting-started/concepts/" class="md-nav__link">
+      <a href="../../getting-started/concepts/" class="md-nav__link">
         
   
   
@@ -330,7 +341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/getting-started/installation/" class="md-nav__link">
+      <a href="../../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -353,7 +364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/getting-started/quickstart/" class="md-nav__link">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -380,6 +391,8 @@
       
   
   
+    
+  
   
   
     
@@ -410,17 +423,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/tutorials/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -439,7 +450,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Tutorials
@@ -452,10 +463,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/credtools/tutorials/from-raw-gwas-to-results/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Raw GWAS to Results
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -466,6 +499,89 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      What You Need
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-write-a-population-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Write a Population Config
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-munge-the-summary-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Munge the Summary Statistics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-chunk-the-genome-into-loci" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Chunk the Genome Into Loci
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-run-the-full-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4: Run the Full Pipeline
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-make-a-quick-plot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 5: Make a Quick Plot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-something-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      When Something Fails
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -478,7 +594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/run-an-existing-loci-list/" class="md-nav__link">
+      <a href="../run-an-existing-loci-list/" class="md-nav__link">
         
   
   
@@ -501,7 +617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/pre-generated-ld-ukb-1kg/" class="md-nav__link">
+      <a href="../pre-generated-ld-ukb-1kg/" class="md-nav__link">
         
   
   
@@ -524,7 +640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/single-ancestry-finemapping/" class="md-nav__link">
+      <a href="../single-ancestry-finemapping/" class="md-nav__link">
         
   
   
@@ -547,7 +663,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/multi-ancestry-finemapping/" class="md-nav__link">
+      <a href="../multi-ancestry-finemapping/" class="md-nav__link">
         
   
   
@@ -570,7 +686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/visualize-qc-and-results/" class="md-nav__link">
+      <a href="../visualize-qc-and-results/" class="md-nav__link">
         
   
   
@@ -669,7 +785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/input-files/" class="md-nav__link">
+      <a href="../../guides/input-files/" class="md-nav__link">
         
   
   
@@ -692,7 +808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/output-files/" class="md-nav__link">
+      <a href="../../guides/output-files/" class="md-nav__link">
         
   
   
@@ -715,7 +831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/known-limitations/" class="md-nav__link">
+      <a href="../../guides/known-limitations/" class="md-nav__link">
         
   
   
@@ -738,7 +854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/external-tools/" class="md-nav__link">
+      <a href="../../guides/external-tools/" class="md-nav__link">
         
   
   
@@ -761,7 +877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/choosing-meta-method/" class="md-nav__link">
+      <a href="../../guides/choosing-meta-method/" class="md-nav__link">
         
   
   
@@ -784,7 +900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/choosing-finemapping-tool/" class="md-nav__link">
+      <a href="../../guides/choosing-finemapping-tool/" class="md-nav__link">
         
   
   
@@ -807,7 +923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/finemapping-tool-requirements/" class="md-nav__link">
+      <a href="../../guides/finemapping-tool-requirements/" class="md-nav__link">
         
   
   
@@ -830,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/quality-control/" class="md-nav__link">
+      <a href="../../guides/quality-control/" class="md-nav__link">
         
   
   
@@ -853,7 +969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/plot-gallery/" class="md-nav__link">
+      <a href="../../guides/plot-gallery/" class="md-nav__link">
         
   
   
@@ -876,7 +992,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/batch-hpc/" class="md-nav__link">
+      <a href="../../guides/batch-hpc/" class="md-nav__link">
         
   
   
@@ -899,7 +1015,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/troubleshooting/" class="md-nav__link">
+      <a href="../../guides/troubleshooting/" class="md-nav__link">
         
   
   
@@ -984,7 +1100,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/file-schemas/" class="md-nav__link">
+      <a href="../../reference/file-schemas/" class="md-nav__link">
         
   
   
@@ -1007,7 +1123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/qc-metrics/" class="md-nav__link">
+      <a href="../../reference/qc-metrics/" class="md-nav__link">
         
   
   
@@ -1068,7 +1184,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/reference/cli/" class="md-nav__link ">
+            <a href="../../reference/cli/" class="md-nav__link ">
               
   
   
@@ -1103,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/munge/" class="md-nav__link">
+      <a href="../../reference/cli/munge/" class="md-nav__link">
         
   
   
@@ -1126,7 +1242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/chunk/" class="md-nav__link">
+      <a href="../../reference/cli/chunk/" class="md-nav__link">
         
   
   
@@ -1149,7 +1265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/prepare/" class="md-nav__link">
+      <a href="../../reference/cli/prepare/" class="md-nav__link">
         
   
   
@@ -1172,7 +1288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/meta/" class="md-nav__link">
+      <a href="../../reference/cli/meta/" class="md-nav__link">
         
   
   
@@ -1195,7 +1311,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/qc/" class="md-nav__link">
+      <a href="../../reference/cli/qc/" class="md-nav__link">
         
   
   
@@ -1218,7 +1334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/finemap/" class="md-nav__link">
+      <a href="../../reference/cli/finemap/" class="md-nav__link">
         
   
   
@@ -1241,7 +1357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/pipeline/" class="md-nav__link">
+      <a href="../../reference/cli/pipeline/" class="md-nav__link">
         
   
   
@@ -1264,7 +1380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/plot/" class="md-nav__link">
+      <a href="../../reference/cli/plot/" class="md-nav__link">
         
   
   
@@ -1331,7 +1447,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/reference/api/" class="md-nav__link ">
+            <a href="../../reference/api/" class="md-nav__link ">
               
   
   
@@ -1366,7 +1482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/core/" class="md-nav__link">
+      <a href="../../reference/api/core/" class="md-nav__link">
         
   
   
@@ -1389,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/preprocessing/" class="md-nav__link">
+      <a href="../../reference/api/preprocessing/" class="md-nav__link">
         
   
   
@@ -1412,7 +1528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/meta/" class="md-nav__link">
+      <a href="../../reference/api/meta/" class="md-nav__link">
         
   
   
@@ -1435,7 +1551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/qc/" class="md-nav__link">
+      <a href="../../reference/api/qc/" class="md-nav__link">
         
   
   
@@ -1458,7 +1574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/finemapping/" class="md-nav__link">
+      <a href="../../reference/api/finemapping/" class="md-nav__link">
         
   
   
@@ -1481,7 +1597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/plotting/" class="md-nav__link">
+      <a href="../../reference/api/plotting/" class="md-nav__link">
         
   
   
@@ -1504,7 +1620,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/cookbook/" class="md-nav__link">
+      <a href="../../reference/api/cookbook/" class="md-nav__link">
         
   
   
@@ -1542,7 +1658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -1564,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -1596,6 +1712,79 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      What You Need
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-write-a-population-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Write a Population Config
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-munge-the-summary-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Munge the Summary Statistics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-chunk-the-genome-into-loci" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Chunk the Genome Into Loci
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-run-the-full-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4: Run the Full Pipeline
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-make-a-quick-plot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 5: Make a Quick Plot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-something-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      When Something Fails
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1607,8 +1796,125 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="raw-gwas-to-results">Raw GWAS to Results<a class="headerlink" href="#raw-gwas-to-results" title="Permanent link">&para;</a></h1>
+<p>Use this tutorial when your starting point is whole-genome summary statistics.
+You will clean the files, split them into loci, build LD inputs, and run
+fine-mapping.</p>
+<h2 id="what-you-need">What You Need<a class="headerlink" href="#what-you-need" title="Permanent link">&para;</a></h2>
+<p>For each population or cohort:</p>
+<ul>
+<li>one GWAS summary statistics file,</li>
+<li>sample size,</li>
+<li>population label,</li>
+<li>cohort name,</li>
+<li>LD reference files in PLINK format (<code>.bed</code>, <code>.bim</code>, <code>.fam</code>).</li>
+</ul>
+<p>The example below uses the small mock data in <code>exampledata/test_mock_data</code>.</p>
+<h2 id="step-1-write-a-population-config">Step 1: Write a Population Config<a class="headerlink" href="#step-1-write-a-population-config" title="Permanent link">&para;</a></h2>
+<p>Create a tab-separated file with one row per study.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cat<span class="w"> </span>&gt;<span class="w"> </span>population_config.tsv<span class="w"> </span><span class="s">&lt;&lt;&#39;EOF&#39;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="s">popu    cohort  sample_size path    ld_ref</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="s">EUR cohort1 10000   exampledata/test_mock_data/EUR_all_loci.sumstats    exampledata/test_mock_data/EUR_all_loci</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s">AFR cohort1 8000    exampledata/test_mock_data/AFR_all_loci.sumstats    exampledata/test_mock_data/AFR_all_loci</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">EAS cohort1 12000   exampledata/test_mock_data/EAS_all_loci.sumstats    exampledata/test_mock_data/EAS_all_loci</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s">EOF</span>
+</code></pre></div>
+<p>The <code>path</code> column points to raw summary statistics. The <code>ld_ref</code> column is the
+PLINK prefix, without <code>.bed</code>, <code>.bim</code>, or <code>.fam</code>.</p>
+<div class="admonition info">
+<p class="admonition-title">Why this file matters</p>
+<p>CREDTOOLS carries this metadata forward. Later outputs can still tell which
+row came from EUR, AFR, EAS, or any cohort labels you used.</p>
+</div>
+<h2 id="step-2-munge-the-summary-statistics">Step 2: Munge the Summary Statistics<a class="headerlink" href="#step-2-munge-the-summary-statistics" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>credtools<span class="w"> </span>munge<span class="w"> </span>population_config.tsv<span class="w"> </span>work/munged<span class="w"> </span>--force
+</code></pre></div>
+<p>Munging does three things:</p>
+<ol>
+<li>renames common columns into the CREDTOOLS format,</li>
+<li>removes obvious bad rows,</li>
+<li>creates a stable <code>SNPID</code> from chromosome, position, and alleles.</li>
+</ol>
+<p>After this step, check:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>work/munged/sumstat_info_updated.txt
+</code></pre></div>
+<p>This updated config points to the munged files and keeps the original metadata.</p>
+<h2 id="step-3-chunk-the-genome-into-loci">Step 3: Chunk the Genome Into Loci<a class="headerlink" href="#step-3-chunk-the-genome-into-loci" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>credtools<span class="w"> </span>chunk<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>work/munged/sumstat_info_updated.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>work/chunks<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--threads<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>Chunking finds significant regions, cuts the summary statistics to each region,
+and extracts LD matrices from the PLINK reference panels.</p>
+<p>The handoff file is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>work/chunks/loci_list.txt
+</code></pre></div>
+<p>Open it once. It should have columns like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>locus_id    chr start   end popu    cohort  sample_size prefix
+</code></pre></div>
+<p>The <code>prefix</code> column is important. CREDTOOLS uses it to find:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>{prefix}.sumstats.gz
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>{prefix}.ld.npz
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>{prefix}.ldmap
+</code></pre></div>
+<h2 id="step-4-run-the-full-pipeline">Step 4: Run the Full Pipeline<a class="headerlink" href="#step-4-run-the-full-pipeline" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>work/chunks/loci_list.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>work/results<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>--meta-method<span class="w"> </span>meta_all
+</code></pre></div>
+<p>For each <code>locus_id</code>, the pipeline creates a subdirectory:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>work/results/
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>- locus_1/
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>- locus_2/
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>- overall_run_summary.log
+</code></pre></div>
+<p>Inside each locus directory, look for:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pips.txt.gz
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>credible_sets_summary.txt.gz
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>causal_variants.txt.gz
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>parameters.json
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>run_summary.log
+</code></pre></div>
+<h2 id="step-5-make-a-quick-plot">Step 5: Make a Quick Plot<a class="headerlink" href="#step-5-make-a-quick-plot" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>credtools<span class="w"> </span>plot<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>work/results/locus_1<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>--type<span class="w"> </span>summary<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>--output<span class="w"> </span>work/results/locus_1/qc_summary.png
+</code></pre></div>
+<p>Use plots as a fast check. Use the tables when you need exact values.</p>
+<h2 id="when-something-fails">When Something Fails<a class="headerlink" href="#when-something-fails" title="Permanent link">&para;</a></h2>
+<p>Start with <code>run_summary.log</code> and <code>overall_run_summary.log</code>. Most failures are
+path or input-shape problems:</p>
+<ul>
+<li>a <code>prefix</code> points to files that do not exist,</li>
+<li>LD and summary statistics do not share enough variants,</li>
+<li>an external tool is not installed,</li>
+<li>a locus is too large for available memory.</li>
+</ul>
+<p>See <a href="../../guides/troubleshooting/">Troubleshooting</a> for the common fixes.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1644,10 +1950,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "/credtools/", "features": ["navigation.indexes", "navigation.instant", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "toc.follow", "content.code.copy"], "search": "/credtools/assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "toc.follow", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/credtools/assets/javascripts/bundle.92b07e13.min.js"></script>
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
     
   </body>

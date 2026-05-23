@@ -8,22 +8,28 @@
       
       
       
+        <link rel="canonical" href="https://Jianhua-Wang.github.io/credtools/tutorials/single-ancestry-finemapping/">
       
       
+        <link rel="prev" href="../pre-generated-ld-ukb-1kg/">
       
-      <link rel="icon" href="/credtools/assets/images/favicon.png">
+      
+        <link rel="next" href="../multi-ancestry-finemapping/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
-        <title>CREDTOOLS</title>
+        <title>Single-Ancestry Fine-Mapping - CREDTOOLS</title>
       
     
     
-      <link rel="stylesheet" href="/credtools/assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
       
         
-        <link rel="stylesheet" href="/credtools/assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -42,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="/credtools/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/credtools/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -67,6 +73,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#single-ancestry-fine-mapping" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -79,7 +90,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/credtools/." title="CREDTOOLS" class="md-header__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
+    <a href="../.." title="CREDTOOLS" class="md-header__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -99,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Single-Ancestry Fine-Mapping
             
           </span>
         </div>
@@ -189,7 +200,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/credtools/." title="CREDTOOLS" class="md-nav__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
+    <a href="../.." title="CREDTOOLS" class="md-nav__button md-logo" aria-label="CREDTOOLS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -219,7 +230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -272,7 +283,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/getting-started/" class="md-nav__link ">
+            <a href="../../getting-started/" class="md-nav__link ">
               
   
   
@@ -307,7 +318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/getting-started/concepts/" class="md-nav__link">
+      <a href="../../getting-started/concepts/" class="md-nav__link">
         
   
   
@@ -330,7 +341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/getting-started/installation/" class="md-nav__link">
+      <a href="../../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -353,7 +364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/getting-started/quickstart/" class="md-nav__link">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -380,6 +391,8 @@
       
   
   
+    
+  
   
   
     
@@ -410,17 +423,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/tutorials/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -439,7 +450,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Tutorials
@@ -455,7 +466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/from-raw-gwas-to-results/" class="md-nav__link">
+      <a href="../from-raw-gwas-to-results/" class="md-nav__link">
         
   
   
@@ -478,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/run-an-existing-loci-list/" class="md-nav__link">
+      <a href="../run-an-existing-loci-list/" class="md-nav__link">
         
   
   
@@ -501,7 +512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/pre-generated-ld-ukb-1kg/" class="md-nav__link">
+      <a href="../pre-generated-ld-ukb-1kg/" class="md-nav__link">
         
   
   
@@ -521,10 +532,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/credtools/tutorials/single-ancestry-finemapping/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Single-Ancestry Fine-Mapping
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -535,6 +568,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-the-loci-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prepare the Loci List
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-qc-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run QC First
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-susie" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run SuSiE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#let-credtools-pick-a-smaller-max_causal" class="md-nav__link">
+    <span class="md-ellipsis">
+      Let CREDTOOLS Pick a Smaller max_causal
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#try-abf-when-you-do-not-have-ld" class="md-nav__link">
+    <span class="md-ellipsis">
+      Try ABF When You Do Not Have LD
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interpret-the-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpret the Output
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -547,7 +654,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/multi-ancestry-finemapping/" class="md-nav__link">
+      <a href="../multi-ancestry-finemapping/" class="md-nav__link">
         
   
   
@@ -570,7 +677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/tutorials/visualize-qc-and-results/" class="md-nav__link">
+      <a href="../visualize-qc-and-results/" class="md-nav__link">
         
   
   
@@ -669,7 +776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/input-files/" class="md-nav__link">
+      <a href="../../guides/input-files/" class="md-nav__link">
         
   
   
@@ -692,7 +799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/output-files/" class="md-nav__link">
+      <a href="../../guides/output-files/" class="md-nav__link">
         
   
   
@@ -715,7 +822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/known-limitations/" class="md-nav__link">
+      <a href="../../guides/known-limitations/" class="md-nav__link">
         
   
   
@@ -738,7 +845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/external-tools/" class="md-nav__link">
+      <a href="../../guides/external-tools/" class="md-nav__link">
         
   
   
@@ -761,7 +868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/choosing-meta-method/" class="md-nav__link">
+      <a href="../../guides/choosing-meta-method/" class="md-nav__link">
         
   
   
@@ -784,7 +891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/choosing-finemapping-tool/" class="md-nav__link">
+      <a href="../../guides/choosing-finemapping-tool/" class="md-nav__link">
         
   
   
@@ -807,7 +914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/finemapping-tool-requirements/" class="md-nav__link">
+      <a href="../../guides/finemapping-tool-requirements/" class="md-nav__link">
         
   
   
@@ -830,7 +937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/quality-control/" class="md-nav__link">
+      <a href="../../guides/quality-control/" class="md-nav__link">
         
   
   
@@ -853,7 +960,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/plot-gallery/" class="md-nav__link">
+      <a href="../../guides/plot-gallery/" class="md-nav__link">
         
   
   
@@ -876,7 +983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/batch-hpc/" class="md-nav__link">
+      <a href="../../guides/batch-hpc/" class="md-nav__link">
         
   
   
@@ -899,7 +1006,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/guides/troubleshooting/" class="md-nav__link">
+      <a href="../../guides/troubleshooting/" class="md-nav__link">
         
   
   
@@ -984,7 +1091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/file-schemas/" class="md-nav__link">
+      <a href="../../reference/file-schemas/" class="md-nav__link">
         
   
   
@@ -1007,7 +1114,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/qc-metrics/" class="md-nav__link">
+      <a href="../../reference/qc-metrics/" class="md-nav__link">
         
   
   
@@ -1068,7 +1175,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/reference/cli/" class="md-nav__link ">
+            <a href="../../reference/cli/" class="md-nav__link ">
               
   
   
@@ -1103,7 +1210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/munge/" class="md-nav__link">
+      <a href="../../reference/cli/munge/" class="md-nav__link">
         
   
   
@@ -1126,7 +1233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/chunk/" class="md-nav__link">
+      <a href="../../reference/cli/chunk/" class="md-nav__link">
         
   
   
@@ -1149,7 +1256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/prepare/" class="md-nav__link">
+      <a href="../../reference/cli/prepare/" class="md-nav__link">
         
   
   
@@ -1172,7 +1279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/meta/" class="md-nav__link">
+      <a href="../../reference/cli/meta/" class="md-nav__link">
         
   
   
@@ -1195,7 +1302,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/qc/" class="md-nav__link">
+      <a href="../../reference/cli/qc/" class="md-nav__link">
         
   
   
@@ -1218,7 +1325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/finemap/" class="md-nav__link">
+      <a href="../../reference/cli/finemap/" class="md-nav__link">
         
   
   
@@ -1241,7 +1348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/pipeline/" class="md-nav__link">
+      <a href="../../reference/cli/pipeline/" class="md-nav__link">
         
   
   
@@ -1264,7 +1371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/cli/plot/" class="md-nav__link">
+      <a href="../../reference/cli/plot/" class="md-nav__link">
         
   
   
@@ -1331,7 +1438,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/credtools/reference/api/" class="md-nav__link ">
+            <a href="../../reference/api/" class="md-nav__link ">
               
   
   
@@ -1366,7 +1473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/core/" class="md-nav__link">
+      <a href="../../reference/api/core/" class="md-nav__link">
         
   
   
@@ -1389,7 +1496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/preprocessing/" class="md-nav__link">
+      <a href="../../reference/api/preprocessing/" class="md-nav__link">
         
   
   
@@ -1412,7 +1519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/meta/" class="md-nav__link">
+      <a href="../../reference/api/meta/" class="md-nav__link">
         
   
   
@@ -1435,7 +1542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/qc/" class="md-nav__link">
+      <a href="../../reference/api/qc/" class="md-nav__link">
         
   
   
@@ -1458,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/finemapping/" class="md-nav__link">
+      <a href="../../reference/api/finemapping/" class="md-nav__link">
         
   
   
@@ -1481,7 +1588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/plotting/" class="md-nav__link">
+      <a href="../../reference/api/plotting/" class="md-nav__link">
         
   
   
@@ -1504,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/reference/api/cookbook/" class="md-nav__link">
+      <a href="../../reference/api/cookbook/" class="md-nav__link">
         
   
   
@@ -1542,7 +1649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -1564,7 +1671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/credtools/contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -1596,6 +1703,70 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-the-loci-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prepare the Loci List
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-qc-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run QC First
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-susie" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run SuSiE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#let-credtools-pick-a-smaller-max_causal" class="md-nav__link">
+    <span class="md-ellipsis">
+      Let CREDTOOLS Pick a Smaller max_causal
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#try-abf-when-you-do-not-have-ld" class="md-nav__link">
+    <span class="md-ellipsis">
+      Try ABF When You Do Not Have LD
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interpret-the-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpret the Output
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1607,8 +1778,109 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="single-ancestry-fine-mapping">Single-Ancestry Fine-Mapping<a class="headerlink" href="#single-ancestry-fine-mapping" title="Permanent link">&para;</a></h1>
+<p>Use this workflow when you have one population or one cohort per locus. It is a
+good first run because there are fewer choices to make.</p>
+<h2 id="prepare-the-loci-list">Prepare the Loci List<a class="headerlink" href="#prepare-the-loci-list" title="Permanent link">&para;</a></h2>
+<p>A single-ancestry loci list still uses the same format:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>locus_id    chr start   end popu    cohort  sample_size prefix
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>locus_1 1   50000000    50500000    EUR cohort1 10000   work/EUR_locus_1
+</code></pre></div>
+<p>Each prefix must have summary statistics, LD, and LD map files.</p>
+<h2 id="run-qc-first">Run QC First<a class="headerlink" href="#run-qc-first" title="Permanent link">&para;</a></h2>
+<p>QC catches many avoidable mistakes before fine-mapping.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>credtools<span class="w"> </span>qc<span class="w"> </span>loci_list.txt<span class="w"> </span>qc_results<span class="w"> </span>--threads<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>Look at:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>qc_results/qc.txt.gz
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>qc_results/qc_run_summary.log
+</code></pre></div>
+<p>If you see many outliers, run QC with removal:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>credtools<span class="w"> </span>qc<span class="w"> </span>loci_list.txt<span class="w"> </span>qc_cleaned<span class="w"> </span>--threads<span class="w"> </span><span class="m">4</span><span class="w"> </span>--remove-outlier
+</code></pre></div>
+<p>When outlier removal creates cleaned files, the next input is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>qc_cleaned/cleaned/cleaned_loci_info.txt.gz
+</code></pre></div>
+<h2 id="run-susie">Run SuSiE<a class="headerlink" href="#run-susie" title="Permanent link">&para;</a></h2>
+<p>SuSiE is the safest first tool for most single-ancestry runs.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>loci_list.txt<span class="w"> </span>finemap_susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--coverage<span class="w"> </span><span class="m">0</span>.95
+</code></pre></div>
+<p>If you used cleaned QC output:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>qc_cleaned/cleaned/cleaned_loci_info.txt.gz<span class="w"> </span>finemap_susie_cleaned<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--max-causal<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<h2 id="let-credtools-pick-a-smaller-max_causal">Let CREDTOOLS Pick a Smaller <code>max_causal</code><a class="headerlink" href="#let-credtools-pick-a-smaller-max_causal" title="Permanent link">&para;</a></h2>
+<p>The pipeline enables COJO-based <code>L</code> setting by default. For <code>finemap</code>, you can
+turn it on explicitly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>loci_list.txt<span class="w"> </span>finemap_susie_cojo<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--set-L-by-cojo
+</code></pre></div>
+<p>This is useful when a locus has one or two clear signals and you do not want to
+overfit with a large <code>max_causal</code>.</p>
+<h2 id="try-abf-when-you-do-not-have-ld">Try ABF When You Do Not Have LD<a class="headerlink" href="#try-abf-when-you-do-not-have-ld" title="Permanent link">&para;</a></h2>
+<p>Most tools require LD. ABF can run without an LD matrix, but the result is less
+rich.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>credtools<span class="w"> </span>finemap<span class="w"> </span>loci_list.txt<span class="w"> </span>finemap_abf<span class="w"> </span>--tool<span class="w"> </span>abf
+</code></pre></div>
+<p>Use this as a fallback, not as the main plan when good LD is available.</p>
+<h2 id="interpret-the-output">Interpret the Output<a class="headerlink" href="#interpret-the-output" title="Permanent link">&para;</a></h2>
+<p>The files you will read most often are:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What to check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pips.txt.gz</code></td>
+<td>variants sorted by fine-mapping probability</td>
+</tr>
+<tr>
+<td><code>credible_sets_summary.txt.gz</code></td>
+<td>one row per credible set</td>
+</tr>
+<tr>
+<td><code>causal_variants.txt.gz</code></td>
+<td>variants assigned to credible sets</td>
+</tr>
+<tr>
+<td><code>parameters.json</code></td>
+<td>tool and parameter record</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">A clean single-ancestry result is not always a small credible set</p>
+<p>If variants are in high LD, the tool may be unable to choose one. That is a
+data limitation, not necessarily a failed run.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1644,10 +1916,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "/credtools/", "features": ["navigation.indexes", "navigation.instant", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "toc.follow", "content.code.copy"], "search": "/credtools/assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "toc.follow", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/credtools/assets/javascripts/bundle.92b07e13.min.js"></script>
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
     
   </body>
