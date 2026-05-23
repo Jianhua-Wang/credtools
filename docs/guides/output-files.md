@@ -37,6 +37,25 @@ work/chunks/
 
 If `ld_ref` was present, `chunk` also tries to build LD files.
 
+## After `prepare`
+
+```text
+work/prepared/
+- prepared_files.txt
+- loci_list.txt
+- EUR.locus_1.sumstats.gz
+- EUR.locus_1.ld.npz
+- EUR.locus_1.ldmap.gz
+```
+
+| File | Use it for |
+| --- | --- |
+| `prepared_files.txt` | status table for prepared locus file sets |
+| `loci_list.txt` | input to `pipeline`, `meta`, `qc`, or `finemap` |
+| `*.sumstats.gz` | locus-level munged summary statistics |
+| `*.ld.npz` | compressed LD matrix |
+| `*.ldmap.gz` | LD variant map and reference allele frequencies |
+
 ## After `meta`
 
 ```text
@@ -71,8 +90,9 @@ Common files:
 | --- | --- |
 | `qc.txt.gz` | one summary table across loci |
 | `{locus_id}/qc.txt.gz` | per-locus QC summary |
-| `{locus_id}/kriging_rss.txt.gz` | LD and z-score consistency |
-| `{locus_id}/maf_comparison.txt.gz` | allele-frequency checks |
+| `{locus_id}/expected_z.txt.gz` | kriging RSS LD and z-score consistency |
+| `{locus_id}/dentist_s.txt.gz` | Dentist-S outlier statistics |
+| `{locus_id}/compare_maf.txt.gz` | allele-frequency checks |
 | `cleaned/cleaned_loci_info.txt.gz` | input after `--remove-outlier` |
 
 The `cleaned/` directory appears only when outlier removal is requested and
@@ -89,8 +109,9 @@ work/results/
   - causal_variants.txt.gz
   - parameters.json
   - run_summary.log
-  - kriging_rss.txt
-  - maf_comparison.txt
+  - expected_z.txt.gz
+  - dentist_s.txt.gz
+  - compare_maf.txt.gz
 ```
 
 Start with these:

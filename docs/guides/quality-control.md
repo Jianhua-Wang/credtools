@@ -55,6 +55,40 @@ credtools finemap qc_cleaned/cleaned/cleaned_loci_info.txt.gz finemap_cleaned \
 | LD decay and LD moments | unusual LD structure |
 | Cochran's Q | heterogeneity across studies |
 
+## Kriging RSS and Dentist-S
+
+Kriging RSS compares observed z-scores with LD-implied expected z-scores. The
+main detailed file is:
+
+```text
+qc_results/{locus_id}/expected_z.txt.gz
+```
+
+Important columns:
+
+| Column | Meaning |
+| --- | --- |
+| `z` | observed z-score after CREDTOOLS standardization |
+| `condmean` | LD-implied expected z-score |
+| `condvar` | conditional variance |
+| `z_std_diff` | standardized residual |
+| `logLR` | evidence for allele-switch-like LD mismatch |
+| `lambda_s` | locus-level RSS regularization estimate |
+
+Dentist-S checks whether each variant is consistent with the lead variant and
+its LD to that lead variant. Its detailed file is:
+
+```text
+qc_results/{locus_id}/dentist_s.txt.gz
+```
+
+The default Dentist-S rule counts variants with
+`-log10p_dentist_s >= 4` and `r2 >= 0.6`.
+
+Use both checks together. A high `lambda_s` with many kriging RSS outliers often
+points to broad LD/reference mismatch. A small number of Dentist-S outliers can
+be local allele, build, or imputation problems around a strong lead signal.
+
 ## Useful Flags
 
 | Flag | When to touch it |

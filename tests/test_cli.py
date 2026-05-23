@@ -1069,7 +1069,11 @@ class TestMainCallback:
 # ---------------------------------------------------------------------------
 # Additional imports for _prepare_ld_matrices and CLI commands
 # ---------------------------------------------------------------------------
-from credtools.cli import _prepare_ld_matrices
+from credtools.cli import (
+    _load_genotype_config,
+    _normalize_prepare_input,
+    _prepare_ld_matrices,
+)
 
 
 # ===========================================================================
@@ -1205,6 +1209,120 @@ class TestPrepareLdMatrices:
         assert prep_df.iloc[0]["sample_size"] == 50000
         # Prefix should strip .sumstats and .gz
         assert "sumstats" not in prep_df.iloc[0]["prefix"]
+
+
+# ===========================================================================
+# Tests for prepare CLI helpers and command
+# ===========================================================================
+class TestRunPrepare:
+    """Tests for the prepare CLI command."""
+
+    def test_normalize_prepare_input_accepts_chunk_info(self):
+        """Internal chunk_info tables should be converted to public loci-list shape."""
+        chunk_info_df = pd.DataFrame(
+            {
+                "locus_id": ["L1"],
+                "ancestry": ["EUR"],
+                "chr": [1],
+                "start": [1000],
+                "end": [2000],
+                "sumstats_file": ["/tmp/EUR.L1.sumstats.gz"],
+            }
+        )
+
+        result = _normalize_prepare_input(chunk_info_df)
+
+        assert list(result.columns) == [
+            "locus_id",
+            "chr",
+            "start",
+            "end",
+            "popu",
+            "cohort",
+            "sample_size",
+            "prefix",
+        ]
+        assert result.iloc[0]["popu"] == "EUR"
+        assert result.iloc[0]["cohort"] == "EUR"
+        assert result.iloc[0]["sample_size"] == 50000
+        assert result.iloc[0]["prefix"] == "/tmp/EUR.L1"
+
+    def test_load_genotype_config_json(self, tmp_path):
+        """JSON configs should map population labels to genotype prefixes."""
+        config_path = tmp_path / "genotypes.json"
+        config_path.write_text(json.dumps({"EUR": "/ref/1kg/EUR"}))
+
+        result = _load_genotype_config(str(config_path))
+
+        assert result == {"EUR": "/ref/1kg/EUR"}
+
+    def test_prepare_command_writes_loci_list(self, tmp_path, monkeypatch):
+        """The prepare command should call prepare_finemap_inputs and write a loci list."""
+        from typer.testing import CliRunner
+
+        from credtools.cli import app
+
+        inputs_path = tmp_path / "loci_list.txt"
+        input_df = pd.DataFrame(
+            {
+                "locus_id": ["L1"],
+                "chr": [1],
+                "start": [1000],
+                "end": [2000],
+                "popu": ["EUR"],
+                "cohort": ["UKB"],
+                "sample_size": [400000],
+                "prefix": [str(tmp_path / "chunks" / "EUR.L1")],
+            }
+        )
+        input_df.to_csv(inputs_path, sep="\t", index=False)
+
+        config_path = tmp_path / "genotypes.json"
+        config_path.write_text(json.dumps({"EUR": "/ref/1kg/EUR"}))
+
+        output_dir = tmp_path / "prepared"
+        captured_kwargs = {}
+
+        def mock_prepare_finemap_inputs(**kwargs):
+            captured_kwargs.update(kwargs)
+            return pd.DataFrame(
+                {
+                    "locus_id": ["L1"],
+                    "chr": [1],
+                    "start": [1000],
+                    "end": [2000],
+                    "popu": ["EUR"],
+                    "cohort": ["UKB"],
+                    "sample_size": [400000],
+                    "prefix": [str(output_dir / "EUR.L1")],
+                    "status": ["created"],
+                }
+            )
+
+        monkeypatch.setattr(
+            "credtools.preprocessing.prepare.prepare_finemap_inputs",
+            mock_prepare_finemap_inputs,
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            [
+                "prepare",
+                str(inputs_path),
+                str(config_path),
+                str(output_dir),
+                "--threads",
+                "2",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert captured_kwargs["threads"] == 2
+        assert captured_kwargs["genotype_files"] == {"EUR": "/ref/1kg/EUR"}
+        assert (output_dir / "loci_list.txt").exists()
+        output_df = pd.read_csv(output_dir / "loci_list.txt", sep="\t")
+        assert output_df.iloc[0]["prefix"] == str(output_dir / "EUR.L1")
 
 
 # ===========================================================================

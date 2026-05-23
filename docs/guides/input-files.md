@@ -1,12 +1,14 @@
 # Input Files
 
-CREDTOOLS has two main entry points:
+CREDTOOLS has three main entry points:
 
 1. a population config for raw genome-wide files,
 2. a loci list for prepared locus-level files.
+3. a genotype config when you run `credtools prepare` separately.
 
 Use the population config when you want CREDTOOLS to create loci for you. Use
-the loci list when your locus files already exist.
+the loci list when your locus files already exist. Use the genotype config only
+when `credtools prepare` needs to extract LD from PLINK references.
 
 ## Population Config
 
@@ -91,6 +93,33 @@ locus_1	1	50000000	50500000	AFR	MVP	90000	data/AFR_MVP_locus_1
 
 All rows with the same `locus_id` must have the same `chr`, `start`, and `end`.
 Each `popu + cohort + locus_id` combination must be unique.
+
+## Genotype Config for `prepare`
+
+Use a genotype config when chunked summary statistics exist but LD files still
+need to be extracted from genotype references.
+
+JSON:
+
+```json
+{
+  "EUR": "/ref/ukb_eur",
+  "AFR": "/ref/1kg_afr",
+  "EAS": "/ref/1kg_eas"
+}
+```
+
+TSV:
+
+```text
+popu	ld_ref
+EUR	/ref/ukb_eur
+AFR	/ref/1kg_afr
+EAS	/ref/1kg_eas
+```
+
+Each key must match a `popu` value in the input loci list. Each value is a
+genotype prefix, usually a PLINK prefix without `.bed`, `.bim`, or `.fam`.
 
 ## Files Behind Each Prefix
 

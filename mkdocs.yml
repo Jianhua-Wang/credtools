@@ -14,6 +14,7 @@ nav:
       - Overview: tutorials/index.md
       - Raw GWAS to Results: tutorials/from-raw-gwas-to-results.md
       - Existing Loci List: tutorials/run-an-existing-loci-list.md
+      - Pre-Generated LD: tutorials/pre-generated-ld-ukb-1kg.md
       - Single-Ancestry Fine-Mapping: tutorials/single-ancestry-finemapping.md
       - Multi-Ancestry Fine-Mapping: tutorials/multi-ancestry-finemapping.md
       - Visualize QC and Results: tutorials/visualize-qc-and-results.md
@@ -36,6 +37,7 @@ nav:
           - Overview: reference/cli/index.md
           - munge: reference/cli/munge.md
           - chunk: reference/cli/chunk.md
+          - prepare: reference/cli/prepare.md
           - meta: reference/cli/meta.md
           - qc: reference/cli/qc.md
           - finemap: reference/cli/finemap.md

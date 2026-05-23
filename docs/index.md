@@ -67,8 +67,8 @@ The main outputs are easy to recognize:
 - `pips.txt.gz`: one row per variant, with posterior inclusion probabilities.
 - `credible_sets_summary.txt.gz`: one row per credible set.
 - `causal_variants.txt.gz`: variants that belong to at least one credible set.
-- QC tables such as `kriging_rss.txt`, `maf_comparison.txt`, and
-  `snp_missingness.txt`.
+- QC tables such as `expected_z.txt.gz`, `dentist_s.txt.gz`, and
+  `compare_maf.txt.gz`.
 - Optional plots from `credtools plot`.
 
 ## Where to Go Next

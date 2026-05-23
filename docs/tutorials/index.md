@@ -17,6 +17,12 @@ matches the files you have today.
 
     [:octicons-arrow-right-24: Run prepared data](run-an-existing-loci-list.md)
 
+-   **Pre-generated LD**
+
+    Use existing UKB or 1KG LD matrices with your locus-level summary stats.
+
+    [:octicons-arrow-right-24: Run pre-generated LD](pre-generated-ld-ukb-1kg.md)
+
 -   **Single ancestry**
 
     Fine-map one population or one cohort.

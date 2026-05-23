@@ -80,14 +80,16 @@ Look for these files:
 
 ```text
 /tmp/credtools_results/
-- pips.txt.gz
-- causal_variants.txt.gz
-- credible_sets_summary.txt.gz
-- parameters.json
-- run_summary.log
-- kriging_rss.txt
-- maf_comparison.txt
-- snp_missingness.txt
+- overall_run_summary.log
+- <locus_id>/
+  - pips.txt.gz
+  - causal_variants.txt.gz
+  - credible_sets_summary.txt.gz
+  - parameters.json
+  - run_summary.log
+  - expected_z.txt.gz
+  - dentist_s.txt.gz
+  - compare_maf.txt.gz
 ```
 
 Create a quick QC plot:

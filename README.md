@@ -79,6 +79,7 @@ placeholder `sample_size` or cohort label, edit it before fine-mapping.
 | --- | --- |
 | `credtools munge` | clean and standardize summary statistics |
 | `credtools chunk` | find loci, create chunks, and prepare LD-backed files |
+| `credtools prepare` | build LD-backed locus files from chunked sumstats and genotype references |
 | `credtools meta` | combine cohorts before QC or fine-mapping |
 | `credtools qc` | check summary-statistic and LD consistency |
 | `credtools finemap` | run fine-mapping only |

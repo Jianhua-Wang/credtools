@@ -74,7 +74,7 @@ derived from `EAF` when CREDTOOLS loads and munges the locus file.
 
 ## Loci List
 
-Used by `meta`, `qc`, `finemap`, and `pipeline`.
+Used by `prepare`, `meta`, `qc`, `finemap`, and `pipeline`.
 
 ```text
 locus_id	chr	start	end	popu	cohort	sample_size	prefix
@@ -94,6 +94,32 @@ locus_1	1	50000000	50500000	AFR	MVP	90000	data/AFR_MVP_locus_1
 | `prefix` | path prefix | no file extension |
 
 Each `popu + cohort + locus_id` combination must be unique.
+
+## Genotype Config
+
+Used by `credtools prepare`.
+
+JSON:
+
+```json
+{
+  "EUR": "/ref/ukb_eur",
+  "AFR": "/ref/1kg_afr"
+}
+```
+
+TSV:
+
+```text
+popu	ld_ref
+EUR	/ref/ukb_eur
+AFR	/ref/1kg_afr
+```
+
+| Column | Type | Rule |
+| --- | --- | --- |
+| `popu` | string | must match `popu` in the prepare input |
+| `ld_ref` | path prefix | PLINK prefix without `.bed`, `.bim`, or `.fam` |
 
 ## Files Behind `prefix`
 
@@ -204,4 +230,3 @@ Detailed QC files:
 | `ld_decay.txt.gz` | `distance_kb`, `r2_avg`, `decay_rate`, `cohort` |
 | `cochran_q.txt.gz` | `SNPID`, `Q`, `Q_pvalue`, `I_squared`, `k` |
 | `snp_missingness.txt.gz` | variant presence or absence by cohort |
-

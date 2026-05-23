@@ -337,18 +337,15 @@ class TestPrepareCommand:
             cmd, capture_output=True, text=True, cwd=test_workspace.parent.parent
         )
 
-        # Note: Currently there's a bug in the prepare command - it expects 'ancestry' column
-        # but chunk creates 'popu' column. For now we test that the command executes.
-        # The important test is that the command exists and can be invoked.
-
-        # Future improvement: fix the column name mismatch in prepare command
-        # For now, just ensure command can be called
+        # The prepare command may still fail in integration environments without
+        # a working PLINK binary. The important check here is that the command
+        # exists and can be invoked.
         assert (
             result.returncode != 127
         ), "Prepare command not found"  # 127 = command not found
 
-        # The command should fail with the current bug but not due to missing command
-        # This tests that the command interface works even if implementation has bugs
+        # This tests that the command interface is wired even if preparation
+        # cannot complete in the local test environment.
 
 
 class TestIntegratedPipeline:
@@ -447,8 +444,8 @@ class TestIntegratedPipeline:
             cwd=test_workspace.parent.parent,
         )
 
-        # Note: The prepare step currently has a bug, so we expect it to fail
-        # but we can still validate the earlier steps worked correctly
+        # The prepare step depends on local LD extraction support, so validate
+        # the earlier steps even if it cannot complete in this environment.
         assert result.returncode != 127, "Integration test: Prepare command not found"
 
         # Instead of testing prepare output, verify that munge and chunk worked correctly

@@ -17,7 +17,7 @@ run.
 | Custom chunks | `--custom-chunks` reads `chr`, `start`, and `end`, then assigns the internal ancestry label `custom`. This may not match your real population labels. | For now, prefer an explicit `loci_list.txt` when you already know the regions. |
 | Auto-created sample size | `chunk` can write `sample_size=50000` as a placeholder in `loci_list.txt`. | Replace it with the real cohort sample size before `meta`, `qc`, `finemap`, or `pipeline`. |
 | Auto-created cohort label | `chunk` may set `cohort` equal to the ancestry label. | Edit `cohort` if you need study-level labels such as `UKBB`, `MVP`, or `BBJ`. |
-| Direct chunk input | Passing raw file paths to `chunk` skips LD extraction because no `ld_ref` is available. | Use a population config with `ld_ref` or prepare LD files yourself. |
+| Direct chunk input | Passing raw file paths to `chunk` skips LD extraction because no `ld_ref` is available. | Use a population config with `ld_ref`, run `credtools prepare` with a genotype config, or provide pre-generated LD files yourself. |
 | ABF without LD | The ABF method itself can run without LD in Python, but the current CLI locus loader expects `{prefix}.ld` or `{prefix}.ld.npz` and a matching `{prefix}.ldmap`. | Use the Python API for a true no-LD ABF run, or provide LD files for CLI workflows. |
 | FINEMAP MAF | FINEMAP requires a `MAF` column after CREDTOOLS loads the locus. | Make sure `EAF` is present so CREDTOOLS can derive `MAF`, or provide `MAF` in prepared inputs. |
 | Multi-input tools | `susiex`, `multisusie`, and `mesusie` analyze all rows in a locus together. | Keep rows for the same `locus_id` aligned to the same chromosome, start, and end. |
@@ -90,4 +90,3 @@ fine-mapping. It is different from a tool crash.
 - Confirm `run_summary.log` has `Failed: 0`.
 - Plot one locus with `credtools plot`.
 - Only then scale to all loci.
-

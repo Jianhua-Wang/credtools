@@ -17,8 +17,14 @@ if TYPE_CHECKING:
 
 import typer
 from rich.console import Console
-from rich.progress import (BarColumn, MofNCompleteColumn, Progress,
-                           SpinnerColumn, TextColumn, TimeRemainingColumn)
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 
 from credtools import __version__
 
@@ -410,8 +416,10 @@ def run_munge(
 
     try:
         from credtools.preprocessing import munge_sumstats
-        from credtools.preprocessing.munge import (create_munge_config,
-                                                   validate_munged_files)
+        from credtools.preprocessing.munge import (
+            create_munge_config,
+            validate_munged_files,
+        )
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing dependencies not found.[/red]")
@@ -713,6 +721,180 @@ def _update_chunk_info_with_prepared(
     return updated_df
 
 
+def _prefix_from_sumstats_file(sumstats_file: str) -> str:
+    """Return the CREDTOOLS prefix for a chunked summary-statistics file."""
+    prefix = str(Path(sumstats_file).with_suffix(""))
+    if prefix.endswith(".sumstats"):
+        prefix = prefix[: -len(".sumstats")]
+    return prefix
+
+
+def _load_genotype_config(config_file: str) -> Dict[str, str]:
+    """Load a population-to-genotype-prefix mapping from JSON or TSV."""
+    import pandas as pd
+
+    expanded = os.path.expanduser(config_file)
+    if not os.path.exists(expanded):
+        raise FileNotFoundError(f"Genotype config file not found: {expanded}")
+
+    if expanded.endswith(".json"):
+        with open(expanded) as handle:
+            config = json.load(handle)
+        if not isinstance(config, dict):
+            raise ValueError("JSON genotype config must be an object.")
+        return {str(key): str(value) for key, value in config.items()}
+
+    config_df = pd.read_csv(expanded, sep="\t")
+    key_column = None
+    for candidate in ("popu", "ancestry", "population"):
+        if candidate in config_df.columns:
+            key_column = candidate
+            break
+    path_column = None
+    for candidate in ("ld_ref", "path", "prefix", "genotype_prefix"):
+        if candidate in config_df.columns:
+            path_column = candidate
+            break
+    if key_column is None or path_column is None:
+        raise ValueError(
+            "TSV genotype config must include a population column "
+            "(`popu`, `ancestry`, or `population`) and a genotype prefix column "
+            "(`ld_ref`, `path`, `prefix`, or `genotype_prefix`)."
+        )
+
+    genotype_files = {}
+    for _, row in config_df.iterrows():
+        if pd.isna(row[key_column]) or pd.isna(row[path_column]):
+            continue
+        genotype_files[str(row[key_column])] = str(row[path_column])
+    return genotype_files
+
+
+def _normalize_prepare_input(input_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Normalize either a loci list or internal chunk_info table for prepare.
+
+    `prepare_finemap_inputs` expects the public loci-list shape with `popu`,
+    `cohort`, `sample_size`, and `prefix`. Older chunk internals use
+    `ancestry` and `sumstats_file`; keep that path working for compatibility.
+    """
+    normalized = input_df.copy()
+
+    if "popu" not in normalized.columns and "ancestry" in normalized.columns:
+        normalized["popu"] = normalized["ancestry"]
+
+    if "prefix" not in normalized.columns and "sumstats_file" in normalized.columns:
+        normalized["prefix"] = normalized["sumstats_file"].apply(
+            _prefix_from_sumstats_file
+        )
+
+    if "cohort" not in normalized.columns and "popu" in normalized.columns:
+        normalized["cohort"] = normalized["popu"]
+
+    if "sample_size" not in normalized.columns:
+        normalized["sample_size"] = 50000
+
+    required_columns = [
+        "locus_id",
+        "chr",
+        "start",
+        "end",
+        "popu",
+        "cohort",
+        "sample_size",
+        "prefix",
+    ]
+    missing_columns = [
+        column for column in required_columns if column not in normalized.columns
+    ]
+    if missing_columns:
+        raise ValueError(
+            f"Prepare input is missing required columns: {missing_columns}"
+        )
+
+    return normalized[required_columns].copy()
+
+
+@app.command(
+    name="prepare",
+    help="Build LD-backed locus files from chunked summary statistics.",
+)
+def run_prepare(
+    inputs: str = typer.Argument(
+        ...,
+        help="Input loci list or chunk_info table with locus coordinates and prefixes.",
+    ),
+    genotype_config: str = typer.Argument(
+        ...,
+        help="JSON or TSV mapping populations to genotype prefixes.",
+    ),
+    output_dir: str = typer.Argument(..., help="Output directory for prepared files."),
+    threads: int = typer.Option(1, "--threads", "-t", help="Number of threads."),
+    ld_format: str = typer.Option(
+        "plink", "--ld-format", "-f", help="LD computation format (plink/vcf)."
+    ),
+    keep_intermediate: bool = typer.Option(
+        False, "--keep-intermediate", "-k", help="Keep intermediate files."
+    ),
+    log_file: Optional[str] = typer.Option(
+        None, "--log-file", "-l", help="Log output to specified file."
+    ),
+):
+    """Prepare final summary-statistics, LD-matrix, and LD-map files."""
+    import pandas as pd
+
+    from credtools.preprocessing.prepare import prepare_finemap_inputs
+
+    setup_file_logging(log_file)
+    console = Console()
+
+    try:
+        input_df = pd.read_csv(os.path.expanduser(inputs), sep="\t")
+        loci_df = _normalize_prepare_input(input_df)
+        genotype_files = _load_genotype_config(genotype_config)
+        os.makedirs(output_dir, exist_ok=True)
+
+        missing_populations = sorted(set(loci_df["popu"]) - set(genotype_files))
+        if missing_populations:
+            raise ValueError(
+                "Genotype config has no prefix for populations: "
+                + ", ".join(missing_populations)
+            )
+
+        console.print("[cyan]Preparing LD-backed locus files...[/cyan]")
+        prepared_df = prepare_finemap_inputs(
+            chunk_info_df=loci_df,
+            genotype_files=genotype_files,
+            output_dir=output_dir,
+            threads=threads,
+            ld_format=ld_format,
+            keep_intermediate=keep_intermediate,
+        )
+
+        loci_list_file = os.path.join(output_dir, "loci_list.txt")
+        if not prepared_df.empty:
+            output_columns = [
+                "locus_id",
+                "chr",
+                "start",
+                "end",
+                "popu",
+                "cohort",
+                "sample_size",
+                "prefix",
+            ]
+            prepared_df[output_columns].to_csv(loci_list_file, sep="\t", index=False)
+        else:
+            loci_df.iloc[0:0].to_csv(loci_list_file, sep="\t", index=False)
+
+        console.print(f"[green]Prepared {len(prepared_df)} locus file sets[/green]")
+        console.print(f"[green]Credtools loci list: {loci_list_file}[/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error during preparation: {e}[/red]")
+        raise typer.Exit(1)
+
+
 @app.command(
     name="chunk",
     help="Identify independent loci, chunk summary statistics, and extract LD matrices.",
@@ -767,10 +949,8 @@ def run_chunk(
     setup_file_logging(log_file)
 
     try:
-        from credtools.preprocessing import (chunk_sumstats,
-                                             identify_independent_loci)
-        from credtools.preprocessing.chunk import \
-            create_loci_list_for_credtools
+        from credtools.preprocessing import chunk_sumstats, identify_independent_loci
+        from credtools.preprocessing.chunk import create_loci_list_for_credtools
     except ImportError as e:
         console = Console()
         console.print("[red]Error: Preprocessing module not found.[/red]")

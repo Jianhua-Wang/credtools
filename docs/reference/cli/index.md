@@ -9,6 +9,7 @@ first.
 | --- | --- |
 | `credtools munge` | raw summary statistics need cleaning and standard column names |
 | `credtools chunk` | genome-wide files need to be split into loci |
+| `credtools prepare` | chunked locus files need LD matrices from genotype references |
 | `credtools meta` | you want to run meta-analysis as a separate step |
 | `credtools qc` | you want standalone QC tables or cleaned inputs |
 | `credtools finemap` | you want standalone fine-mapping |
@@ -26,6 +27,7 @@ credtools --log-file credtools.log
 Command-specific help:
 
 ```bash
+credtools prepare --help
 credtools pipeline --help
 credtools finemap --help
 ```

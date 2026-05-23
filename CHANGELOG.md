@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.2] (2026-05-23)
+
+### Added
+- New `credtools prepare` CLI command for building LD-backed locus files from a loci list or internal `chunk_info.txt` plus JSON/TSV genotype reference config.
+- CLI reference page for `credtools prepare`.
+- Tutorial for using pre-generated UKB and 1000 Genomes LD files with CREDTOOLS loci lists.
+
+### Changed
+- Documented genotype configs for separate `prepare` runs and clarified when to use pre-generated LD versus PLINK-backed LD extraction.
+- Updated QC documentation and output references to the current file names: `expected_z.txt.gz`, `dentist_s.txt.gz`, and `compare_maf.txt.gz`.
+- Extended bumpversion coverage to `uv.lock` so release metadata stays aligned across package files.
+
+### Fixed
+- Restored the editable package version in `uv.lock` to match the package version before the next release bump.
+- Removed stale test comments that still described `prepare` as a missing or broken command.
+
 ## [0.9.0] (2026-05-05)
 
 ### Added
