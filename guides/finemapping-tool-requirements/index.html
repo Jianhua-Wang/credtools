@@ -904,6 +904,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#adaptive-l" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptive L (--adaptive-max-causal)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#choosing-the-first-tool" class="md-nav__link">
     <span class="md-ellipsis">
       Choosing the First Tool
@@ -1740,6 +1749,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#adaptive-l" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptive L (--adaptive-max-causal)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#choosing-the-first-tool" class="md-nav__link">
     <span class="md-ellipsis">
       Choosing the First Tool
@@ -1936,14 +1954,90 @@ instead of forcing a weak credible set.</p>
 <p>If that is not what you want, loosen <code>--significant-threshold</code> for exploratory
 runs and label the output accordingly.</p>
 <h2 id="convergence-options">Convergence Options<a class="headerlink" href="#convergence-options" title="Permanent link">&para;</a></h2>
-<p>Iterative tools expose <code>--max-iter</code> and convergence tolerance options. When
-using adaptive search:</p>
+<p>Iterative tools expose <code>--max-iter</code> and convergence tolerance options. When a
+fixed signal cap is hard to choose, use adaptive L.</p>
+<h2 id="adaptive-l">Adaptive L (<code>--adaptive-max-causal</code>)<a class="headerlink" href="#adaptive-l" title="Permanent link">&para;</a></h2>
+<p><code>L</code> is the model's cap on the number of causal signals. In the CREDTOOLS CLI,
+this is exposed as <code>--max-causal</code>; in the Python API, it is the <code>max_causal</code>
+argument. Adaptive L does not change the fine-mapping model itself. It is a
+retry strategy around the selected tool that changes <code>max_causal</code> when the
+current value looks too small or too hard for the model to fit.</p>
+<p>Use it when loci have variable signal counts or when some high-L runs fail to
+converge:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>loci_list.txt<span class="w"> </span>results<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--adaptive-max-causal
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--max-causal<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--adaptive-max-causal
 </code></pre></div>
-<p>CREDTOOLS starts from the requested <code>--max-causal</code>, tries larger values if the
-model appears capped, and can retry smaller values when convergence fails.</p>
+<p>The starting value is the effective <code>max_causal</code>: the requested <code>--max-causal</code>,
+or the COJO-derived value when <code>--set-L-by-cojo</code> is enabled.</p>
+<pre class="mermaid"><code>flowchart TD
+    A["Start with effective L"] --&gt; B["Run fine-mapping tool"]
+    B --&gt; C{"Run failed?"}
+    C -- "yes" --&gt; H{"Smaller L left?"}
+    C -- "no" --&gt; D["Apply purity filter&lt;br/&gt;if --purity &gt; 0"]
+    D --&gt; E{"0 &lt; n_cs &lt; L?"}
+    E -- "yes" --&gt; F["Accept result"]
+    E -- "no" --&gt; G{"n_cs &gt;= L?"}
+    G -- "yes" --&gt; I["Increase L by 5&lt;br/&gt;and retry while within cap"]
+    I --&gt; B
+    G -- "no: n_cs = 0" --&gt; H
+    H -- "yes" --&gt; J["Run next smaller L"]
+    J --&gt; K{"Non-converged empty result?"}
+    K -- "yes" --&gt; H
+    K -- "no" --&gt; F
+    H -- "no" --&gt; M["Return empty result&lt;br/&gt;adaptive_failed = true"]</code></pre>
+<p>The loop uses these rules:</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Adaptive action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0 &lt; n_cs &lt; L</code></td>
+<td>Accept the result. The model found credible sets without filling all available signal slots.</td>
+</tr>
+<tr>
+<td><code>n_cs &gt;= L</code></td>
+<td>Treat the run as saturated. Increase <code>L</code> by 5 and retry while the high-L guard allows it.</td>
+</tr>
+<tr>
+<td>The tool raises an error</td>
+<td>Enter the decrease phase and try smaller values of <code>L</code>.</td>
+</tr>
+<tr>
+<td>The wrapper returns <code>n_cs = 0</code> with <code>converged = False</code></td>
+<td>Treat this as retryable non-convergence and keep decreasing <code>L</code>.</td>
+</tr>
+<tr>
+<td>A smaller-L run returns any non-retryable result</td>
+<td>Accept it, including a converged no-signal result with <code>n_cs = 0</code>.</td>
+</tr>
+<tr>
+<td>Every attempted value fails or stays non-converged</td>
+<td>Return an empty credible set with <code>parameters.adaptive_failed = true</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The increase branch is deliberately bounded rather than exhaustive. In the
+current implementation, CREDTOOLS adds 5 while the current <code>L</code> is at or below
+20, so the default <code>L = 5</code> path can visit <code>10</code>, <code>15</code>, <code>20</code>, and a final
+guard-edge attempt at <code>25</code> if the <code>L = 20</code> run is still saturated. If you need a
+strict scientific cap, use a fixed <code>--max-causal</code> without adaptive L.</p>
+<p>When <code>--adaptive-max-causal</code> is enabled, CREDTOOLS also defaults
+<code>empty_on_nonconvergence=True</code> for wrappers that support it. This makes
+non-converged runs return an empty result marked <code>converged = False</code>, so the
+adaptive loop can keep reducing <code>L</code> instead of accepting unstable partial
+credible sets.</p>
+<p>Purity filtering is applied inside the adaptive loop when <code>--purity</code> is set.
+That means the loop makes success and saturation decisions using the
+post-filter <code>n_cs</code>, so low-purity credible sets do not force <code>L</code> upward.</p>
+<p>Adaptive L applies to <code>finemap</code>, <code>rsparsepro</code>, <code>susie</code>, <code>susie_ash</code>, and
+<code>susie_inf</code> per input locus. It applies to <code>multisusie</code>, <code>susiex</code>, and
+<code>mesusie</code> once at the <code>LocusSet</code> level.</p>
 <p>For SuSiEx, keep <code>--mult-step</code> off when using <code>--adaptive-max-causal</code>; both
 features try to refine the model and can make debugging harder.</p>
 <h2 id="choosing-the-first-tool">Choosing the First Tool<a class="headerlink" href="#choosing-the-first-tool" title="Permanent link">&para;</a></h2>
