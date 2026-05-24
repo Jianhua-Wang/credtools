@@ -49,6 +49,9 @@ credtools finemap work/chunks/loci_list.txt work/finemap \
 | `--calculate-lambda-s` | estimate lambda-s while loading loci | off |
 | `--log-file` | write logs to a file | none |
 
+For exact adaptive-L retry rules, see
+[Adaptive L](../../guides/finemapping-tool-requirements.md#adaptive-l).
+
 ## SuSiE Options
 
 | Option | Default |

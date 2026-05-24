@@ -76,17 +76,79 @@ runs and label the output accordingly.
 
 ## Convergence Options
 
-Iterative tools expose `--max-iter` and convergence tolerance options. When
-using adaptive search:
+Iterative tools expose `--max-iter` and convergence tolerance options. When a
+fixed signal cap is hard to choose, use adaptive L.
+
+## Adaptive L (`--adaptive-max-causal`) {#adaptive-l}
+
+`L` is the model's cap on the number of causal signals. In the CREDTOOLS CLI,
+this is exposed as `--max-causal`; in the Python API, it is the `max_causal`
+argument. Adaptive L does not change the fine-mapping model itself. It is a
+retry strategy around the selected tool that changes `max_causal` when the
+current value looks too small or too hard for the model to fit.
+
+Use it when loci have variable signal counts or when some high-L runs fail to
+converge:
 
 ```bash
 credtools pipeline loci_list.txt results \
   --tool susie \
+  --max-causal 5 \
   --adaptive-max-causal
 ```
 
-CREDTOOLS starts from the requested `--max-causal`, tries larger values if the
-model appears capped, and can retry smaller values when convergence fails.
+The starting value is the effective `max_causal`: the requested `--max-causal`,
+or the COJO-derived value when `--set-L-by-cojo` is enabled.
+
+```mermaid
+flowchart TD
+    A["Start with effective L"] --> B["Run fine-mapping tool"]
+    B --> C{"Run failed?"}
+    C -- "yes" --> H{"Smaller L left?"}
+    C -- "no" --> D["Apply purity filter<br/>if --purity > 0"]
+    D --> E{"0 < n_cs < L?"}
+    E -- "yes" --> F["Accept result"]
+    E -- "no" --> G{"n_cs >= L?"}
+    G -- "yes" --> I["Increase L by 5<br/>and retry while within cap"]
+    I --> B
+    G -- "no: n_cs = 0" --> H
+    H -- "yes" --> J["Run next smaller L"]
+    J --> K{"Non-converged empty result?"}
+    K -- "yes" --> H
+    K -- "no" --> F
+    H -- "no" --> M["Return empty result<br/>adaptive_failed = true"]
+```
+
+The loop uses these rules:
+
+| Situation | Adaptive action |
+| --- | --- |
+| `0 < n_cs < L` | Accept the result. The model found credible sets without filling all available signal slots. |
+| `n_cs >= L` | Treat the run as saturated. Increase `L` by 5 and retry while the high-L guard allows it. |
+| The tool raises an error | Enter the decrease phase and try smaller values of `L`. |
+| The wrapper returns `n_cs = 0` with `converged = False` | Treat this as retryable non-convergence and keep decreasing `L`. |
+| A smaller-L run returns any non-retryable result | Accept it, including a converged no-signal result with `n_cs = 0`. |
+| Every attempted value fails or stays non-converged | Return an empty credible set with `parameters.adaptive_failed = true`. |
+
+The increase branch is deliberately bounded rather than exhaustive. In the
+current implementation, CREDTOOLS adds 5 while the current `L` is at or below
+20, so the default `L = 5` path can visit `10`, `15`, `20`, and a final
+guard-edge attempt at `25` if the `L = 20` run is still saturated. If you need a
+strict scientific cap, use a fixed `--max-causal` without adaptive L.
+
+When `--adaptive-max-causal` is enabled, CREDTOOLS also defaults
+`empty_on_nonconvergence=True` for wrappers that support it. This makes
+non-converged runs return an empty result marked `converged = False`, so the
+adaptive loop can keep reducing `L` instead of accepting unstable partial
+credible sets.
+
+Purity filtering is applied inside the adaptive loop when `--purity` is set.
+That means the loop makes success and saturation decisions using the
+post-filter `n_cs`, so low-purity credible sets do not force `L` upward.
+
+Adaptive L applies to `finemap`, `rsparsepro`, `susie`, `susie_ash`, and
+`susie_inf` per input locus. It applies to `multisusie`, `susiex`, and
+`mesusie` once at the `LocusSet` level.
 
 For SuSiEx, keep `--mult-step` off when using `--adaptive-max-causal`; both
 features try to refine the model and can make debugging harder.
@@ -113,4 +175,3 @@ credtools finemap important_loci.txt results_finemap \
 
 Use comparison runs to answer a specific question, such as whether a top
 credible set is stable under a different model.
-

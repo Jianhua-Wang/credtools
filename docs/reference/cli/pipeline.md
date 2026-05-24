@@ -43,6 +43,9 @@ For each `locus_id`, the pipeline:
 | `--calculate-lambda-s` | estimate lambda-s while loading loci | off |
 | `--log-file` | write logs to a file | none |
 
+For exact adaptive-L retry rules, see
+[Adaptive L](../../guides/finemapping-tool-requirements.md#adaptive-l).
+
 ## Selected Tool-Specific Options
 
 | Tool family | Options |

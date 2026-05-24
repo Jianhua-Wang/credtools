@@ -68,6 +68,9 @@ credtools pipeline loci_list.txt results_multisusie \
 | `--set-L-by-cojo` | use COJO to estimate the number of signals |
 | `--purity` | filter credible sets with weak internal LD |
 
+For the full adaptive-L retry flow, see
+[Adaptive L](finemapping-tool-requirements.md#adaptive-l).
+
 ## A Safe First Run
 
 ```bash
