@@ -3,6 +3,14 @@
 This page gives the short release story. For the full raw changelog, see
 [`CHANGELOG.md`](https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md).
 
+## 0.9.3
+
+Documented adaptive L (`--adaptive-max-causal`) in more detail.
+
+The guide now explains how CREDTOOLS changes `max_causal`, when it increases or
+decreases L, how non-convergence and purity filtering affect the retry loop, and
+which tools support the mechanism.
+
 ## 0.9.0
 
 Added SuSiE-inf support through `--tool susie_inf`.

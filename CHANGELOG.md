@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.3] (2026-05-24)
+
+### Added
+- Documented the adaptive-L (`--adaptive-max-causal`) retry mechanism with a Mermaid flowchart, rule table, convergence handling, purity-filter interaction, and supported tool scope.
+
+### Changed
+- Linked the adaptive-L explanation from fine-mapping guide and CLI reference pages so users can find the detailed mechanism from option tables.
+
 ## [0.9.2] (2026-05-23)
 
 ### Added
