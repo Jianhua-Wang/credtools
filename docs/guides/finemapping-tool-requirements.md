@@ -103,38 +103,45 @@ or the COJO-derived value when `--set-L-by-cojo` is enabled.
 ```mermaid
 flowchart TD
     A["Start with effective L"] --> B["Run fine-mapping tool"]
-    B --> C{"Run failed?"}
-    C -- "yes" --> H{"Smaller L left?"}
+    B --> C{"Run failed?<br/>(error or converged = false)"}
     C -- "no" --> D["Apply purity filter<br/>if --purity > 0"]
-    D --> E{"0 < n_cs < L?"}
+    D --> E{"n_cs < L?"}
     E -- "yes" --> F["Accept result"]
-    E -- "no" --> G{"n_cs >= L?"}
-    G -- "yes" --> I["Increase L by 5<br/>and retry while within cap"]
+    E -- "no: saturated" --> G{"L at cap (20)?"}
+    G -- "yes" --> F
+    G -- "no" --> I["Increase L by 5<br/>(clamped to 20)<br/>and remember this result"]
     I --> B
-    G -- "no: n_cs = 0" --> H
-    H -- "yes" --> J["Run next smaller L"]
-    J --> K{"Non-converged empty result?"}
-    K -- "yes" --> H
-    K -- "no" --> F
-    H -- "no" --> M["Return empty result<br/>adaptive_failed = true"]
+    C -- "yes at L = k" --> H["Try L = k-1, k-2, ..., 1"]
+    H --> J{"Already have a valid<br/>result for this L?"}
+    J -- "yes" --> F
+    J -- "no" --> K["Run tool at this L"]
+    K --> L2{"Run failed?"}
+    L2 -- "no" --> F
+    L2 -- "yes" --> N{"Smaller L left?"}
+    N -- "yes" --> H
+    N -- "no" --> M["Return empty result<br/>adaptive_failed = true"]
 ```
 
 The loop uses these rules:
 
 | Situation | Adaptive action |
 | --- | --- |
-| `0 < n_cs < L` | Accept the result. The model found credible sets without filling all available signal slots. |
-| `n_cs >= L` | Treat the run as saturated. Increase `L` by 5 and retry while the high-L guard allows it. |
-| The tool raises an error | Enter the decrease phase and try smaller values of `L`. |
-| The wrapper returns `n_cs = 0` with `converged = False` | Treat this as retryable non-convergence and keep decreasing `L`. |
-| A smaller-L run returns any non-retryable result | Accept it, including a converged no-signal result with `n_cs = 0`. |
+| Valid result with `n_cs < L` | Accept the result. This includes a genuine no-signal result with `n_cs = 0` and `converged = true` or unknown (for example, a significance-gated empty result). |
+| Valid result with `n_cs >= L` | Treat the run as saturated. Remember this result, increase `L` by 5 (clamped to 20), and retry. A saturated result at `L = 20` is accepted as the best result within range. |
+| The tool raises an error, or returns `converged = false` (at any `n_cs`) | Treat the run at `L = k` as failed and fall back to `k-1, k-2, ..., 1`. |
+| Fallback reaches an `L` that already produced a valid result | Reuse that result directly without recomputation. |
+| Fallback reaches an `L` that has not been tried | Run it; accept the first valid result. |
 | Every attempted value fails or stays non-converged | Return an empty credible set with `parameters.adaptive_failed = true`. |
 
-The increase branch is deliberately bounded rather than exhaustive. In the
-current implementation, CREDTOOLS adds 5 while the current `L` is at or below
-20, so the default `L = 5` path can visit `10`, `15`, `20`, and a final
-guard-edge attempt at `25` if the `L = 20` run is still saturated. If you need a
-strict scientific cap, use a fixed `--max-causal` without adaptive L.
+For example, with the default `L = 5`, a locus that saturates at 5 and 10 and
+then fails at 15 falls back to 14. If 14 down to 11 also fail, the earlier
+valid `L = 10` result is reused rather than restarting from `L = 4`. The
+expansion phase never exceeds `L = 20`. If you need a strict scientific cap,
+use a fixed `--max-causal` without adaptive L.
+
+Each attempt is logged with its `max_causal`, the resulting `n_cs`, the
+convergence flag, and the reason for any failure or fallback; the final line
+reports the selected `max_causal`.
 
 When `--adaptive-max-causal` is enabled, CREDTOOLS also defaults
 `empty_on_nonconvergence=True` for wrappers that support it. This makes

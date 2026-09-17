@@ -112,6 +112,140 @@ def _is_nonconverged_empty(credible_set: CredibleSet) -> bool:
     return credible_set.n_cs == 0 and credible_set.converged is False
 
 
+def _is_valid_result(credible_set: CredibleSet) -> bool:
+    """
+    Check whether a fine-mapping result can be accepted by the adaptive loop.
+
+    A result is valid unless the wrapper explicitly reports ``converged=False``.
+    ``converged=None`` (unknown, e.g. a significance-gated empty result or a
+    tool that does not report convergence) is treated as valid so that genuine
+    no-signal results are not mistaken for failures.
+
+    Parameters
+    ----------
+    credible_set : CredibleSet
+        The result from a fine-mapping tool.
+
+    Returns
+    -------
+    bool
+        True if ``converged is not False``.
+    """
+    return credible_set.converged is not False
+
+
+# Upper bound and step size for the adaptive max_causal expansion phase.
+ADAPTIVE_MAX_CAUSAL_CAP = 20
+ADAPTIVE_MAX_CAUSAL_STEP = 5
+
+
+def _adaptive_search(
+    run: Callable[[int], CredibleSet],
+    tool: str,
+    initial_max_causal: int,
+    max_causal_cap: int = ADAPTIVE_MAX_CAUSAL_CAP,
+    step: int = ADAPTIVE_MAX_CAUSAL_STEP,
+) -> CredibleSet:
+    """
+    Shared adaptive max_causal control flow.
+
+    Phase 1 (expand): run at ``initial_max_causal``. A valid result with
+    ``n_cs < L`` is accepted. A saturated result (``n_cs >= L``) increases L by
+    ``step`` (clamped to ``max_causal_cap``); a saturated result at the cap is
+    accepted as the best result within range.
+
+    Phase 2 (fall back): when the run at ``L = k`` fails (exception or
+    ``converged=False``), try ``k-1, k-2, ..., 1``. Valid results from Phase 1
+    are cached, so falling back onto a previously successful L reuses it
+    without recomputation. The first valid result is accepted.
+
+    Parameters
+    ----------
+    run : Callable[[int], CredibleSet]
+        Runs the tool at a given max_causal (purity filtering already applied).
+    tool : str
+        Tool name for logging and the empty fallback result.
+    initial_max_causal : int
+        Starting L.
+    max_causal_cap : int, optional
+        Largest L the expansion phase may try, by default 20.
+    step : int, optional
+        Increment used in the expansion phase, by default 5.
+
+    Returns
+    -------
+    CredibleSet
+        The selected result, or an empty credible set flagged
+        ``adaptive_failed`` if every attempted L fails.
+    """
+    cache: Dict[int, CredibleSet] = {}
+
+    def _attempt(mc: int) -> Optional[CredibleSet]:
+        """Run at L=mc; return the result if valid, else None. Caches valid results."""
+        try:
+            r = run(mc)
+        except Exception as e:  # noqa: BLE001 - any tool error is a retryable failure
+            logger.warning(f"Adaptive {tool}: max_causal={mc} failed with error: {e}")
+            return None
+        if not _is_valid_result(r):
+            logger.warning(
+                f"Adaptive {tool}: max_causal={mc} failed (converged=False, n_cs={r.n_cs})"
+            )
+            return None
+        logger.info(
+            f"Adaptive {tool}: max_causal={mc} -> n_cs={r.n_cs} (converged={r.converged})"
+        )
+        cache[mc] = r
+        return r
+
+    def _select(mc: int, r: CredibleSet, reason: str) -> CredibleSet:
+        logger.info(
+            f"Adaptive {tool}: selected max_causal={mc} with n_cs={r.n_cs} ({reason})"
+        )
+        return r
+
+    # Phase 1: expand while saturated
+    max_causal = initial_max_causal
+    while True:
+        result = _attempt(max_causal)
+        if result is None:
+            break
+        if result.n_cs < max_causal:
+            reason = "no credible sets" if result.n_cs == 0 else "n_cs < max_causal"
+            return _select(max_causal, result, reason)
+        if max_causal >= max_causal_cap:
+            logger.info(
+                f"Adaptive {tool}: max_causal={max_causal} is saturated but at cap "
+                f"({max_causal_cap}); not increasing further"
+            )
+            return _select(max_causal, result, "saturated at cap")
+        next_max_causal = min(max_causal + step, max_causal_cap)
+        logger.info(
+            f"Adaptive {tool}: max_causal={max_causal} is saturated "
+            f"(n_cs={result.n_cs}), increasing max_causal to {next_max_causal}"
+        )
+        max_causal = next_max_causal
+
+    # Phase 2: fall back from the failed L downwards, reusing cached results
+    failed_at = max_causal
+    logger.info(
+        f"Adaptive {tool}: falling back from max_causal={failed_at - 1} after "
+        f"failure at max_causal={failed_at}"
+    )
+    for mc in range(failed_at - 1, 0, -1):
+        if mc in cache:
+            return _select(mc, cache[mc], "reused earlier successful result")
+        result = _attempt(mc)
+        if result is not None:
+            return _select(mc, result, "first valid result during fallback")
+
+    logger.warning(
+        f"Adaptive {tool}: all attempts failed (max_causal {failed_at} down to 1), "
+        "returning empty result"
+    )
+    return _empty_credible_set(tool)
+
+
 def _empty_credible_set(tool: str) -> CredibleSet:
     """
     Create an empty CredibleSet when all attempts fail.
@@ -174,9 +308,9 @@ def _adaptive_fine_map(
     CredibleSet
         Fine-mapping result or empty result if all attempts fail.
     """
-    max_causal = initial_max_causal
     logger.info(
-        f"Starting adaptive fine-mapping with {tool}, initial max_causal={max_causal}"
+        f"Starting adaptive fine-mapping with {tool}, "
+        f"initial max_causal={initial_max_causal}"
     )
 
     def _run(mc: int) -> CredibleSet:
@@ -185,66 +319,7 @@ def _adaptive_fine_map(
             r = filter_credset_by_purity(r, min_purity=purity_threshold)
         return r
 
-    # Phase 1: Try initial max_causal and increase if needed
-    try:
-        result = _run(max_causal)
-        logger.info(
-            f"Initial attempt: found {result.n_cs} credible sets with max_causal={max_causal}"
-        )
-
-        # Success case: found some credible sets but not saturated
-        if _is_success(result, max_causal):
-            logger.info(
-                f"Adaptive fine-mapping successful with max_causal={max_causal}"
-            )
-            return result
-
-        # Too many credible sets: increase max_causal
-        while result.n_cs >= max_causal and max_causal <= 20:
-            max_causal += 5
-            logger.info(
-                f"Too many credible sets found, increasing max_causal to {max_causal}"
-            )
-            try:
-                result = _run(max_causal)
-                logger.info(
-                    f"Attempt with max_causal={max_causal}: found {result.n_cs} credible sets"
-                )
-                if result.n_cs < max_causal:
-                    logger.info(
-                        f"Adaptive fine-mapping successful after increasing max_causal to {max_causal}"
-                    )
-                    return result
-            except Exception as e:
-                logger.warning(f"Failed with max_causal={max_causal}: {e}")
-                break
-
-    except Exception as e:
-        logger.info(f"Initial attempt failed with max_causal={initial_max_causal}: {e}")
-
-    # Phase 2: If initial attempt failed, decrease max_causal
-    max_causal = initial_max_causal - 1
-    while max_causal >= 1:
-        logger.info(f"Trying reduced max_causal={max_causal}")
-        try:
-            result = _run(max_causal)
-            if _is_nonconverged_empty(result):
-                logger.info(
-                    f"Non-converged at max_causal={max_causal}, decreasing further"
-                )
-                max_causal -= 1
-                continue
-            logger.info(
-                f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
-            )
-            return result
-        except Exception as e:
-            logger.info(f"Failed with max_causal={max_causal}: {e}")
-            max_causal -= 1
-
-    # All attempts failed
-    logger.warning(f"All adaptive attempts failed for {tool}, returning empty result")
-    return _empty_credible_set(tool)
+    return _adaptive_search(_run, tool, initial_max_causal)
 
 
 def _adaptive_fine_map_multi(
@@ -258,12 +333,8 @@ def _adaptive_fine_map_multi(
     """
     Implement adaptive max_causal logic for multi-input fine-mapping tools.
 
-    This function applies the same adaptive algorithm as _adaptive_fine_map(),
-    but operates on a LocusSet instead of a single Locus. The algorithm:
-
-    Phase 1 (Increase): Start with initial_max_causal, if n_cs >= max_causal,
-                        increase by 5 (max 20)
-    Phase 2 (Decrease): If initial fails, decrease from initial-1 to 1
+    This function shares the control flow of _adaptive_fine_map() (see
+    _adaptive_search), but operates on a LocusSet instead of a single Locus.
 
     Parameters
     ----------
@@ -288,10 +359,9 @@ def _adaptive_fine_map_multi(
     CredibleSet
         Fine-mapping result or empty result if all attempts fail.
     """
-    max_causal = initial_max_causal
     logger.info(
         f"Starting adaptive fine-mapping with {tool} on {locus_set.n_loci} loci, "
-        f"initial max_causal={max_causal}"
+        f"initial max_causal={initial_max_causal}"
     )
 
     def _run(mc: int) -> CredibleSet:
@@ -300,66 +370,7 @@ def _adaptive_fine_map_multi(
             r = filter_credset_by_purity(r, min_purity=purity_threshold)
         return r
 
-    # Phase 1: Try initial max_causal and increase if needed
-    try:
-        result = _run(max_causal)
-        logger.info(
-            f"Initial attempt: found {result.n_cs} credible sets with max_causal={max_causal}"
-        )
-
-        # Success case: found some credible sets but not saturated
-        if _is_success(result, max_causal):
-            logger.info(
-                f"Adaptive fine-mapping successful with max_causal={max_causal}"
-            )
-            return result
-
-        # Too many credible sets: increase max_causal
-        while result.n_cs >= max_causal and max_causal <= 20:
-            max_causal += 5
-            logger.info(
-                f"Too many credible sets found, increasing max_causal to {max_causal}"
-            )
-            try:
-                result = _run(max_causal)
-                logger.info(
-                    f"Attempt with max_causal={max_causal}: found {result.n_cs} credible sets"
-                )
-                if result.n_cs < max_causal:
-                    logger.info(
-                        f"Adaptive fine-mapping successful after increasing max_causal to {max_causal}"
-                    )
-                    return result
-            except Exception as e:
-                logger.warning(f"Failed with max_causal={max_causal}: {e}")
-                break
-
-    except Exception as e:
-        logger.info(f"Initial attempt failed with max_causal={initial_max_causal}: {e}")
-
-    # Phase 2: If initial attempt failed, decrease max_causal
-    max_causal = initial_max_causal - 1
-    while max_causal >= 1:
-        logger.info(f"Trying reduced max_causal={max_causal}")
-        try:
-            result = _run(max_causal)
-            if _is_nonconverged_empty(result):
-                logger.info(
-                    f"Non-converged at max_causal={max_causal}, decreasing further"
-                )
-                max_causal -= 1
-                continue
-            logger.info(
-                f"Success with reduced max_causal={max_causal}, found {result.n_cs} credible sets"
-            )
-            return result
-        except Exception as e:
-            logger.info(f"Failed with max_causal={max_causal}: {e}")
-            max_causal -= 1
-
-    # All attempts failed
-    logger.warning(f"All adaptive attempts failed for {tool}, returning empty result")
-    return _empty_credible_set(tool)
+    return _adaptive_search(_run, tool, initial_max_causal)
 
 
 def fine_map(
@@ -419,8 +430,9 @@ def fine_map(
     adaptive_max_causal : bool, optional
         Enable adaptive max_causal parameter tuning, by default False.
         When True, automatically adjusts max_causal based on results:
-        - If credible sets >= max_causal, increase by 5 (up to 20)
-        - If convergence fails, decrease by 1 (down to 1)
+        - If credible sets >= max_causal, increase by 5 (capped at 20)
+        - If the run at L=k fails (error or converged=False), fall back to
+          k-1, k-2, ..., 1, reusing earlier successful results where available
         Applies to: finemap, susie, rsparsepro (per-locus), multisusie, susiex (LocusSet-level).
     strategy : str, optional
         DEPRECATED. This parameter is no longer used and will be removed in a future version.

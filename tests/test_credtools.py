@@ -14,14 +14,9 @@ import pytest
 from credtools import __version__
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet
-from credtools.credtools import (
-    _adaptive_fine_map,
-    _adaptive_fine_map_multi,
-    _empty_credible_set,
-    _generate_run_summary,
-    _is_success,
-    fine_map,
-)
+from credtools.credtools import (_adaptive_fine_map, _adaptive_fine_map_multi,
+                                 _empty_credible_set, _generate_run_summary,
+                                 _is_success, fine_map)
 from credtools.ldmatrix import LDMatrix
 from credtools.locus import Locus, LocusSet, load_locus
 
@@ -1661,28 +1656,26 @@ class TestAdaptiveFineMapEdgeCases:
         tool_func = MagicMock(side_effect=side_effect)
         locus = MagicMock()
         result = _adaptive_fine_map(locus, "susie", 5, tool_func, {})
-        # Should fall through to decrease phase: tries max_causal=4,3,2,1
-        # All will use side_effect which raises for max_causal != 5
-        # Actually when max_causal < 5, it also raises. So all fail => empty.
-        # But wait - in decrease phase it tries max_causal=4 which raises.
-        assert result.n_cs == 0 or result.n_cs >= 0  # Just check it doesn't crash
+        # Fallback 9..6 all raise, then the cached saturated L=5 result is reused.
+        assert result.n_cs == 5
+        assert call_count == 6  # 5, 10, 9, 8, 7, 6
 
-    def test_saturated_increase_then_exception_breaks_to_decrease_success(self):
-        """Saturated triggers increase which fails, then decrease phase succeeds."""
+    def test_saturated_increase_then_exception_reuses_saturated_result(self):
+        """Saturated at 5, increase to 10 fails, 9..6 fail: reuse L=5, never try 4."""
 
         def side_effect(locus, max_causal=5, **kwargs):
             if max_causal == 5:
                 return self._make_cs(5)  # Saturated at 5
             if max_causal > 5:
                 raise RuntimeError("too large")  # Increase phase fails
-            if max_causal == 4:
-                return self._make_cs(2)  # Decrease phase succeeds
-            raise RuntimeError("fail")
+            raise AssertionError("must not fall below the cached L=5")
 
         tool_func = MagicMock(side_effect=side_effect)
         locus = MagicMock()
         result = _adaptive_fine_map(locus, "susie", 5, tool_func, {})
-        assert result.n_cs == 2
+        assert result.n_cs == 5
+        attempted = [c.kwargs["max_causal"] for c in tool_func.call_args_list]
+        assert attempted == [5, 10, 9, 8, 7, 6]
 
 
 # ---------------------------------------------------------------------------
@@ -1720,23 +1713,25 @@ class TestAdaptiveFineMapMultiEdgeCases:
         result = _adaptive_fine_map_multi(locus_set, "multisusie", 5, tool_func, {})
         assert result.n_cs == 7
 
-    def test_saturated_increase_fails_then_decrease_succeeds(self):
-        """Saturated triggers increase which fails, decrease phase succeeds."""
+    def test_saturated_increase_fails_then_fallback_succeeds(self):
+        """Saturated at 5, increase to 10 fails, fallback starts at 9 and succeeds."""
 
         def side_effect(locus_set, max_causal=5, **kwargs):
             if max_causal == 5:
                 return self._make_cs(5)  # Saturated
-            if max_causal > 5:
-                raise RuntimeError("too large")  # Increase fails => break
-            if max_causal == 4:
-                return self._make_cs(3)  # Decrease succeeds
-            raise RuntimeError("fail")
+            if max_causal == 10:
+                raise RuntimeError("too large")  # Increase fails
+            if max_causal == 9:
+                return self._make_cs(3)  # Fallback from 9 succeeds
+            raise AssertionError(f"unexpected max_causal={max_causal}")
 
         tool_func = MagicMock(side_effect=side_effect)
         locus_set = MagicMock()
         locus_set.n_loci = 2
         result = _adaptive_fine_map_multi(locus_set, "multisusie", 5, tool_func, {})
         assert result.n_cs == 3
+        attempted = [c.kwargs["max_causal"] for c in tool_func.call_args_list]
+        assert attempted == [5, 10, 9]
 
     def test_initial_failure_then_decrease_succeeds(self):
         """Initial attempt fails, decrease phase finds a working value."""
@@ -1925,7 +1920,7 @@ class TestAdaptiveFinemapNonConvergence:
         assert tool_func.call_count == 3
 
     def test_genuine_zero_n_cs_with_converged_true_does_not_keep_retrying(self):
-        """n_cs=0 with converged=True (no signal) returns at first Phase-2 success."""
+        """n_cs=0 with converged=True (no signal) is accepted at the initial L."""
         empty_converged = CredibleSet(
             tool="susie",
             parameters={},
@@ -1941,9 +1936,9 @@ class TestAdaptiveFinemapNonConvergence:
         locus = MagicMock()
         result = _adaptive_fine_map(locus, "susie", 3, tool_func, {})
         assert result.n_cs == 0
-        # Phase 1 + first Phase-2 iteration should suffice (no infinite retry).
-        # Phase 1 (L=3) + Phase 2 (L=2) = 2 calls; Phase 2 returns since converged.
-        assert tool_func.call_count == 2
+        assert result.parameters.get("adaptive_failed") is None
+        # A converged empty result is a genuine no-signal result: no fallback runs.
+        assert tool_func.call_count == 1
 
 
 # ---------------------------------------------------------------------------

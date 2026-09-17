@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.4] (2026-09-16)
+
+### Fixed
+- Adaptive `max_causal` (`--adaptive-max-causal`) now falls back from `k-1` when the run at `L = k` fails, instead of restarting from `initial - 1`. For example, 5 → 10 → 15 (fails) now tries 14, not 4.
+- Valid results from the expansion phase are cached; when the fallback reaches an `L` that already succeeded (e.g. `L = 10`), that result is reused instead of being discarded or recomputed.
+- The expansion phase is capped at `L = 20`; it no longer attempts `L = 25`, and a saturated result at the cap is accepted rather than triggering a fallback.
+- Results with `converged = False` are never accepted as successful in any phase (previously a non-converged empty result could be accepted during expansion). Results with `converged = None` (unknown) are still treated as valid, so significance-gated no-signal results are not mistaken for failures.
+- A genuine no-signal result (`n_cs = 0`, `converged` true or unknown) at the initial `L` is now accepted directly instead of triggering one extra run at `L - 1`.
+
+### Changed
+- `_adaptive_fine_map` and `_adaptive_fine_map_multi` share a single control-flow implementation (`_adaptive_search`), and each attempt is logged with its `max_causal`, `n_cs`, convergence flag, and failure/fallback reason, followed by the selected `max_causal`.
+
 ## [0.9.3] (2026-05-24)
 
 ### Added

@@ -3,6 +3,17 @@
 This page gives the short release story. For the full raw changelog, see
 [`CHANGELOG.md`](https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md).
 
+## 0.9.4
+
+Fixed the adaptive L (`--adaptive-max-causal`) fallback logic.
+
+When a larger L failed, the loop used to restart from `initial - 1` and discard
+earlier successful runs (5 → 10 → 15 fails → 4). It now falls back one step at
+a time from the failed L (15 fails → 14 → 13 → …), reuses an earlier valid
+result when it reaches that L, never exceeds L = 20, and never accepts a
+non-converged result as success. See
+[Adaptive L](guides/finemapping-tool-requirements.md#adaptive-l).
+
 ## 0.9.3
 
 Documented adaptive L (`--adaptive-max-causal`) in more detail.
