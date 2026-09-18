@@ -11,6 +11,7 @@ from credtools.constants import ColName
 from credtools.ldmatrix import LDMatrix
 from credtools.locus import Locus, LocusSet
 from credtools.meta import (
+    ensure_meta_configuration,
     heterogeneity_summary,
     meta,
     meta_all,
@@ -1073,6 +1074,7 @@ class TestMetaLociSkip:
         # Write prev loci_info.txt so skip can read it
         outdir = str(tmp_path / "output")
         os.makedirs(outdir, exist_ok=True)
+        ensure_meta_configuration(outdir, "meta_all", "ess")
         loci_info.to_csv(f"{outdir}/loci_info.txt", sep="\t", index=False)
 
         input_path = tmp_path / "input.txt"

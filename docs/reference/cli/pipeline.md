@@ -30,6 +30,7 @@ For each `locus_id`, the pipeline:
 | Option | Meaning | Default |
 | --- | --- | --- |
 | `--meta-method` | `meta_all`, `meta_by_population`, or `no_meta` | `meta_all` |
+| `--ld-weighting` | matched geometric LD weighting: `ess` or `se` | `ess` |
 | `--skip-qc` | skip the QC phase | off |
 | `--tool` | fine-mapping engine | `susie` |
 | `--max-causal` | maximum causal variants | `5` |
@@ -45,6 +46,12 @@ For each `locus_id`, the pipeline:
 
 For exact adaptive-L retry rules, see
 [Adaptive L](../../guides/finemapping-tool-requirements.md#adaptive-l).
+
+LD weighting has the same [matched-input contract as `meta`](meta.md#matched-ld-weighting).
+Both choices recompute IVW summary statistics from within-cohort GWAS/LD matches.
+Use `--ld-weighting se` to select SE weights, or omit it for ESS. Write different
+modes to separate output directories; per-locus `meta_config.json` prevents
+mixing modes or overwriting legacy inputs. Adaptive-L behavior is unchanged.
 
 ## Selected Tool-Specific Options
 

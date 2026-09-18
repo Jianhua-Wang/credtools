@@ -44,6 +44,13 @@ class MetaMethod(str, Enum):
     no_meta = "no_meta"
 
 
+class LDWeighting(str, Enum):
+    """LD weighting after cohort matching, with geometric normalization."""
+
+    ess = "ess"
+    se = "se"
+
+
 class Tool(str, Enum):
     """The tool to perform fine-mapping."""
 
@@ -1130,6 +1137,11 @@ def run_meta(
     meta_method: MetaMethod = typer.Option(
         MetaMethod.meta_all, "--meta-method", "-m", help="Meta-analysis method."
     ),
+    ld_weighting: LDWeighting = typer.Option(
+        LDWeighting.ess,
+        "--ld-weighting",
+        help="Geometric LD weights after cohort GWAS/LD matching: ess (sample_size) or se (1/SE^2).",
+    ),
     calculate_lambda_s: bool = typer.Option(
         False,
         "--calculate-lambda-s",
@@ -1150,7 +1162,10 @@ def run_meta(
     from credtools.meta import meta_loci
 
     setup_file_logging(log_file)
-    meta_loci(inputs, outdir, threads, meta_method, calculate_lambda_s, skip=skip)
+    meta_loci(
+        inputs, outdir, threads, meta_method, calculate_lambda_s,
+        skip=skip, ld_weighting=ld_weighting.value,
+    )
 
 
 @app.command(
@@ -1676,6 +1691,11 @@ def run_pipeline(
     meta_method: MetaMethod = typer.Option(
         MetaMethod.meta_all, "--meta-method", "-m", help="Meta-analysis method."
     ),
+    ld_weighting: LDWeighting = typer.Option(
+        LDWeighting.ess,
+        "--ld-weighting",
+        help="Geometric LD weights after cohort GWAS/LD matching: ess (sample_size) or se (1/SE^2).",
+    ),
     skip_qc: bool = typer.Option(
         False, "--skip-qc", "-q", help="Skip quality control."
     ),
@@ -1988,6 +2008,7 @@ def run_pipeline(
                 locus_info,
                 outdir=out_dir,
                 meta_method=meta_method,
+                ld_weighting=ld_weighting.value,
                 skip_qc=skip_qc,
                 tool=tool,
                 max_causal=max_causal,

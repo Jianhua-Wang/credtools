@@ -1,9 +1,10 @@
 """Meta analysis of multi-ancestry gwas data."""
 
+import json
 import logging
 import os
 from multiprocessing import Pool
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -27,6 +28,7 @@ from credtools.locus import (
     load_locus_set,
 )
 from credtools.sumstats import munge
+from credtools.meta_weights import matched_meta, validate_ld_weighting
 
 logger = logging.getLogger("META")
 
@@ -47,6 +49,9 @@ def meta_sumstats(inputs: LocusSet) -> pd.DataFrame:
 
     Notes
     -----
+    This standalone function does not match LD. For paired fine-mapping
+    statistics and LD, use meta_all(), which shares contribution eligibility.
+
     This function performs inverse-variance weighted fixed-effects meta-analysis:
 
     1. Merges summary statistics from all studies on SNPID
@@ -130,100 +135,18 @@ def meta_sumstats(inputs: LocusSet) -> pd.DataFrame:
     return munge(output_df)
 
 
-def meta_lds(inputs: LocusSet) -> LDMatrix:
+def meta_lds(inputs: LocusSet, ld_weighting: str = "ess") -> LDMatrix:
+    """Merge within-cohort GWAS/LD matches using geometric ESS or SE weights.
+
+    ESS (default) uses the supplied scalar sample_size; SE uses 1/SE**2.
+    Normalize at each SNP, then multiply the square-root coefficients at both
+    ends of each LD correlation. Missing contributions are zero, not pairwise
+    renormalized. Use meta_all() to obtain the paired IVW summary statistics.
     """
-    Perform meta-analysis of LD matrices using sample-size weighted averaging.
-
-    Parameters
-    ----------
-    inputs : LocusSet
-        LocusSet containing input data from multiple studies.
-
-    Returns
-    -------
-    LDMatrix
-        Meta-analyzed LD matrix with merged variant map.
-
-    Notes
-    -----
-    This function performs the following operations:
-
-    1. Identifies unique variants across all studies
-    2. Creates a master variant list sorted by chromosome and position
-    3. Performs sample-size weighted averaging of LD correlations
-    4. Handles missing variants by setting weights to zero
-    5. Optionally meta-analyzes allele frequencies if available
-
-    The meta-analysis formula:
-    LD_meta[i,j] = Σ(LD_k[i,j] * N_k) / Σ(N_k)
-
-    where k indexes studies, N_k is sample size, and the sum is over studies
-    that have both variants i and j.
-    """
-    # Get unique variants across all studies
-    variant_dfs = [input.ld.map for input in inputs.loci]
-    ld_matrices = [input.ld.r for input in inputs.loci]
-    sample_sizes = [input.sample_size for input in inputs.loci]
-
-    # Concatenate all variants
-    merged_variants = pd.concat(variant_dfs, ignore_index=True)
-    merged_variants.drop_duplicates(subset=[ColName.SNPID], inplace=True)
-    merged_variants.sort_values([ColName.CHR, ColName.BP], inplace=True)
-    merged_variants.reset_index(drop=True, inplace=True)
-    # meta allele frequency of LD reference, if exists
-    if all("AF2" in variant_df.columns for variant_df in variant_dfs):
-        n_sum = sum([input.sample_size for input in inputs.loci])
-        weights = [input.sample_size / n_sum for input in inputs.loci]
-        af_df = merged_variants[[ColName.SNPID]].copy()
-        af_df.set_index(ColName.SNPID, inplace=True)
-        for i, variant_df in enumerate(variant_dfs):
-            df = variant_df.copy()
-            df.set_index(ColName.SNPID, inplace=True)
-            af_df[f"AF2_{i}"] = df["AF2"]
-        # Normalize weights to present cohorts only
-        af_present = af_df.notna()
-        af_df.fillna(0, inplace=True)
-        weight_sum = sum(
-            af_present[f"AF2_{i}"].astype(float) * weights[i]
-            for i in range(len(variant_dfs))
-        )
-        af_df["AF2_meta"] = (
-            sum(af_df[f"AF2_{i}"] * weights[i] for i in range(len(variant_dfs)))
-            / weight_sum
-        )
-        merged_variants["AF2"] = merged_variants[ColName.SNPID].map(af_df["AF2_meta"])
-    all_variants = merged_variants[ColName.SNPID].values
-    variant_to_index = {snp: idx for idx, snp in enumerate(all_variants)}
-    n_variants = len(all_variants)
-
-    # Initialize arrays using numpy operations
-    merged_ld = np.zeros((n_variants, n_variants))
-    weight_matrix = np.zeros((n_variants, n_variants))
-
-    # Process each study
-    for ld_mat, variants_df, sample_size in zip(ld_matrices, variant_dfs, sample_sizes):
-        # coverte float16 to float32, to avoid overflow
-        # ld_mat = ld_mat.astype(np.float32)
-
-        # Get indices in the master matrix
-        study_snps = variants_df["SNPID"].values
-        study_indices = np.array([variant_to_index[snp] for snp in study_snps])
-
-        # Create index meshgrid for faster indexing
-        idx_i, idx_j = np.meshgrid(study_indices, study_indices)
-
-        # Update matrices using vectorized operations
-        merged_ld[idx_i, idx_j] += ld_mat * sample_size
-        weight_matrix[idx_i, idx_j] += sample_size
-
-    # Compute weighted average
-    mask = weight_matrix != 0
-    merged_ld[mask] /= weight_matrix[mask]
-
-    return LDMatrix(merged_variants, merged_ld.astype(np.float32))
+    return matched_meta(inputs, ld_weighting)[1]
 
 
-def meta_all(inputs: LocusSet) -> Locus:
+def meta_all(inputs: LocusSet, ld_weighting: str = "ess") -> Locus:
     """
     Perform comprehensive meta-analysis of both summary statistics and LD matrices.
 
@@ -231,6 +154,9 @@ def meta_all(inputs: LocusSet) -> Locus:
     ----------
     inputs : LocusSet
         LocusSet containing input data from multiple studies.
+    ld_weighting : {"ess", "se"}, optional
+        Geometric LD weights after within-cohort matching, by default "ess".
+        Summary statistics always use matched inverse-variance weighting.
 
     Returns
     -------
@@ -242,15 +168,16 @@ def meta_all(inputs: LocusSet) -> Locus:
     This function:
 
     1. Performs meta-analysis of summary statistics using inverse-variance weighting
-    2. Performs meta-analysis of LD matrices using sample-size weighting
+    2. Merges LD using geometric ESS (default) or SE weights on the same contributions
     3. Combines population and cohort names from all input studies
     4. Sums sample sizes across studies
     5. Intersects the meta-analyzed data to ensure consistency
 
     Population and cohort names are combined with "+" as separator and sorted alphabetically.
     """
-    meta_sumstat = meta_sumstats(inputs)
-    meta_ld = meta_lds(inputs)
+    validate_ld_weighting(ld_weighting)
+    if not inputs.loci:
+        raise ValueError("No input cohorts for meta-analysis")
     sample_size = sum([input.sample_size for input in inputs.loci])
     popu_set = set()
     for input in inputs.loci:
@@ -272,7 +199,8 @@ def meta_all(inputs: LocusSet) -> Locus:
     if not all(e == locus_ends[0] for e in locus_ends):
         raise ValueError("All input loci must have the same end position")
 
-    return Locus(
+    meta_sumstat, meta_ld, audit, cohort_audit = matched_meta(inputs, ld_weighting)
+    result = Locus(
         popu,
         cohort,
         sample_size,
@@ -282,9 +210,12 @@ def meta_all(inputs: LocusSet) -> Locus:
         ld=meta_ld,
         if_intersect=True,
     )
+    result.meta_audit = audit
+    result.meta_cohort_audit = cohort_audit
+    return result
 
 
-def meta_by_population(inputs: LocusSet) -> Dict[str, Locus]:
+def meta_by_population(inputs: LocusSet, ld_weighting: str = "ess") -> Dict[str, Locus]:
     """
     Perform meta-analysis within each population separately.
 
@@ -304,12 +235,13 @@ def meta_by_population(inputs: LocusSet) -> Dict[str, Locus]:
 
     1. Groups studies by population code
     2. Performs meta-analysis within each population group
-    3. For single-study populations, applies intersection without meta-analysis
+    3. For single-study populations, applies the same matching and validation
     4. Returns a dictionary with population codes as keys
 
     This approach preserves population-specific LD patterns while still
     allowing meta-analysis of multiple cohorts within the same population.
     """
+    validate_ld_weighting(ld_weighting)
     meta_popu = {}
     for input in inputs.loci:
         popu = input.popu
@@ -320,14 +252,11 @@ def meta_by_population(inputs: LocusSet) -> Dict[str, Locus]:
 
     result_dict = {}
     for popu in meta_popu:
-        if len(meta_popu[popu]) > 1:
-            result_dict[popu] = meta_all(LocusSet(meta_popu[popu]))
-        else:
-            result_dict[popu] = intersect_sumstat_ld(meta_popu[popu][0])
+        result_dict[popu] = meta_all(LocusSet(meta_popu[popu]), ld_weighting)
     return result_dict
 
 
-def meta(inputs: LocusSet, meta_method: str = "meta_all") -> LocusSet:
+def meta(inputs: LocusSet, meta_method: str = "meta_all", ld_weighting: str = "ess") -> LocusSet:
     """
     Perform meta-analysis using the specified method.
 
@@ -363,10 +292,11 @@ def meta(inputs: LocusSet, meta_method: str = "meta_all") -> LocusSet:
     - "no_meta": Keeps studies separate, useful for comparison or when
         meta-analysis is not appropriate
     """
+    validate_ld_weighting(ld_weighting)
     if meta_method == "meta_all":
-        return LocusSet([meta_all(inputs)])
+        return LocusSet([meta_all(inputs, ld_weighting)])
     elif meta_method == "meta_by_population":
-        res = meta_by_population(inputs)
+        res = meta_by_population(inputs, ld_weighting)
         return LocusSet([res[popu] for popu in res])
     elif meta_method == "no_meta":
         return LocusSet([intersect_sumstat_ld(i) for i in inputs.loci])
@@ -583,10 +513,60 @@ def save_heterogeneity(
         )
 
 
+def meta_configuration(meta_method: str, ld_weighting: str) -> Dict[str, Any]:
+    """Describe the input contract used to protect output reuse."""
+    validate_ld_weighting(ld_weighting)
+    if meta_method not in ("meta_all", "meta_by_population", "no_meta"):
+        raise ValueError(f"Unsupported meta-analysis method: {meta_method}")
+    return {
+        "schema_version": 1,
+        "algorithm": "cohort_matched_geometric_v1" if meta_method != "no_meta" else "no_meta_v1",
+        "meta_method": meta_method,
+        "ld_weighting": ld_weighting if meta_method != "no_meta" else None,
+        "summary_weighting": "inverse_variance" if meta_method != "no_meta" else None,
+    }
+
+
+def ensure_meta_configuration(outdir: str, meta_method: str, ld_weighting: str) -> None:
+    """Refuse legacy/mixed-mode outputs; write a manifest for new output directories."""
+    expected = meta_configuration(meta_method, ld_weighting)
+    path = os.path.join(outdir, "meta_config.json")
+    os.makedirs(outdir, exist_ok=True)
+    if os.path.exists(path):
+        with open(path) as handle:
+            existing = json.load(handle)
+        if existing != expected:
+            raise ValueError("Meta configuration differs from existing output; use a separate output directory")
+        return
+    # A pre-feature result has no evidence of matching or its LD weighting.
+    # Do not silently reuse or overwrite it, even without --skip.
+    if any(name == "loci_info.txt" or name.endswith((".ld.npz", ".sumstat", ".sumstats.gz"))
+           for name in os.listdir(outdir)):
+        raise ValueError("Existing meta output has no configuration manifest; use a new output directory")
+    with open(path, "w") as handle:
+        json.dump(expected, handle, indent=2)
+        handle.write("\n")
+
+
+def meta_output_prefix(locus: Locus, meta_method: str, ld_weighting: str) -> str:
+    """Make matched LD weighting explicit in output filenames."""
+    suffix = "no_meta" if meta_method == "no_meta" else f"matched_{ld_weighting}"
+    return f"{locus.prefix}.{suffix}"
+
+
+def save_meta_audit(locus: Locus, out_prefix: str) -> None:
+    """Save SNP information retention and cohort contribution counts when available."""
+    for attr, suffix in (("meta_audit", "meta_audit"), ("meta_cohort_audit", "meta_cohorts")):
+        audit = getattr(locus, attr, None)
+        if audit is not None:
+            audit.to_csv(f"{out_prefix}.{suffix}.tsv.gz", sep="\t", index=False, compression="gzip")
+
+
 def recover_completed_locus(
     locus_id: str,
     outdir: str,
     prev_loci_info: Optional[pd.DataFrame],
+    configuration: Optional[Dict[str, Any]] = None,
 ) -> Optional[Tuple[List[List[Any]], pd.DataFrame]]:
     """Recover a previously completed locus from existing output files.
 
@@ -610,6 +590,13 @@ def recover_completed_locus(
     locus_dir = os.path.join(outdir, locus_id)
     if not os.path.isdir(locus_dir):
         return None
+    if configuration is not None:
+        try:
+            with open(os.path.join(locus_dir, "meta_config.json")) as handle:
+                if json.load(handle) != configuration:
+                    return None
+        except (OSError, ValueError):
+            return None
 
     rows = prev_loci_info[prev_loci_info["locus_id"] == locus_id]
     if rows.empty:
@@ -649,7 +636,7 @@ def recover_completed_locus(
 
 
 def meta_locus(
-    args: Tuple[str, pd.DataFrame, str, str, bool],
+    args: Union[Tuple[str, pd.DataFrame, str, str, bool], Tuple[str, pd.DataFrame, str, str, bool, str]],
 ) -> Tuple[List[List[Any]], pd.DataFrame]:
     """Process a single locus for meta-analysis.
 
@@ -667,6 +654,8 @@ def meta_locus(
             Method for meta-analysis
         - calculate_lambda_s : bool
             Whether to calculate lambda_s
+        - ld_weighting : str, optional sixth item
+            Geometric LD weighting, "ess" (default) or "se".
 
     Returns
     -------
@@ -686,7 +675,11 @@ def meta_locus(
     5. Saves results to compressed files (sumstats.gz, ld.npz, ldmap.gz)
     6. Returns metadata for each processed locus and heterogeneity summary
     """
-    locus_id, locus_info, outdir, meta_method, calculate_lambda_s = args
+    # Retain compatibility with the previous five-item worker argument tuple.
+    locus_id, locus_info, outdir, meta_method, calculate_lambda_s = args[:5]
+    ld_weighting = args[5] if len(args) > 5 else "ess"
+    out_dir = os.path.abspath(f"{outdir}/{locus_id}")
+    ensure_meta_configuration(out_dir, meta_method, ld_weighting)
     results = []
     locus_set = load_locus_set(locus_info, calculate_lambda_s=calculate_lambda_s)
 
@@ -698,7 +691,7 @@ def meta_locus(
     het_summary = heterogeneity_summary(het_metrics, locus_set)
     het_summary["locus_id"] = locus_id
 
-    locus_set = meta(locus_set, meta_method)
+    locus_set = meta(locus_set, meta_method, ld_weighting)
     out_dir = f"{outdir}/{locus_id}"
     out_dir = os.path.abspath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
@@ -707,7 +700,8 @@ def meta_locus(
     save_heterogeneity(het_metrics, out_dir, summary=het_summary)
 
     for locus in locus_set.loci:
-        out_prefix = f"{out_dir}/{locus.prefix}"
+        out_prefix = f"{out_dir}/{meta_output_prefix(locus, meta_method, ld_weighting)}"
+        save_meta_audit(locus, out_prefix)
         locus.sumstats.to_csv(
             f"{out_prefix}.sumstats.gz", sep="\t", index=False, compression="gzip"
         )
@@ -738,6 +732,7 @@ def meta_loci(
     meta_method: str = "meta_all",
     calculate_lambda_s: bool = False,
     skip: bool = False,
+    ld_weighting: str = "ess",
 ) -> None:
     """
     Perform meta-analysis on multiple loci in parallel.
@@ -758,6 +753,8 @@ def meta_loci(
         See meta() function for available options.
     skip : bool, optional
         Skip loci already completed from a previous run, by default False.
+    ld_weighting : {"ess", "se"}, optional
+        Cohort-matched geometric LD weighting, by default "ess".
 
     Returns
     -------
@@ -780,19 +777,24 @@ def meta_loci(
     Output files are organized as:
     {outdir}/{locus_id}/{prefix}.{sumstats.gz,ld.npz,ldmap.gz}
     """
+    configuration = meta_configuration(meta_method, ld_weighting)
     loci_info = pd.read_csv(inputs, sep="\t")
     loci_info = check_loci_info(loci_info)  # Validate input data
-    new_loci_info = pd.DataFrame(columns=loci_info.columns)
+    # Worker records have this fixed schema; input TSV column order is arbitrary.
+    # Do not relabel positional results using the input's column order.
+    new_loci_info = pd.DataFrame(columns=[
+        "chr", "start", "end", "popu", "sample_size", "cohort", "prefix", "locus_id"
+    ])
     all_het_summaries: List[pd.DataFrame] = []
 
     # Group loci by locus_id
     grouped_loci = list(loci_info.groupby("locus_id"))
     total_loci = len(grouped_loci)
-    os.makedirs(outdir, exist_ok=True)
+    ensure_meta_configuration(outdir, meta_method, ld_weighting)
 
     # Try to recover completed loci when skip=True
     prev_loci_info: Optional[pd.DataFrame] = None
-    pending_args: List[Tuple[str, pd.DataFrame, str, str, bool]] = []
+    pending_args: List[Tuple[str, pd.DataFrame, str, str, bool, str]] = []
     skipped_count = 0
 
     if skip:
@@ -803,7 +805,7 @@ def meta_loci(
 
     if prev_loci_info is not None:
         for locus_id, locus_info_group in grouped_loci:
-            recovered = recover_completed_locus(locus_id, outdir, prev_loci_info)
+            recovered = recover_completed_locus(locus_id, outdir, prev_loci_info, configuration)
             if recovered is not None:
                 results, het_summary = recovered
                 for res in results:
@@ -820,11 +822,12 @@ def meta_loci(
                         outdir,
                         meta_method,
                         calculate_lambda_s,
+                        ld_weighting,
                     )
                 )
     else:
         pending_args = [
-            (locus_id, locus_info_group, outdir, meta_method, calculate_lambda_s)
+            (locus_id, locus_info_group, outdir, meta_method, calculate_lambda_s, ld_weighting)
             for locus_id, locus_info_group in grouped_loci
         ]
 

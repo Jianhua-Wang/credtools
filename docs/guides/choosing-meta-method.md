@@ -14,6 +14,12 @@ most important choices in a multi-study run.
 
 ## `meta_all`
 
+For `meta_all` and `meta_by_population`, LD weighting is a separate choice:
+`--ld-weighting ess` (default) or `--ld-weighting se`. Both match GWAS and LD
+within cohorts before taking the union and recompute matched IVW statistics.
+See [matched LD weighting](../reference/cli/meta.md#matched-ld-weighting) for
+formulas, information-loss audits, and the default-algorithm migration warning.
+
 ```bash
 credtools pipeline loci_list.txt results \
   --meta-method meta_all \

@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.5] (2026-09-18)
+
+### Added
+- `--ld-weighting ess|se` on `meta` and `pipeline`, and `ld_weighting` in the Python meta APIs; default is `ess`.
+- Per-SNP information-retention and per-cohort matching audits, mode-labeled output prefixes, and configuration manifests guarding resume/output reuse.
+
+### Changed
+- Both LD weighting modes now match GWAS and LD within cohorts before aggregating the union. Matched meta BETA/SE/P use the same eligible contributions as LD.
+- ESS LD uses geometric per-SNP normalization, not the historical pairwise normalization. This is a deliberate default-algorithm change; use fresh output directories and retain v0.9.4 for historical reproduction.
+- SE LD uses geometric inverse-variance information weights. Float16 LD storage, the adaptive-L policy, and the absence of default PSD correction are unchanged.
+
+### Fixed
+- Meta output `loci_info.txt` uses the worker record schema regardless of input TSV column order, preventing misplaced prefixes and broken downstream loading/resume.
+
+### Known limitations
+- INS validation found population-order sensitivity in MESuSiE and MultiSuSiE. Keep population order fixed for comparisons; this release does not resolve that sensitivity or change their fine-mapping algorithms.
+
 ## [0.9.4] (2026-09-16)
 
 ### Fixed

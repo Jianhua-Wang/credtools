@@ -20,6 +20,7 @@ Documentation: <https://Jianhua-Wang.github.io/credtools>
   `credtools chunk`.
 - Prepares locus-level summary statistics, LD matrices, and LD maps.
 - Runs meta-analysis with `meta_all`, `meta_by_population`, or `no_meta`.
+- Offers matched geometric LD weighting with `--ld-weighting ess` (default) or `--ld-weighting se` on `meta` and `pipeline`.
 - Runs QC for LD and summary-statistic consistency.
 - Runs fine-mapping with SuSiE, FINEMAP, ABF, CARMA, SuSiEx, MultiSuSiE,
   MESuSiE, and RSparsePro wrappers.

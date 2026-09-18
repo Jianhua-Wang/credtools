@@ -3,6 +3,22 @@
 This page gives the short release story. For the full raw changelog, see
 [`CHANGELOG.md`](https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md).
 
+## 0.9.5
+
+Added `--ld-weighting ess|se` to `meta` and `pipeline`, with ESS as the default.
+Both modes match GWAS and LD within cohorts, recompute matched IVW statistics,
+and merge LD with geometric per-SNP normalization. ESS is no longer the legacy
+pairwise average, so use fresh output directories. Mode manifests and matching
+audits make the change explicit and protect resume from incompatible outputs.
+
+Also fixed meta output metadata when the input TSV uses a different column
+order. Adaptive L, float16 LD storage, and the absence of default PSD repair
+are unchanged. See [matched LD weighting](reference/cli/meta.md#matched-ld-weighting).
+
+Known limitation: INS validation found population-order sensitivity in MESuSiE
+and MultiSuSiE. Keep population order fixed when comparing results; this
+release does not resolve that sensitivity or change their fitting algorithms.
+
 ## 0.9.4
 
 Fixed the adaptive L (`--adaptive-max-causal`) fallback logic.

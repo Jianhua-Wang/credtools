@@ -17,7 +17,8 @@ from credtools.credibleset import (CredibleSet, combine_creds,
 from credtools.locus import LocusSet, load_locus_set
 from credtools.meta import (compute_heterogeneity,
                             compute_heterogeneity_by_population,
-                            heterogeneity_summary, meta, save_heterogeneity)
+                            heterogeneity_summary, meta, save_heterogeneity,
+                            ensure_meta_configuration, meta_output_prefix, save_meta_audit)
 from credtools.qc import locus_qc
 from credtools.wrappers import (run_abf, run_abf_cojo, run_carma, run_finemap,
                                 run_mesusie, run_multisusie, run_rsparsepro,
@@ -681,6 +682,7 @@ def pipeline(
     outdir: str = ".",
     calculate_lambda_s: bool = False,
     strategy: Optional[str] = None,  # Deprecated parameter
+    ld_weighting: str = "ess",
     **kwargs,
 ):
     """
@@ -697,6 +699,9 @@ def pipeline(
         Skip QC, by default False.
     tool : str, optional
         Fine-mapping tool, by default "susie".
+    ld_weighting : {"ess", "se"}, optional
+        Cohort-matched geometric LD weighting, by default "ess". Both choices
+        recompute IVW summary statistics from the same matched contributions.
     calculate_lambda_s : bool, optional
         Whether to calculate lambda_s parameter using estimate_s_rss function, by default False.
     strategy : str, optional
@@ -705,6 +710,7 @@ def pipeline(
     import sys
     from datetime import datetime
 
+    ensure_meta_configuration(outdir, meta_method, ld_weighting)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -717,6 +723,7 @@ def pipeline(
         "errors": [],
         "tool": tool,
         "meta_method": meta_method,
+        "ld_weighting": ld_weighting,
         "parameters": kwargs,
     }
 
@@ -737,12 +744,13 @@ def pipeline(
         logger.info("Heterogeneity metrics computed and saved.")
 
         # meta-analysis
-        locus_set = meta(locus_set, meta_method=meta_method)
+        locus_set = meta(locus_set, meta_method=meta_method, ld_weighting=ld_weighting)
         logger.info(f"Meta-analysis complete, {locus_set.n_loci} loci loaded.")
         logger.info(f"Save meta-analysis results to {outdir}.")
 
         for locus in locus_set.loci:
-            out_prefix = f"{outdir}/{locus.prefix}"
+            out_prefix = f"{outdir}/{meta_output_prefix(locus, meta_method, ld_weighting)}"
+            save_meta_audit(locus, out_prefix)
             locus.sumstats.to_csv(f"{out_prefix}.sumstat", sep="\t", index=False)
             np.savez_compressed(
                 f"{out_prefix}.ld.npz", ld=locus.ld.r.astype(np.float16)
@@ -864,5 +872,7 @@ def _generate_run_summary(run_summary: dict, output_file: str):
         f.write("Parameters Used:\n")
         f.write(f"  Tool: {run_summary['tool']}\n")
         f.write(f"  Meta Method: {run_summary['meta_method']}\n")
+        if "ld_weighting" in run_summary:
+            f.write(f"  LD Weighting: {run_summary['ld_weighting']}\n")
         for key, value in run_summary["parameters"].items():
             f.write(f"  {key}: {value}\n")
