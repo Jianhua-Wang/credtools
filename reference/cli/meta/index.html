@@ -1268,6 +1268,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#matched-ld-weighting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Matched LD Weighting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Matched LD Weighting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migration-and-audits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration and Audits
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1730,6 +1754,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#matched-ld-weighting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Matched LD Weighting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Matched LD Weighting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migration-and-audits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration and Audits
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1779,6 +1827,11 @@
 <td><code>meta_all</code></td>
 </tr>
 <tr>
+<td><code>--ld-weighting</code></td>
+<td>geometric LD weighting: <code>ess</code> or <code>se</code></td>
+<td><code>ess</code></td>
+</tr>
+<tr>
 <td><code>--calculate-lambda-s</code></td>
 <td>estimate lambda-s while loading loci</td>
 <td>off</td>
@@ -1797,9 +1850,10 @@
 </table>
 <h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>OUTDIR/
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>- loci_info.txt
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>- heterogeneity.txt.gz
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>- {locus_id}/
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>- meta_config.json
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>- loci_info.txt
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>- heterogeneity.txt.gz
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>- {locus_id}/
 </code></pre></div>
 <p>Use <code>OUTDIR/loci_info.txt</code> as the next input for <code>qc</code> or <code>finemap</code>.</p>
 <h2 id="meta-methods">Meta Methods<a class="headerlink" href="#meta-methods" title="Permanent link">&para;</a></h2>
@@ -1825,6 +1879,63 @@
 </tr>
 </tbody>
 </table>
+<h2 id="matched-ld-weighting">Matched LD Weighting<a class="headerlink" href="#matched-ld-weighting" title="Permanent link">&para;</a></h2>
+<p>Both <code>ess</code> (default) and <code>se</code> first match GWAS and LD <strong>within each cohort</strong>,
+align allele directions, then use the <strong>union</strong> of those matches. A variant
+does not have to occur in every cohort. Only finite BETA and positive finite SE
+contribute. A cohort with no eligible matches contributes zero; an entirely
+empty output fails explicitly.</p>
+<p>In both modes, meta BETA, SE and P are recomputed by inverse-variance weighting
+from exactly those matched contributions. The option changes <strong>LD weighting</strong>,
+not the summary-statistics estimator. Original discovery GWAS inputs are not
+overwritten; these are LD-supported fine-mapping inputs and can lose power.</p>
+<p>For cohort <code>k</code> and SNP <code>j</code>, define <code>w[k,j]</code> as:</p>
+<ul>
+<li><code>ess</code>: the supplied cohort <code>sample_size</code> for an eligible contribution;</li>
+<li><code>se</code>: <code>1 / SE[k,j]^2</code> from the input summary statistics;</li>
+<li>zero when that cohort/SNP contribution is unavailable.</li>
+</ul>
+<p>With <code>a[k,j] = sqrt(w[k,j] / sum_k w[k,j])</code>, merge LD as
+<code>R[i,j] = sum_k a[k,i] * a[k,j] * R_k[i,j]</code>. There is <strong>no pairwise
+renormalization</strong>. Supply effective sample sizes in <code>sample_size</code> for ESS
+weighting; credtools does not infer case/control ESS from that field.
+Supply any desired LDSC-corrected SE upstream; the option does not apply a new
+correction. SE weights describe the covariance of IVW meta Z under independent
+cohorts and appropriate LD; ESS weights remain an approximation to that covariance.
+Neither option corrects sample overlap or poor reference LD.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Default: matched geometric ESS LD</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>credtools<span class="w"> </span>meta<span class="w"> </span>work/chunks/loci_list.txt<span class="w"> </span>work/meta_ess<span class="w"> </span>--meta-method<span class="w"> </span>meta_all
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Matched SE LD, with the same matched IVW summary statistics</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>credtools<span class="w"> </span>meta<span class="w"> </span>work/chunks/loci_list.txt<span class="w"> </span>work/meta_se<span class="w"> </span>--ld-weighting<span class="w"> </span>se
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># The same option works within each population</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>credtools<span class="w"> </span>meta<span class="w"> </span>work/chunks/loci_list.txt<span class="w"> </span>work/popmeta_se<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>--meta-method<span class="w"> </span>meta_by_population<span class="w"> </span>--ld-weighting<span class="w"> </span>se
+</code></pre></div>
+<p><code>no_meta</code> retains its existing intersection behavior and ignores the weighting
+choice. A single-cohort population still uses the matched input contract, with
+its BETA/SE and LD unchanged apart from allele alignment/order and numeric rounding;
+P is computed from BETA/SE.</p>
+<h3 id="migration-and-audits">Migration and Audits<a class="headerlink" href="#migration-and-audits" title="Permanent link">&para;</a></h3>
+<p>This changes the default ESS <strong>algorithm</strong> compared with releases through
+v0.9.4: matching occurs before aggregation, and geometric normalization replaces
+the old pairwise ESS average. Use a <strong>new output directory</strong>, even for default
+ESS. Keep the old release and old outputs for exact historical reproduction.</p>
+<p>Output prefixes include <code>.matched_ess</code> or <code>.matched_se</code>. Each output has
+<code>*.meta_audit.tsv.gz</code> (per-SNP original valid information, matched information,
+fraction retained, and contributing-cohort counts) and <code>*.meta_cohorts.tsv.gz</code>
+(per-cohort valid/matched SNP counts). Information is <code>1/SE^2</code> in these audits
+even in ESS mode. The scalar output sample size is the sum of input cohort
+sample sizes, <strong>not a per-SNP observed sample size</strong>.</p>
+<p><code>meta_config.json</code> records the algorithm and weighting. A different mode or a
+legacy output without a manifest cannot be reused or overwritten in place;
+<code>--skip</code> only reuses compatible output. As before, use a new output directory
+when changing the source input files; the manifest is not an input-content hash.</p>
+<p>Information and summary-statistics arithmetic use float64; LD accumulation uses
+float32 and <code>.ld.npz</code> storage remains float16. There is no automatic PSD repair.
+The existing file loader's NaN-to-zero LD policy is unchanged: matching an LD
+map entry does not establish that every pairwise LD cell was observed.</p>
 
 
 

@@ -1798,6 +1798,11 @@ most important choices in a multi-study run.</p>
 </tbody>
 </table>
 <h2 id="meta_all"><code>meta_all</code><a class="headerlink" href="#meta_all" title="Permanent link">&para;</a></h2>
+<p>For <code>meta_all</code> and <code>meta_by_population</code>, LD weighting is a separate choice:
+<code>--ld-weighting ess</code> (default) or <code>--ld-weighting se</code>. Both match GWAS and LD
+within cohorts before taking the union and recompute matched IVW statistics.
+See <a href="../../reference/cli/meta/#matched-ld-weighting">matched LD weighting</a> for
+formulas, information-loss audits, and the default-algorithm migration warning.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>loci_list.txt<span class="w"> </span>results<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--meta-method<span class="w"> </span>meta_all<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--tool<span class="w"> </span>susie

@@ -1802,6 +1802,11 @@
 <td><code>meta_all</code></td>
 </tr>
 <tr>
+<td><code>--ld-weighting</code></td>
+<td>matched geometric LD weighting: <code>ess</code> or <code>se</code></td>
+<td><code>ess</code></td>
+</tr>
+<tr>
 <td><code>--skip-qc</code></td>
 <td>skip the QC phase</td>
 <td>off</td>
@@ -1865,6 +1870,11 @@
 </table>
 <p>For exact adaptive-L retry rules, see
 <a href="../../../guides/finemapping-tool-requirements/#adaptive-l">Adaptive L</a>.</p>
+<p>LD weighting has the same <a href="../meta/#matched-ld-weighting">matched-input contract as <code>meta</code></a>.
+Both choices recompute IVW summary statistics from within-cohort GWAS/LD matches.
+Use <code>--ld-weighting se</code> to select SE weights, or omit it for ESS. Write different
+modes to separate output directories; per-locus <code>meta_config.json</code> prevents
+mixing modes or overwriting legacy inputs. Adaptive-L behavior is unchanged.</p>
 <h2 id="selected-tool-specific-options">Selected Tool-Specific Options<a class="headerlink" href="#selected-tool-specific-options" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

@@ -1603,6 +1603,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#095" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.5
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#094" class="md-nav__link">
     <span class="md-ellipsis">
       0.9.4
@@ -1731,6 +1740,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#095" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.5
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#094" class="md-nav__link">
     <span class="md-ellipsis">
       0.9.4
@@ -1824,6 +1842,18 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>This page gives the short release story. For the full raw changelog, see
 <a href="https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md"><code>CHANGELOG.md</code></a>.</p>
+<h2 id="095">0.9.5<a class="headerlink" href="#095" title="Permanent link">&para;</a></h2>
+<p>Added <code>--ld-weighting ess|se</code> to <code>meta</code> and <code>pipeline</code>, with ESS as the default.
+Both modes match GWAS and LD within cohorts, recompute matched IVW statistics,
+and merge LD with geometric per-SNP normalization. ESS is no longer the legacy
+pairwise average, so use fresh output directories. Mode manifests and matching
+audits make the change explicit and protect resume from incompatible outputs.</p>
+<p>Also fixed meta output metadata when the input TSV uses a different column
+order. Adaptive L, float16 LD storage, and the absence of default PSD repair
+are unchanged. See <a href="../reference/cli/meta/#matched-ld-weighting">matched LD weighting</a>.</p>
+<p>Known limitation: INS validation found population-order sensitivity in MESuSiE
+and MultiSuSiE. Keep population order fixed when comparing results; this
+release does not resolve that sensitivity or change their fitting algorithms.</p>
 <h2 id="094">0.9.4<a class="headerlink" href="#094" title="Permanent link">&para;</a></h2>
 <p>Fixed the adaptive L (<code>--adaptive-max-causal</code>) fallback logic.</p>
 <p>When a larger L failed, the loop used to restart from <code>initial - 1</code> and discard
