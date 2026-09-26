@@ -3,6 +3,20 @@
 This page gives the short release story. For the full raw changelog, see
 [`CHANGELOG.md`](https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md).
 
+## 0.9.6
+
+Corrected native convergence metadata for SuSiEx and MESuSiE. SuSiEx reads
+`FAIL`, `NULL`, or normal CS rows directly from its `.cs` file and rejects
+missing or malformed output. MESuSiE uses its final two computed ELBO values
+with the original difference threshold of 0.001 instead of defaulting a missing
+flag to True. Insufficient or nonfinite evidence is False; finite negative
+changes still satisfy the native criterion. No ELBO trace is exported.
+
+MultiSuSiE, PIP/CS parsing, and existing empty-on-nonconvergence behavior are
+unchanged. Corrected flags can activate that existing behavior. This patch
+does not add convergence columns to CLI outputs or change purity-filter
+metadata propagation. See [native convergence metadata](guides/known-limitations.md#native-convergence-metadata).
+
 ## 0.9.5
 
 Added `--ld-weighting ess|se` to `meta` and `pipeline`, with ESS as the default.

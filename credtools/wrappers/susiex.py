@@ -1,5 +1,6 @@
 """Wrapper for SuSiEx multi-ancestry fine-mapping."""
 
+import csv
 import json
 import logging
 import os
@@ -14,6 +15,39 @@ from credtools.locus import Locus, LocusSet, intersect_sumstat_ld
 from credtools.utils import io_in_tempdir, tool_manager
 
 logger = logging.getLogger("SuSiEx")
+
+
+def _read_susiex_converged(cs_file: str) -> bool:
+    """Read native FAIL/NULL/CS evidence; reject missing or malformed output."""
+    with open(cs_file, newline="") as handle:
+        rows = list(csv.reader(handle, delimiter="\t", strict=True))
+    rows = [row for row in rows if any(cell.strip() for cell in row)]
+    if len(rows) == 1 and len(rows[0]) == 1:
+        marker = rows[0][0].strip()
+        if marker in {"FAIL", "NULL"}:
+            return marker == "NULL"
+
+    error = f"Malformed SuSiEx CS file: {cs_file}"
+    if len(rows) < 2:
+        raise ValueError(error)
+    header = rows[0]
+    if (
+        len(set(header)) != len(header)
+        or any(not name.strip() for name in header)
+        or not {"CS_ID", "SNP"}.issubset(header)
+    ):
+        raise ValueError(error)
+    cs_col, snp_col = header.index("CS_ID"), header.index("SNP")
+    for row in rows[1:]:
+        if len(row) != len(header) or not row[snp_col].strip():
+            raise ValueError(error)
+        try:
+            cs_id = int(row[cs_col])
+        except ValueError as exc:
+            raise ValueError(error) from exc
+        if cs_id < 1:
+            raise ValueError(error)
+    return True
 
 
 @io_in_tempdir("./tmp/SuSiEx")
@@ -282,6 +316,7 @@ def run_susiex(
     logger.info(f"Running SuSiEx with command: {' '.join(cmd)}.")
     tool_manager.run_tool("SuSiEx", cmd, f"{temp_dir}/run.log", required_output_files)
 
+    converged = _read_susiex_converged(f"{temp_dir}/chr{chrom}_{start}_{end}.cs")
     pip_df = pd.read_csv(f"{temp_dir}/chr{chrom}_{start}_{end}.snp", sep="\t")
     cs_snp: List[List[str]] = []
     purity_list: List[Optional[float]] = []
@@ -340,4 +375,5 @@ def run_susiex(
         pips=pip,
         parameters=parameters,
         purity=purity_list if len(purity_list) > 0 else None,
+        converged=converged,
     )

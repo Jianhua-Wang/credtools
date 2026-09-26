@@ -83,6 +83,30 @@ the result can be a valid empty credible set:
 This usually means the locus did not pass the significance threshold used for
 fine-mapping. It is different from a tool crash.
 
+## Native convergence metadata
+
+The multi-ancestry wrappers expose a Boolean in their native `CredibleSet` result:
+
+| Tool | Source of `converged` |
+| --- | --- |
+| MultiSuSiE | The original fit's `converged` field (unchanged). |
+| SuSiEx | The native `.cs` file: `FAIL` means False; `NULL` or a valid, nonempty CS table means True. A missing, empty or malformed file raises an error. |
+| MESuSiE | The last two actually computed ELBO values satisfy `(new - old) < 0.001`, exactly matching the native stopping rule. |
+
+MESuSiE's initial `-Inf` and unused trailing `NA` entries are not computed
+observations. Fewer than two computed values, internal missing values,
+NaN/infinite values or a nonfinite difference produce False rather than a
+default True. A finite negative ELBO change still produces True, as in the
+original algorithm; this flag does not introduce an ELBO-monotonicity test.
+Only the Boolean is sent from R to Python, not an ELBO trace. The native 0.001
+threshold is used regardless of the wrapper's exposed `tol` value.
+
+CS/PIP parsing and the existing `empty_on_nonconvergence` behavior are unchanged.
+A corrected False may therefore activate that pre-existing setting for MESuSiE;
+with the setting disabled, the native PIPs and CS remain available. These are
+native-wrapper flags: this change does not add CLI output columns or repair
+metadata propagation through later purity filtering/combination.
+
 ## First Run Checklist
 
 - Run one locus with `--log-file first_locus.log`.

@@ -15,6 +15,31 @@
 #   mesusie_purity.csv     - (CS_ID, PURITY, CS_TYPE)
 #   mesusie_converged.txt  - "TRUE" or "FALSE"
 
+# Match the native stopping rule without treating unused ELBO slots as data.
+mesusie_converged_from_elbo <- function(elbo) {
+  if (!is.numeric(elbo) || length(elbo) == 0L || any(is.nan(elbo))) {
+    return(FALSE)
+  }
+  # MESuSiE initializes ELBO[1] to -Inf; it is not a computed observation.
+  if (identical(elbo[1], -Inf)) {
+    elbo <- elbo[-1]
+  }
+  observed <- which(!is.na(elbo))
+  if (length(observed) < 2L) {
+    return(FALSE)
+  }
+  # Trim only unused trailing NA padding. Never bridge an internal missing or
+  # nonfinite observation to obtain a seemingly converged pair.
+  computed <- elbo[seq_len(max(observed))]
+  if (any(!is.finite(computed))) {
+    return(FALSE)
+  }
+  n <- length(computed)
+  delta <- computed[n] - computed[n - 1L]
+  # Negative changes satisfy the original rule too; do not use abs(delta).
+  is.finite(delta) && delta < 0.001
+}
+
 # Parse command line arguments
 args <- commandArgs(trailingOnly = TRUE)
 parse_args <- function(args) {
@@ -190,8 +215,8 @@ if (!is.null(cs_result$cs) && length(cs_result$cs) > 0) {
 write.csv(cs_rows, file.path(temp_dir, "mesusie_cs.csv"), row.names = FALSE)
 write.csv(purity_rows, file.path(temp_dir, "mesusie_purity.csv"), row.names = FALSE)
 
-# Write convergence status
-converged <- ifelse(!is.null(fit$converged), fit$converged, TRUE)
+# Write only the Boolean, using the original native ELBO criterion.
+converged <- mesusie_converged_from_elbo(fit$ELBO)
 writeLines(as.character(toupper(converged)), file.path(temp_dir, "mesusie_converged.txt"))
 
 cat(sprintf("MESuSiE wrapper: done. Found %d credible sets.\n", nrow(purity_rows)))

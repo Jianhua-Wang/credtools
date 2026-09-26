@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.6] (2026-09-26)
+
+### Fixed
+- Exclude local `.validation` logs, caches, and temporary data from release distributions.
+- SuSiEx convergence metadata now reads the native `.cs` result: `FAIL` maps to False, while `NULL` and valid nonempty CS tables map to True. Missing or malformed CS files raise an error instead of being treated as converged.
+- MESuSiE convergence metadata now uses the final two actually computed ELBO values and the native `(new - old) < 0.001` stopping criterion, replacing the missing-field default of True. Initial `-Inf` and unused trailing `NA` entries are excluded; insufficient or numerically invalid evidence returns False. Finite negative changes retain the native True interpretation.
+
+### Notes
+- MultiSuSiE is unchanged. PIP/CS parsing and the existing `empty_on_nonconvergence` policy are unchanged; a corrected MESuSiE False can now activate that existing policy. Only the convergence Boolean is returned from R, with no exported ELBO trace.
+- This patch updates native wrapper metadata, not CLI output schemas or metadata propagation through subsequent purity filtering and result combination.
+
 ## [0.9.5] (2026-09-18)
 
 ### Added

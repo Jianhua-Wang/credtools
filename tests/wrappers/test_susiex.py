@@ -50,10 +50,9 @@ def _make_mock_susiex_run_tool(
                 }
             )
             pip_df.to_csv(snp_file, sep="\t", index=False)
-            # Still need .cs file to exist
-            pd.DataFrame({"CS_ID": [], "SNP": []}).to_csv(
-                cs_file, sep="\t", index=False
-            )
+            # Native SuSiEx marks a converged, empty result with NULL.
+            with open(cs_file, "w") as handle:
+                handle.write("NULL\n")
         else:
             # Write .snp file with PIP columns
             # SuSiEx outputs SNP + PIP_all + PIP1 [+ PIP2 ...] when CS found
