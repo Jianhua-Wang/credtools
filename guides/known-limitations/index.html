@@ -812,6 +812,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#native-convergence-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Native convergence metadata
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#first-run-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       First Run Checklist
@@ -1740,6 +1749,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#native-convergence-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Native convergence metadata
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#first-run-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       First Run Checklist
@@ -1890,6 +1908,42 @@ the result can be a valid empty credible set:</p>
 </ul>
 <p>This usually means the locus did not pass the significance threshold used for
 fine-mapping. It is different from a tool crash.</p>
+<h2 id="native-convergence-metadata">Native convergence metadata<a class="headerlink" href="#native-convergence-metadata" title="Permanent link">&para;</a></h2>
+<p>The multi-ancestry wrappers expose a Boolean in their native <code>CredibleSet</code> result:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Source of <code>converged</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MultiSuSiE</td>
+<td>The original fit's <code>converged</code> field (unchanged).</td>
+</tr>
+<tr>
+<td>SuSiEx</td>
+<td>The native <code>.cs</code> file: <code>FAIL</code> means False; <code>NULL</code> or a valid, nonempty CS table means True. A missing, empty or malformed file raises an error.</td>
+</tr>
+<tr>
+<td>MESuSiE</td>
+<td>The last two actually computed ELBO values satisfy <code>(new - old) &lt; 0.001</code>, exactly matching the native stopping rule.</td>
+</tr>
+</tbody>
+</table>
+<p>MESuSiE's initial <code>-Inf</code> and unused trailing <code>NA</code> entries are not computed
+observations. Fewer than two computed values, internal missing values,
+NaN/infinite values or a nonfinite difference produce False rather than a
+default True. A finite negative ELBO change still produces True, as in the
+original algorithm; this flag does not introduce an ELBO-monotonicity test.
+Only the Boolean is sent from R to Python, not an ELBO trace. The native 0.001
+threshold is used regardless of the wrapper's exposed <code>tol</code> value.</p>
+<p>CS/PIP parsing and the existing <code>empty_on_nonconvergence</code> behavior are unchanged.
+A corrected False may therefore activate that pre-existing setting for MESuSiE;
+with the setting disabled, the native PIPs and CS remain available. These are
+native-wrapper flags: this change does not add CLI output columns or repair
+metadata propagation through later purity filtering/combination.</p>
 <h2 id="first-run-checklist">First Run Checklist<a class="headerlink" href="#first-run-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Run one locus with <code>--log-file first_locus.log</code>.</li>

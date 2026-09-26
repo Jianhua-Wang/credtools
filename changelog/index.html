@@ -1603,6 +1603,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#096" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.6
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#095" class="md-nav__link">
     <span class="md-ellipsis">
       0.9.5
@@ -1740,6 +1749,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#096" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.6
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#095" class="md-nav__link">
     <span class="md-ellipsis">
       0.9.5
@@ -1842,6 +1860,17 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>This page gives the short release story. For the full raw changelog, see
 <a href="https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md"><code>CHANGELOG.md</code></a>.</p>
+<h2 id="096">0.9.6<a class="headerlink" href="#096" title="Permanent link">&para;</a></h2>
+<p>Corrected native convergence metadata for SuSiEx and MESuSiE. SuSiEx reads
+<code>FAIL</code>, <code>NULL</code>, or normal CS rows directly from its <code>.cs</code> file and rejects
+missing or malformed output. MESuSiE uses its final two computed ELBO values
+with the original difference threshold of 0.001 instead of defaulting a missing
+flag to True. Insufficient or nonfinite evidence is False; finite negative
+changes still satisfy the native criterion. No ELBO trace is exported.</p>
+<p>MultiSuSiE, PIP/CS parsing, and existing empty-on-nonconvergence behavior are
+unchanged. Corrected flags can activate that existing behavior. This patch
+does not add convergence columns to CLI outputs or change purity-filter
+metadata propagation. See <a href="../guides/known-limitations/#native-convergence-metadata">native convergence metadata</a>.</p>
 <h2 id="095">0.9.5<a class="headerlink" href="#095" title="Permanent link">&para;</a></h2>
 <p>Added <code>--ld-weighting ess|se</code> to <code>meta</code> and <code>pipeline</code>, with ESS as the default.
 Both modes match GWAS and LD within cohorts, recompute matched IVW statistics,
