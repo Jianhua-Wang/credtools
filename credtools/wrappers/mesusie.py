@@ -58,6 +58,9 @@ def run_mesusie(
     estimate_residual_variance: bool = False,
     empty_on_nonconvergence: bool = False,
     temp_dir: Optional[str] = None,
+    mesusie_optimizer: str = "em",
+    mesusie_em_max_iter: int = 100,
+    mesusie_em_tol: float = 1e-9,
 ) -> CredibleSet:
     """
     Run MESuSiE multi-ancestry fine-mapping analysis on a LocusSet.
@@ -89,6 +92,15 @@ def run_mesusie(
         partially-fit results. Defaults to False (preserve legacy behavior).
     temp_dir : Optional[str], optional
         Temporary directory for intermediate files, by default None.
+    mesusie_optimizer : {"em", "native"}, optional
+        Covariance optimizer, by default "em" (order-stable covariance EM).
+        "native" uses the installed MESuSiE optimizer. Both use the guarded
+        outer stopping criterion and honor tol and coverage.
+    mesusie_em_max_iter : int, optional
+        Maximum inner EM iterations per effect update, by default 100.
+        Exhaustion is recorded separately from outer convergence.
+    mesusie_em_tol : float, optional
+        Inner EM objective tolerance, by default 1e-9.
 
     Returns
     -------
@@ -103,6 +115,16 @@ def run_mesusie(
     RuntimeError
         If the R script execution fails.
     """
+    if mesusie_optimizer not in {"em", "native"}:
+        raise ValueError("mesusie_optimizer must be 'em' or 'native'")
+    if not np.isfinite(tol) or tol <= 0:
+        raise ValueError("tol must be finite and positive")
+    if not np.isfinite(coverage) or not 0 < coverage < 1:
+        raise ValueError("coverage must be between 0 and 1")
+    if max_iter < 1 or max_causal < 1 or mesusie_em_max_iter < 1:
+        raise ValueError("Iteration limits and max_causal must be positive")
+    if not np.isfinite(mesusie_em_tol) or mesusie_em_tol <= 0:
+        raise ValueError("mesusie_em_tol must be finite and positive")
     logger.info(f"Running MESuSiE on {locus_set}")
     parameters = {
         "max_causal": max_causal,
@@ -112,6 +134,9 @@ def run_mesusie(
         "purity": purity,
         "estimate_residual_variance": estimate_residual_variance,
         "empty_on_nonconvergence": empty_on_nonconvergence,
+        "mesusie_optimizer": mesusie_optimizer,
+        "mesusie_em_max_iter": mesusie_em_max_iter,
+        "mesusie_em_tol": mesusie_em_tol,
     }
     logger.info(f"Parameters: {parameters}")
 
@@ -204,6 +229,14 @@ def run_mesusie(
         str(coverage),
         "--max_iter",
         str(max_iter),
+        "--tol",
+        str(tol),
+        "--optimizer",
+        mesusie_optimizer,
+        "--em_max_iter",
+        str(mesusie_em_max_iter),
+        "--em_tol",
+        str(mesusie_em_tol),
         "--purity",
         str(purity),
         "--estimate_residual_variance",
@@ -240,6 +273,17 @@ def run_mesusie(
         if not converged:
             logger.warning("MESuSiE did not converge. Results may be unreliable.")
 
+    n_iter = None
+    status_file = Path(temp_dir) / "mesusie_status.tsv"
+    if status_file.exists():
+        status = (
+            pd.read_csv(status_file, sep="\t", dtype=str)
+            .set_index("key")["value"]
+            .to_dict()
+        )
+        n_iter = int(status["n_iter"])
+        parameters["mesusie_runtime"] = status
+
     if converged is False and empty_on_nonconvergence:
         logger.error(
             "MESuSiE did not converge in %d iterations; returning empty "
@@ -260,6 +304,7 @@ def run_mesusie(
             pips=zero_pips,
             parameters=parameters,
             converged=False,
+            n_iter=n_iter,
         )
 
     # Build PIP series
@@ -313,4 +358,5 @@ def run_mesusie(
         parameters=parameters,
         purity=purity_list if len(purity_list) > 0 else None,
         converged=converged,
+        n_iter=n_iter,
     )

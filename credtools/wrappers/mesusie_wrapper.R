@@ -15,8 +15,8 @@
 #   mesusie_purity.csv     - (CS_ID, PURITY, CS_TYPE)
 #   mesusie_converged.txt  - "TRUE" or "FALSE"
 
-# Match the native stopping rule without treating unused ELBO slots as data.
-mesusie_converged_from_elbo <- function(elbo) {
+# Guard convergence without treating unused ELBO slots as observations.
+mesusie_converged_from_elbo <- function(elbo, tol = 0.001) {
   if (!is.numeric(elbo) || length(elbo) == 0L || any(is.nan(elbo))) {
     return(FALSE)
   }
@@ -36,8 +36,7 @@ mesusie_converged_from_elbo <- function(elbo) {
   }
   n <- length(computed)
   delta <- computed[n] - computed[n - 1L]
-  # Negative changes satisfy the original rule too; do not use abs(delta).
-  is.finite(delta) && delta < 0.001
+  is.finite(delta) && delta >= 0 && delta < tol
 }
 
 # Parse command line arguments
@@ -70,6 +69,10 @@ n_pop <- as.integer(params$n_pop)
 L <- as.integer(params$L)
 coverage <- as.numeric(params$coverage)
 max_iter <- as.integer(params$max_iter)
+tol <- if (is.null(params$tol)) 1e-3 else as.numeric(params$tol)
+optimizer <- if (is.null(params$optimizer)) "em" else params$optimizer
+em_max_iter <- if (is.null(params$em_max_iter)) 100L else as.integer(params$em_max_iter)
+em_tol <- if (is.null(params$em_tol)) 1e-9 else as.numeric(params$em_tol)
 purity <- as.numeric(params$purity)
 estimate_residual_variance <- as.logical(params$estimate_residual_variance)
 
@@ -88,6 +91,12 @@ if (!requireNamespace("MESuSiE", quietly = TRUE)) {
        "  devtools::install_github('borangao/MESuSiE')")
 }
 library(MESuSiE)
+script_arg <- grep("^--file=", commandArgs(), value = TRUE)
+if (length(script_arg) != 1L) stop("Cannot locate bundled MESuSiE adapter")
+script_dir <- dirname(normalizePath(sub("^--file=", "", script_arg)))
+source(file.path(script_dir, "mesusie_em.R"))
+adapter <- build_credtools_mesusie(script_dir, file.path(temp_dir, "em-cache"),
+                                  optimizer, tol, coverage, em_max_iter, em_tol)
 
 # Read population names
 pop_names_file <- file.path(temp_dir, "pop_names.txt")
@@ -149,7 +158,7 @@ cat("Running meSuSie_core...\n")
 #   optim_method, estimate_residual_variance, max_iter,
 #   cor_method, cor_threshold)
 fit <- tryCatch({
-  meSuSie_core(
+  adapter$core(
     R_mat_list = R_mat_list,
     summary_stat_list = summary_stat_list,
     L = L,
@@ -215,8 +224,25 @@ if (!is.null(cs_result$cs) && length(cs_result$cs) > 0) {
 write.csv(cs_rows, file.path(temp_dir, "mesusie_cs.csv"), row.names = FALSE)
 write.csv(purity_rows, file.path(temp_dir, "mesusie_purity.csv"), row.names = FALSE)
 
-# Write only the Boolean, using the original native ELBO criterion.
-converged <- mesusie_converged_from_elbo(fit$ELBO)
+# Record actual stopping and the trimmed trace; inner budget != convergence.
+converged <- isTRUE(adapter$telemetry$converged) &&
+  mesusie_converged_from_elbo(adapter$telemetry$elbo, tol)
 writeLines(as.character(toupper(converged)), file.path(temp_dir, "mesusie_converged.txt"))
+description <- packageDescription("MESuSiE")
+status <- c(optimizer = optimizer, n_iter = adapter$telemetry$n_iter,
+            inner_calls = adapter$telemetry$inner_calls,
+            inner_maxiter = adapter$telemetry$inner_maxiter,
+            covariance_fallbacks = adapter$telemetry$fallbacks,
+            package_version = as.character(packageVersion("MESuSiE")),
+            outer_tol = tol, coverage = coverage)
+if (!is.null(description$RemoteSha)) status <- c(status, package_sha = description$RemoteSha)
+write.table(data.frame(key = names(status), value = unname(status)),
+            file.path(temp_dir, "mesusie_status.tsv"), sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(data.frame(iteration = seq_len(adapter$telemetry$n_iter),
+                       elbo = adapter$telemetry$elbo[-1]),
+            file.path(temp_dir, "mesusie_elbo.tsv"), sep = "\t", row.names = FALSE, quote = FALSE)
+if (adapter$telemetry$inner_maxiter > 0L)
+  cat(sprintf("MESuSiE EM: %d/%d inner updates reached the iteration budget; outer convergence=%s\n",
+              adapter$telemetry$inner_maxiter, adapter$telemetry$inner_calls, converged))
 
 cat(sprintf("MESuSiE wrapper: done. Found %d credible sets.\n", nrow(purity_rows)))

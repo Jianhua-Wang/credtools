@@ -110,9 +110,24 @@ devtools::install_github("ZikunY/CARMA")
 For MESuSiE:
 
 ```r
-install.packages("devtools")
+install.packages(c("devtools", "Rcpp", "RcppArmadillo"))
 devtools::install_github("borangao/MESuSiE")
 ```
+
+From v0.9.7, MESuSiE uses a bundled covariance-EM adapter by default. R must
+have a working C++ compilation toolchain (Rtools on Windows; the usual R
+development/compiler tools on Linux/macOS). The source is compiled in each
+invocation's temporary directory, so concurrent fits do not share a writable
+Rcpp cache. No installed MESuSiE functions are overwritten.
+
+Use `--mesusie-optimizer native` on `finemap` or `pipeline` to retain the
+original covariance optimizer. Python callers can pass
+`mesusie_optimizer="native"` to `run_mesusie`/`fine_map`. Both modes honor
+coverage and the guarded outer tolerance, so native mode is not a byte-for-byte
+reproduction of v0.9.6. In Python, `mesusie_em_max_iter` (100) and
+`mesusie_em_tol` (1e-9) configure the inner updates. This adapter was tested
+with MESuSiE 1.0, upstream commit `5a3dd323e5d07dbd190952937f29b7a0bcf5eee0`;
+an incompatible native function layout is an explicit error.
 
 ## Temporary Files
 
@@ -140,4 +155,3 @@ credtools pipeline test_loci_list.txt smoke_results \
 
 If the smoke test fails, fix the environment or schema first. Do not submit the
 full batch and hope the cluster logs are easier to read.
-

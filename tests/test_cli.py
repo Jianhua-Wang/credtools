@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from credtools.cli import CombineCred, CombinePIP, Tool, run_fine_map
+from credtools.cli import CombineCred, CombinePIP, MESuSiEOptimizer, Tool, run_fine_map
 
 
 class DummyPool:
@@ -110,6 +110,7 @@ def test_run_fine_map_parallel(tmp_path, monkeypatch, processes):
         estimate_residual_variance=False,
         purity=0.5,
         convergence_tol=1e-3,
+        mesusie_optimizer=MESuSiEOptimizer.em,
         calculate_lambda_s=False,
         log_file=None,
     )
@@ -958,6 +959,7 @@ class TestRunFineMapFailedLoci:
             estimate_residual_variance=False,
             purity=0.5,
             convergence_tol=1e-3,
+            mesusie_optimizer=MESuSiEOptimizer.em,
             calculate_lambda_s=False,
             log_file=None,
         )
@@ -1015,6 +1017,7 @@ class TestRunFineMapFailedLoci:
             estimate_residual_variance=False,
             purity=0.0,
             convergence_tol=1e-3,
+            mesusie_optimizer=MESuSiEOptimizer.em,
             calculate_lambda_s=False,
             log_file=None,
         )

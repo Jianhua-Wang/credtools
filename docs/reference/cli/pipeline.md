@@ -62,6 +62,7 @@ mixing modes or overwriting legacy inputs. Adaptive-L behavior is unchanged.
 | SuSiE | `--max-iter`, `--estimate-residual-variance`, `--purity`, `--convergence-tol` |
 | RSparsePro | `--eps`, `--ubound`, `--cthres`, `--eincre`, `--minldthres`, `--maxldthres`, `--varemax`, `--varemin` |
 | SuSiEx | `--mult-step`, `--keep-ambig`, `--min-purity`, `--tol` |
+| MESuSiE | `--mesusie-optimizer em\|native` (default `em`), `--tol`, `--max-iter`, `--coverage`, `--purity` |
 | CARMA | `--outlier-switch`, `--effect-size-prior` |
 | MULTISUSIE | `--rho`, `--scaled-prior-variance`, `--standardize`, `--pop-spec-standardization`, `--estimate-prior-variance`, `--estimate-prior-method`, `--pop-spec-effect-priors`, `--iter-before-zeroing-effects`, `--prior-tol` |
 

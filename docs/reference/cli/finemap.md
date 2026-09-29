@@ -60,6 +60,12 @@ For exact adaptive-L retry rules, see
 | `--estimate-residual-variance` | off |
 | `--convergence-tol` | `1e-3` |
 
+`--convergence-tol` also controls the outer stopping tolerance for MultiSuSiE
+and MESuSiE. MESuSiE defaults to covariance EM; use
+`--mesusie-optimizer native` to select the original covariance optimizer.
+Both modes use guarded outer convergence. See the
+[R/compiler requirements](../../guides/external-tools.md#r-based-tools).
+
 ## COJO Options
 
 Used with `--set-L-by-cojo`.

@@ -17,7 +17,7 @@ a specific fine-mapping tool.
 | `carma` | single input | yes | `Rscript`, `CARMA` | Includes CARMA outlier modeling. |
 | `multisusie` | multi input | yes | none | Joint multi-population SuSiE-style model. |
 | `susiex` | multi input | yes | `SuSiEx` executable | Cross-ancestry fine-mapping wrapper. |
-| `mesusie` | multi input | yes | `Rscript`, `MESuSiE` | Joint multi-ancestry model with shared and ancestry-specific signals. |
+| `mesusie` | multi input | yes | `Rscript`, `MESuSiE`; default EM also needs `Rcpp`, `RcppArmadillo`, C++ toolchain | Joint multi-ancestry model with shared and ancestry-specific signals. |
 
 !!! note "Single input versus multi input"
     Single-input tools run once per row in a locus set and CREDTOOLS combines

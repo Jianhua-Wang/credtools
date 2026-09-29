@@ -59,7 +59,8 @@ def run_susie(
         The purity values are calculated and stored in the CredibleSet object.
     convergence_tol : float, optional
         Convergence tolerance for the ELBO (Evidence Lower BOund), by default 1e-3.
-        Algorithm stops when ELBO change falls below this threshold.
+        Algorithm stops when the ELBO change is nonnegative and below this
+        threshold. A decrease is not convergence.
     significant_threshold : float, optional
         Minimum p-value required for a variant to be considered significant. If no
         variants cross this threshold, the function returns an empty credible set

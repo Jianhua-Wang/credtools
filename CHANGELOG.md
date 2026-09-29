@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.7] (2026-09-28)
+
+### Fixed
+- Python SuSiE and MultiSuSiE now require a finite, nonnegative ELBO increment smaller than the tolerance before reporting convergence. Substantial decreases emit a warning; computed NaN/infinite objectives raise an error. SuSiE warm starts no longer inherit a stale convergence flag.
+- MultiSuSiE's credtools wrapper uses float64 inference to reduce numerical population-order sensitivity. LD storage/rounding and posterior-moment formulas are unchanged.
+- MESuSiE now honors the requested outer tolerance and CS coverage, and reports actual iteration counts and optimizer diagnostics instead of reconstructing native one-sided convergence alone.
+
+### Changed
+- MESuSiE defaults to the dimension-general covariance-EM update validated on three- and five-population inputs. The native posterior and likelihood are retained; the installed R package is not modified. `--mesusie-optimizer native` selects the original covariance optimizer; both modes use guarded outer convergence.
+- The EM adapter requires Rcpp, RcppArmadillo and a working R C++ toolchain. Compilation caches are invocation-local to avoid concurrent cache corruption. Unsupported native function layouts fail explicitly rather than silently running an unpatched optimizer.
+
+### Notes
+- EM inner-iteration budget exhaustion is recorded separately from outer convergence; it is not reported as inner convergence. Population-order tests do not establish global optimality or resolve GWAS/LD mismatch.
+- The adaptive-L expansion/fallback policy, cohort matching, ESS/SE LD merging, and other fine-mapping tools are unchanged. Numerical changes can affect PIPs/CSs and whether the existing nonconvergence filter is activated; use fresh output directories.
+
 ## [0.9.6] (2026-09-26)
 
 ### Fixed

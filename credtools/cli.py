@@ -51,6 +51,13 @@ class LDWeighting(str, Enum):
     se = "se"
 
 
+class MESuSiEOptimizer(str, Enum):
+    """Covariance optimizer for MESuSiE."""
+
+    em = "em"
+    native = "native"
+
+
 class Tool(str, Enum):
     """The tool to perform fine-mapping."""
 
@@ -1163,8 +1170,13 @@ def run_meta(
 
     setup_file_logging(log_file)
     meta_loci(
-        inputs, outdir, threads, meta_method, calculate_lambda_s,
-        skip=skip, ld_weighting=ld_weighting.value,
+        inputs,
+        outdir,
+        threads,
+        meta_method,
+        calculate_lambda_s,
+        skip=skip,
+        ld_weighting=ld_weighting.value,
     )
 
 
@@ -1454,6 +1466,9 @@ def run_fine_map(
     convergence_tol: float = typer.Option(
         1e-3, "--convergence-tol", "-ct", help="Convergence tolerance."
     ),
+    mesusie_optimizer: MESuSiEOptimizer = typer.Option(
+        MESuSiEOptimizer.em, "--mesusie-optimizer", help="MESuSiE covariance optimizer."
+    ),
     # CARMA parameters
     outlier_switch: bool = typer.Option(
         True,
@@ -1560,6 +1575,8 @@ def run_fine_map(
         "estimate_residual_variance": estimate_residual_variance,
         "purity": purity,
         "convergence_tol": convergence_tol,
+        "tol": convergence_tol,
+        "mesusie_optimizer": mesusie_optimizer.value,
         "significant_threshold": significant_threshold,
         "outlier_switch": outlier_switch,
         "effect_size_prior": effect_size_prior,
@@ -1878,6 +1895,12 @@ def run_pipeline(
     tol: float = typer.Option(
         1e-3, "--tol", "-t", help="Convergence tolerance.", rich_help_panel="SuSiEx"
     ),
+    mesusie_optimizer: MESuSiEOptimizer = typer.Option(
+        MESuSiEOptimizer.em,
+        "--mesusie-optimizer",
+        help="MESuSiE covariance optimizer.",
+        rich_help_panel="MESuSiE",
+    ),
     # CARMA parameters
     outlier_switch: bool = typer.Option(
         True,
@@ -2054,6 +2077,7 @@ def run_pipeline(
                 estimate_prior_variance=estimate_prior_variance,
                 estimate_prior_method=estimate_prior_method,
                 pop_spec_effect_priors=pop_spec_effect_priors,
+                mesusie_optimizer=mesusie_optimizer.value,
                 iter_before_zeroing_effects=iter_before_zeroing_effects,
                 prior_tol=prior_tol,
                 calculate_lambda_s=calculate_lambda_s,

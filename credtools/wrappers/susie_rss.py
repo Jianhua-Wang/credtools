@@ -1768,6 +1768,8 @@ def susie_suff_stat(
     # Main iteration loop
     elbo = np.full(max_iter + 1, np.nan)
     elbo[0] = -np.inf
+    # A warm start's previous convergence flag does not describe this fit.
+    s["converged"] = False
     tracking: List[Dict[str, Any]] = []
 
     bhat = Xty / np.diag(XtX)
@@ -1799,10 +1801,15 @@ def susie_suff_stat(
         logger.debug(f"objective: {get_objective_ss(XtX, Xty, s, yty, n)}")
 
         elbo[i + 1] = get_objective_ss(XtX, Xty, s, yty, n)
-        if np.isinf(elbo[i + 1]):
-            raise ValueError("The objective becomes infinite. Please check the input.")
+        if not np.isfinite(elbo[i + 1]):
+            raise ValueError(
+                "The objective becomes nonfinite (NaN or infinite). Please check the input."
+            )
 
-        if (elbo[i + 1] - elbo[i]) < tol:
+        delta = elbo[i + 1] - elbo[i]
+        if delta < -tol:
+            logger.warning("ELBO decreased by %.3g at iteration %d", -delta, i + 1)
+        if np.isfinite(delta) and 0 <= delta < tol:
             logger.info("Converged, stopping iteration")
             s["converged"] = True
             break
@@ -1820,7 +1827,7 @@ def susie_suff_stat(
     s["elbo"] = elbo
     s["niter"] = i + 1
 
-    if "converged" not in s:
+    if not s["converged"]:
         logger.warning(
             f"IBSS algorithm did not converge in {max_iter} iterations! "
             "Please check consistency between summary statistics and LD matrix."

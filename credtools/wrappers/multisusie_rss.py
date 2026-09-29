@@ -724,10 +724,19 @@ def susie_multi_ss(
 
         # update the ELBO and check for convergence
         elbo[i + 1] = get_objective(XTX_list, XTY_list, s, YTY_list, X_l2_arr)
+        if not np.isfinite(elbo[i + 1]):
+            raise ValueError(
+                "The objective becomes nonfinite (NaN or infinite). Please check the input."
+            )
         if verbose:
             logger.info("objective: %s" % (elbo[i + 1]))
 
-        if ((elbo[i + 1] - elbo[i]) < tol) and (i >= (iter_before_zeroing_effects + 1)):
+        delta = elbo[i + 1] - elbo[i]
+        if delta < -tol:
+            logger.warning("ELBO decreased by %.3g at iteration %d", -delta, i + 1)
+        if (np.isfinite(delta) and 0 <= delta < tol) and (
+            i >= (iter_before_zeroing_effects + 1)
+        ):
             s.converged = True
             tqdm_iter.close()
             break

@@ -88,7 +88,7 @@ def test_susiex_bad_cs_is_error(locus_set_two_pop, monkeypatch, content):
         run_susiex(locus_set_two_pop)
 
 
-def test_mesusie_original_elbo_rule(tmp_path):
+def test_mesusie_guarded_elbo_rule(tmp_path):
     """Exercise real R, including unused padding, exhaustion and negative deltas."""
     rscript = shutil.which("Rscript")
     if rscript is None:
@@ -110,7 +110,8 @@ cases <- list(
   list(c(-Inf, -10, -9.9995, NA, NA), TRUE),
   list(c(-Inf, 0, 0.001), FALSE),
   list(c(-Inf, 0, 0.002), FALSE),
-  list(c(-Inf, -10, -20, NA), TRUE),
+  list(c(-Inf, -10, -20, NA), FALSE),
+  list(c(-Inf, -10, -10.00001, NA), FALSE),
   list(c(-Inf, 0, 0), TRUE),
   list(c(-Inf, -10, -9, -8), FALSE),
   list(c(-Inf, -10), FALSE),

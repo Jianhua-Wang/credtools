@@ -102,7 +102,8 @@ def run_multisusie(
         More iterations may improve convergence but increase runtime.
     tol : float, optional
         Convergence tolerance for the ELBO, by default 1e-3.
-        Algorithm stops when ELBO change falls below this threshold.
+        Algorithm stops when the ELBO change is nonnegative and below this
+        threshold, after the initial effect-zeroing period.
     purity : float, optional
         Minimum purity threshold for credible sets, by default 0.1.
         Credible sets with purity below this threshold will be filtered out by MultiSuSiE.
@@ -124,6 +125,9 @@ def run_multisusie(
 
     Notes
     -----
+    The wrapper uses float64 inference from version 0.9.7. This does not
+    change LD-file storage precision or the existing expanded-LD rounding.
+
     MultiSuSiE implements a multi-population extension of the SuSiE model:
 
     y_k = Σ(l=1 to L) X_k * b_k,l + ε_k
@@ -230,6 +234,7 @@ def run_multisusie(
         "tol": tol,
         "purity": purity,
         "empty_on_nonconvergence": empty_on_nonconvergence,
+        "inference_dtype": "float64",
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
 
@@ -301,7 +306,7 @@ def run_multisusie(
         iter_before_zeroing_effects=iter_before_zeroing_effects,
         prior_tol=prior_tol,
         purity=purity,
-        float_type=np.float32,
+        float_type=np.float64,
         low_memory_mode=False,
         recover_R=False,
         single_population_mac_thresh=20,
