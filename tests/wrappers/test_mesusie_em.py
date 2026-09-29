@@ -73,3 +73,23 @@ def test_python_to_r_em_adapter(tmp_path, monkeypatch, rscript_with_mesusie):
     assert float(status["outer_tol"]) == 0.002
     assert int(status["inner_calls"]) > 0
     assert np.isfinite(result.pips).all()
+
+
+def test_em_kernel_matches_v097(tmp_path, rscript_with_mesusie):
+    """Guard small-matrix and generic paths against the frozen reference."""
+    here = Path(__file__).parent
+    result = subprocess.run(
+        [
+            rscript_with_mesusie,
+            "--vanilla",
+            str(here / "test_mesusie_kernel.R"),
+            str(here.parents[1] / "credtools/wrappers"),
+            str(here / "fixtures/mesusie_em_v097.cpp"),
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "MESUSIE_KERNEL_EQUIVALENCE_PASS" in result.stdout

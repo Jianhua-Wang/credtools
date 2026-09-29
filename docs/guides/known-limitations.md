@@ -112,6 +112,18 @@ convergence. The validated five-population INS comparison used fixed L=5;
 order stability is not a claim about the true number of causal signals,
 global optimality or validity under LD mismatch.
 
+The development EM kernel caches data invariant within each single-effect
+update and streams configuration-level sufficient moments using log-scaled
+weights. It reuses a Cholesky factor for the small covariance solves and log
+determinant; dimensions above five use generic Armadillo operations. No SNPs
+or configurations are pruned, and float64, the inner iteration/tolerance
+settings, eigenvalue floor, native likelihood guard and outer stopping policy
+are unchanged. Algebraic equivalence does not imply bitwise equality: tests
+compare covariance/likelihood against the frozen v0.9.7 kernel, and application
+validation must also check PIPs, CS membership and convergence. Compilation
+overhead can dominate tiny fits, so compute-only benchmarks must not be read
+as cold-start wall-time guarantees.
+
 CS/PIP parsing and the existing `empty_on_nonconvergence` behavior are unchanged.
 A corrected False may therefore activate that pre-existing setting for MESuSiE;
 with the setting disabled, the native PIPs and CS remain available. These are

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Performance
+- Accelerate MESuSiE covariance EM by caching per-update invariant terms, reusing small Cholesky solves and streaming configuration-level moments. Preserve float64, the likelihood, priors, iteration limits, tolerances, covariance eigenvalue floor and outer/adaptive stopping policy; retain all SNPs and ancestry configurations.
+- Add numerical regression checks against the frozen v0.9.7 kernel for one through seven populations, including nearly singular covariance and zero-prior configurations. Floating-point agreement is checked within explicit tolerances, not claimed to be bitwise identical. Native adapter and fine-mapping integration tests remain in place.
+
 ## [0.9.7] (2026-09-28)
 
 ### Fixed
