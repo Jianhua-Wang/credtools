@@ -1909,9 +1909,22 @@ implemented.</p>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">devtools</span><span class="o">::</span><span class="nf">install_github</span><span class="p">(</span><span class="s">&quot;ZikunY/CARMA&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>For MESuSiE:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nf">install.packages</span><span class="p">(</span><span class="s">&quot;devtools&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nf">install.packages</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s">&quot;devtools&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Rcpp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RcppArmadillo&quot;</span><span class="p">))</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">devtools</span><span class="o">::</span><span class="nf">install_github</span><span class="p">(</span><span class="s">&quot;borangao/MESuSiE&quot;</span><span class="p">)</span>
 </code></pre></div>
+<p>From v0.9.7, MESuSiE uses a bundled covariance-EM adapter by default. R must
+have a working C++ compilation toolchain (Rtools on Windows; the usual R
+development/compiler tools on Linux/macOS). The source is compiled in each
+invocation's temporary directory, so concurrent fits do not share a writable
+Rcpp cache. No installed MESuSiE functions are overwritten.</p>
+<p>Use <code>--mesusie-optimizer native</code> on <code>finemap</code> or <code>pipeline</code> to retain the
+original covariance optimizer. Python callers can pass
+<code>mesusie_optimizer="native"</code> to <code>run_mesusie</code>/<code>fine_map</code>. Both modes honor
+coverage and the guarded outer tolerance, so native mode is not a byte-for-byte
+reproduction of v0.9.6. In Python, <code>mesusie_em_max_iter</code> (100) and
+<code>mesusie_em_tol</code> (1e-9) configure the inner updates. This adapter was tested
+with MESuSiE 1.0, upstream commit <code>5a3dd323e5d07dbd190952937f29b7a0bcf5eee0</code>;
+an incompatible native function layout is an explicit error.</p>
 <h2 id="temporary-files">Temporary Files<a class="headerlink" href="#temporary-files" title="Permanent link">&para;</a></h2>
 <p>Some wrappers write intermediate files under <code>./tmp/</code>:</p>
 <table>

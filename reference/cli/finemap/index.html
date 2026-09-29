@@ -1956,6 +1956,11 @@
 </tr>
 </tbody>
 </table>
+<p><code>--convergence-tol</code> also controls the outer stopping tolerance for MultiSuSiE
+and MESuSiE. MESuSiE defaults to covariance EM; use
+<code>--mesusie-optimizer native</code> to select the original covariance optimizer.
+Both modes use guarded outer convergence. See the
+<a href="../../../guides/external-tools/#r-based-tools">R/compiler requirements</a>.</p>
 <h2 id="cojo-options">COJO Options<a class="headerlink" href="#cojo-options" title="Permanent link">&para;</a></h2>
 <p>Used with <code>--set-L-by-cojo</code>.</p>
 <table>

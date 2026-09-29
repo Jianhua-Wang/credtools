@@ -1919,8 +1919,12 @@ fine-mapping. It is different from a tool crash.</p>
 </thead>
 <tbody>
 <tr>
+<td>Python SuSiE</td>
+<td>Finite objective and <code>0 &lt;= new - old &lt; tol</code>.</td>
+</tr>
+<tr>
 <td>MultiSuSiE</td>
-<td>The original fit's <code>converged</code> field (unchanged).</td>
+<td>The fit's <code>converged</code> field: guarded ELBO criterion, after the initial effect-zeroing period. The wrapper uses float64 inference.</td>
 </tr>
 <tr>
 <td>SuSiEx</td>
@@ -1928,17 +1932,26 @@ fine-mapping. It is different from a tool crash.</p>
 </tr>
 <tr>
 <td>MESuSiE</td>
-<td>The last two actually computed ELBO values satisfy <code>(new - old) &lt; 0.001</code>, exactly matching the native stopping rule.</td>
+<td>Actual adapter stopping plus two finite computed ELBO values satisfying <code>0 &lt;= new - old &lt; tol</code>. The requested tolerance is honored.</td>
 </tr>
 </tbody>
 </table>
 <p>MESuSiE's initial <code>-Inf</code> and unused trailing <code>NA</code> entries are not computed
 observations. Fewer than two computed values, internal missing values,
 NaN/infinite values or a nonfinite difference produce False rather than a
-default True. A finite negative ELBO change still produces True, as in the
-original algorithm; this flag does not introduce an ELBO-monotonicity test.
-Only the Boolean is sent from R to Python, not an ELBO trace. The native 0.001
-threshold is used regardless of the wrapper's exposed <code>tol</code> value.</p>
+default True. From v0.9.7, negative increments no longer count as convergence
+in Python SuSiE, MultiSuSiE or the MESuSiE adapter. A substantial decrease is
+warned about; a nonfinite computed objective fails the fit. This matches the
+nonnegative ELBO convergence rule in recent susieR, not an absolute-difference
+rule. It does not promise that all earlier ELBO steps were monotone.</p>
+<p>MESuSiE defaults to covariance EM and retains the original likelihood and
+posterior. The R wrapper writes <code>mesusie_status.tsv</code> and <code>mesusie_elbo.tsv</code>
+in its temporary directory; iteration counts and status are carried in the
+native <code>CredibleSet</code> and its <code>mesusie_runtime</code> parameters. Inner EM updates
+that exhaust the budget are counted separately and do not imply inner
+convergence. The validated five-population INS comparison used fixed L=5;
+order stability is not a claim about the true number of causal signals,
+global optimality or validity under LD mismatch.</p>
 <p>CS/PIP parsing and the existing <code>empty_on_nonconvergence</code> behavior are unchanged.
 A corrected False may therefore activate that pre-existing setting for MESuSiE;
 with the setting disabled, the native PIPs and CS remain available. These are
