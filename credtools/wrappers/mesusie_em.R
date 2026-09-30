@@ -13,6 +13,7 @@ build_credtools_mesusie <- function(script_dir, cache_dir, optimizer = "em",
   telemetry$inner_calls <- 0L
   telemetry$inner_maxiter <- 0L
   telemetry$fallbacks <- 0L
+  telemetry$gaussian_numerics <- if (optimizer == "em") "cholesky_latent" else "native"
   env$telemetry <- telemetry
   env$outer_tol <- tol
   env$check_elbo <- function(new, old, iter) {

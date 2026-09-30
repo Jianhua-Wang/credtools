@@ -3,6 +3,28 @@
 This page gives the short release story. For the full raw changelog, see
 [`CHANGELOG.md`](https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md).
 
+## Unreleased
+
+Accelerate MESuSiE covariance EM without pruning SNPs/configurations or changing
+the model, priors, precision, tolerances or iteration budgets. Evaluate the EM
+Gaussian likelihood with Cholesky log determinants and multivariate posterior
+moments with latent square-root conditioning. Preserve the independent objective
+guard; this is not an LD repair or a guarantee of convergence.
+
+Keep EM as the default and `--mesusie-optimizer native` as the original-arithmetic
+sensitivity control. Runtime diagnostics record the Gaussian implementation,
+BLAS library and requested environment settings without imposing them. See
+[MESuSiE limitations](guides/known-limitations.md#native-convergence-metadata).
+
+## 0.9.7
+
+Require nonnegative finite ELBO increments for convergence in Python SuSiE,
+MultiSuSiE and MESuSiE. Use float64 in the MultiSuSiE wrapper and default MESuSiE
+to dimension-general covariance EM. Honor MESuSiE's requested outer tolerance
+and CS coverage, with actual iteration counts and inner-optimizer diagnostics.
+These changes do not promise calibrated fine-mapping under LD mismatch or
+universal population-order invariance.
+
 ## 0.9.6
 
 Corrected native convergence metadata for SuSiEx and MESuSiE. SuSiEx reads

@@ -119,6 +119,11 @@ convergence. The validated five-population INS comparison used fixed L=5;
 order stability is not a claim about the true number of causal signals,
 global optimality or validity under LD mismatch.
 
+Runtime provenance also records `gaussian_numerics` (`cholesky_latent` or
+`native`), `blas_library`, and requested OpenBLAS/thread environment values.
+These are diagnostic settings, not a measurement of actual kernel dispatch or
+thread use; absent environment values are explicitly labeled `unset`.
+
 The development EM kernel caches data invariant within each single-effect
 update and streams configuration-level sufficient moments using log-scaled
 weights. It reuses a Cholesky factor for the small covariance solves and log

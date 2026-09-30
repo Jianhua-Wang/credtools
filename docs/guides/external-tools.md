@@ -129,6 +129,30 @@ reproduction of v0.9.6. In Python, `mesusie_em_max_iter` (100) and
 with MESuSiE 1.0, upstream commit `5a3dd323e5d07dbd190952937f29b7a0bcf5eee0`;
 an incompatible native function layout is an explicit error.
 
+In the unreleased development implementation, EM uses Cholesky marginal
+likelihoods and latent square-root multivariate posterior moments for the same
+Gaussian model; `native` retains the installed package's arithmetic. The
+optimized EM still uses all SNPs/configurations and unchanged budgets/tolerances.
+Numerical repair is not an LD repair. A divergent/failed fit must not be treated
+as a validated credible set; nonconvergence remains reported explicitly.
+
+`mesusie_status.tsv` and the Python `mesusie_runtime` parameters include
+`gaussian_numerics`, `blas_library`, `openblas_coretype_env`,
+`openblas_num_threads_env` and `omp_num_threads_env`. The environment fields
+record requests, not measured dispatch/thread counts. For controlled comparisons
+on heterogeneous OpenBLAS x86 CPUs, use one thread and the same supported kernel,
+for example:
+
+```bash
+OPENBLAS_CORETYPE=Nehalem OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  credtools finemap loci_info.tsv new_mesusie_results --tool mesusie
+```
+
+Select a kernel appropriate for the machines/library; `Nehalem` is not a
+universal setting for other BLAS implementations or architectures. credtools
+does not set global BLAS options automatically. See
+[numerical limitations](known-limitations.md#native-convergence-metadata).
+
 ## Temporary Files
 
 Some wrappers write intermediate files under `./tmp/`:

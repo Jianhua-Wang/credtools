@@ -18,6 +18,7 @@ for (n in c(2L, 3L, 5L)) {
   results <- list()
   for (order in list(seq_len(n), rev(seq_len(n)))) {
     a <- build_credtools_mesusie(args[1], cache, tol = .001, coverage = .9)
+    stopifnot(a$telemetry$gaussian_numerics == "cholesky_latent")
     posterior_calls <- 0L
     adapter_env <- environment(a$core)
     adapter_env$mvlmm_reg <- local({
@@ -39,6 +40,7 @@ a <- build_credtools_mesusie(args[1], cache, optimizer = "native", coverage = .8
 f <- a$core(ld[1:2], ss[1:2], L = 1L, max_iter = 3L,
             estimate_residual_variance = FALSE, cor_threshold = 0)
 stopifnot(f$cs$requested_coverage == .8, a$telemetry$inner_calls == 0L,
+          a$telemetry$gaussian_numerics == "native",
           identical(original_ser, body(MESuSiE:::single_effect_regression)),
           identical(original_core, body(MESuSiE::meSuSie_core)))
 cat("MESUSIE_EM_INTEGRATION_PASS\n")

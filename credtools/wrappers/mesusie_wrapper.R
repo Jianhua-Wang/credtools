@@ -230,11 +230,18 @@ converged <- isTRUE(adapter$telemetry$converged) &&
 writeLines(as.character(toupper(converged)), file.path(temp_dir, "mesusie_converged.txt"))
 description <- packageDescription("MESuSiE")
 status <- c(optimizer = optimizer, n_iter = adapter$telemetry$n_iter,
+            gaussian_numerics = adapter$telemetry$gaussian_numerics,
             inner_calls = adapter$telemetry$inner_calls,
             inner_maxiter = adapter$telemetry$inner_maxiter,
             covariance_fallbacks = adapter$telemetry$fallbacks,
             package_version = as.character(packageVersion("MESuSiE")),
             outer_tol = tol, coverage = coverage)
+blas <- extSoftVersion()["BLAS"]
+status <- c(status,
+            blas_library = if (length(blas) && !is.na(blas)) unname(blas) else "unknown",
+            openblas_coretype_env = Sys.getenv("OPENBLAS_CORETYPE", unset = "unset"),
+            openblas_num_threads_env = Sys.getenv("OPENBLAS_NUM_THREADS", unset = "unset"),
+            omp_num_threads_env = Sys.getenv("OMP_NUM_THREADS", unset = "unset"))
 if (!is.null(description$RemoteSha)) status <- c(status, package_sha = description$RemoteSha)
 write.table(data.frame(key = names(status), value = unname(status)),
             file.path(temp_dir, "mesusie_status.tsv"), sep = "\t", row.names = FALSE, quote = FALSE)

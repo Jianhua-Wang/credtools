@@ -1,5 +1,6 @@
 """Exercise the bundled adapter against an installed MESuSiE, when available."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -72,6 +73,14 @@ def test_python_to_r_em_adapter(tmp_path, monkeypatch, rscript_with_mesusie):
     assert float(status["coverage"]) == 0.9
     assert float(status["outer_tol"]) == 0.002
     assert int(status["inner_calls"]) > 0
+    assert status["gaussian_numerics"] == "cholesky_latent"
+    assert isinstance(status["blas_library"], str)
+    for variable, field in [
+        ("OPENBLAS_CORETYPE", "openblas_coretype_env"),
+        ("OPENBLAS_NUM_THREADS", "openblas_num_threads_env"),
+        ("OMP_NUM_THREADS", "omp_num_threads_env"),
+    ]:
+        assert status[field] == os.environ.get(variable, "unset")
     assert np.isfinite(result.pips).all()
 
 
