@@ -1603,6 +1603,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#098" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.8
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#097" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.7
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#096" class="md-nav__link">
     <span class="md-ellipsis">
       0.9.6
@@ -1749,6 +1767,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#098" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.8
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#097" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.9.7
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#096" class="md-nav__link">
     <span class="md-ellipsis">
       0.9.6
@@ -1860,6 +1896,23 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>This page gives the short release story. For the full raw changelog, see
 <a href="https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md"><code>CHANGELOG.md</code></a>.</p>
+<h2 id="098">0.9.8<a class="headerlink" href="#098" title="Permanent link">&para;</a></h2>
+<p>Accelerate MESuSiE covariance EM without pruning SNPs/configurations or changing
+the model, priors, precision, tolerances or iteration budgets. Evaluate the EM
+Gaussian likelihood with Cholesky log determinants and multivariate posterior
+moments with latent square-root conditioning. Preserve the independent objective
+guard; this is not an LD repair or a guarantee of convergence.</p>
+<p>Keep EM as the default and <code>--mesusie-optimizer native</code> as the original-arithmetic
+sensitivity control. Runtime diagnostics record the Gaussian implementation,
+BLAS library and requested environment settings without imposing them. See
+<a href="../guides/known-limitations/#native-convergence-metadata">MESuSiE limitations</a>.</p>
+<h2 id="097">0.9.7<a class="headerlink" href="#097" title="Permanent link">&para;</a></h2>
+<p>Require nonnegative finite ELBO increments for convergence in Python SuSiE,
+MultiSuSiE and MESuSiE. Use float64 in the MultiSuSiE wrapper and default MESuSiE
+to dimension-general covariance EM. Honor MESuSiE's requested outer tolerance
+and CS coverage, with actual iteration counts and inner-optimizer diagnostics.
+These changes do not promise calibrated fine-mapping under LD mismatch or
+universal population-order invariance.</p>
 <h2 id="096">0.9.6<a class="headerlink" href="#096" title="Permanent link">&para;</a></h2>
 <p>Corrected native convergence metadata for SuSiEx and MESuSiE. SuSiEx reads
 <code>FAIL</code>, <code>NULL</code>, or normal CS rows directly from its <code>.cs</code> file and rejects

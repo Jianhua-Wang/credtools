@@ -1944,14 +1944,42 @@ in Python SuSiE, MultiSuSiE or the MESuSiE adapter. A substantial decrease is
 warned about; a nonfinite computed objective fails the fit. This matches the
 nonnegative ELBO convergence rule in recent susieR, not an absolute-difference
 rule. It does not promise that all earlier ELBO steps were monotone.</p>
-<p>MESuSiE defaults to covariance EM and retains the original likelihood and
-posterior. The R wrapper writes <code>mesusie_status.tsv</code> and <code>mesusie_elbo.tsv</code>
+<p>MESuSiE defaults to covariance EM and retains the original Gaussian model.
+From v0.9.8, the EM adapter evaluates the marginal likelihood with Cholesky
+log determinants and computes multivariate posterior moments by latent
+square-root conditioning, avoiding direct determinants and subtractive
+posterior covariance cancellation. It rejects substantive negative prior
+eigenvalues; only eigensolver-scale negative roundoff may be clipped to zero.
+This does not project or repair LD. The <code>native</code> optimizer mode retains the
+installed package's arithmetic as an explicit sensitivity control.
+The R wrapper writes <code>mesusie_status.tsv</code> and <code>mesusie_elbo.tsv</code>
 in its temporary directory; iteration counts and status are carried in the
 native <code>CredibleSet</code> and its <code>mesusie_runtime</code> parameters. Inner EM updates
 that exhaust the budget are counted separately and do not imply inner
 convergence. The validated five-population INS comparison used fixed L=5;
 order stability is not a claim about the true number of causal signals,
 global optimality or validity under LD mismatch.</p>
+<p>Runtime provenance also records <code>gaussian_numerics</code> (<code>cholesky_latent</code> or
+<code>native</code>), <code>blas_library</code>, and requested OpenBLAS/thread environment values.
+These are diagnostic settings, not a measurement of actual kernel dispatch or
+thread use; absent environment values are explicitly labeled <code>unset</code>.</p>
+<p>From v0.9.8, the EM kernel caches data invariant within each single-effect
+update and streams configuration-level sufficient moments using log-scaled
+weights. It reuses a Cholesky factor for the small covariance solves and log
+determinant; dimensions above five use generic Armadillo operations. No SNPs
+or configurations are pruned, and float64, the inner iteration/tolerance
+settings, eigenvalue floor, independent likelihood guard (absolute tolerance
+1e-6) and outer stopping policy
+are unchanged. Algebraic equivalence does not imply bitwise equality: tests
+compare covariance/likelihood against the frozen v0.9.7 kernel, and application
+validation must also check PIPs, CS membership and convergence. Compilation
+overhead can dominate tiny fits, so compute-only benchmarks must not be read
+as cold-start wall-time guarantees.</p>
+<p>For cross-host reproducibility on heterogeneous OpenBLAS CPUs, controlled
+comparisons use one thread and a common supported <code>OPENBLAS_CORETYPE</code> (for
+example, <code>Nehalem</code>). Thread count alone does not fix CPU-specific dispatch.
+This is a testing/launch setting, not a global environment mutation or an
+automatic backend setting imposed on users.</p>
 <p>CS/PIP parsing and the existing <code>empty_on_nonconvergence</code> behavior are unchanged.
 A corrected False may therefore activate that pre-existing setting for MESuSiE;
 with the setting disabled, the native PIPs and CS remain available. These are

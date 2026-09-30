@@ -1925,6 +1925,25 @@ reproduction of v0.9.6. In Python, <code>mesusie_em_max_iter</code> (100) and
 <code>mesusie_em_tol</code> (1e-9) configure the inner updates. This adapter was tested
 with MESuSiE 1.0, upstream commit <code>5a3dd323e5d07dbd190952937f29b7a0bcf5eee0</code>;
 an incompatible native function layout is an explicit error.</p>
+<p>From v0.9.8, EM uses Cholesky marginal
+likelihoods and latent square-root multivariate posterior moments for the same
+Gaussian model; <code>native</code> retains the installed package's arithmetic. The
+optimized EM still uses all SNPs/configurations and unchanged budgets/tolerances.
+Numerical repair is not an LD repair. A divergent/failed fit must not be treated
+as a validated credible set; nonconvergence remains reported explicitly.</p>
+<p><code>mesusie_status.tsv</code> and the Python <code>mesusie_runtime</code> parameters include
+<code>gaussian_numerics</code>, <code>blas_library</code>, <code>openblas_coretype_env</code>,
+<code>openblas_num_threads_env</code> and <code>omp_num_threads_env</code>. The environment fields
+record requests, not measured dispatch/thread counts. For controlled comparisons
+on heterogeneous OpenBLAS x86 CPUs, use one thread and the same supported kernel,
+for example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">OPENBLAS_CORETYPE</span><span class="o">=</span>Nehalem<span class="w"> </span><span class="nv">OPENBLAS_NUM_THREADS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>credtools<span class="w"> </span>finemap<span class="w"> </span>loci_info.tsv<span class="w"> </span>new_mesusie_results<span class="w"> </span>--tool<span class="w"> </span>mesusie
+</code></pre></div>
+<p>Select a kernel appropriate for the machines/library; <code>Nehalem</code> is not a
+universal setting for other BLAS implementations or architectures. credtools
+does not set global BLAS options automatically. See
+<a href="../known-limitations/#native-convergence-metadata">numerical limitations</a>.</p>
 <h2 id="temporary-files">Temporary Files<a class="headerlink" href="#temporary-files" title="Permanent link">&para;</a></h2>
 <p>Some wrappers write intermediate files under <code>./tmp/</code>:</p>
 <table>
@@ -1953,10 +1972,10 @@ an incompatible native function layout is an explicit error.</p>
 keep temporary directories so you can inspect tool inputs and logs.</p>
 <h2 id="quick-environment-test">Quick Environment Test<a class="headerlink" href="#quick-environment-test" title="Permanent link">&para;</a></h2>
 <p>Run a tiny smoke test before a large job:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>test_loci_list.txt<span class="w"> </span>smoke_results<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>--max-causal<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>--log-file<span class="w"> </span>smoke.log
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>credtools<span class="w"> </span>pipeline<span class="w"> </span>test_loci_list.txt<span class="w"> </span>smoke_results<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>--tool<span class="w"> </span>susie<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>--max-causal<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>--log-file<span class="w"> </span>smoke.log
 </code></pre></div>
 <p>If the smoke test fails, fix the environment or schema first. Do not submit the
 full batch and hope the cluster logs are easier to read.</p>
