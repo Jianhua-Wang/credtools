@@ -93,3 +93,22 @@ def test_em_kernel_matches_v097(tmp_path, rscript_with_mesusie):
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "MESUSIE_KERNEL_EQUIVALENCE_PASS" in result.stdout
+
+
+def test_stable_gaussian_numerics(tmp_path, rscript_with_mesusie):
+    """Native equivalence and independent posterior/null/PSD validation."""
+    here = Path(__file__).parent
+    result = subprocess.run(
+        [
+            rscript_with_mesusie,
+            "--vanilla",
+            str(here / "test_mesusie_numerics.R"),
+            str(here.parents[1] / "credtools/wrappers"),
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "MESUSIE_NUMERICS_PASS" in result.stdout

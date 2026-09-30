@@ -94,7 +94,9 @@ def run_mesusie(
         Temporary directory for intermediate files, by default None.
     mesusie_optimizer : {"em", "native"}, optional
         Covariance optimizer, by default "em" (order-stable covariance EM).
-        "native" uses the installed MESuSiE optimizer. Both use the guarded
+        EM uses stable Gaussian likelihood/posterior arithmetic without
+        changing the model. "native" uses the installed optimizer and arithmetic.
+        Both use the guarded
         outer stopping criterion and honor tol and coverage.
     mesusie_em_max_iter : int, optional
         Maximum inner EM iterations per effect update, by default 100.

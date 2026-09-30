@@ -103,8 +103,15 @@ warned about; a nonfinite computed objective fails the fit. This matches the
 nonnegative ELBO convergence rule in recent susieR, not an absolute-difference
 rule. It does not promise that all earlier ELBO steps were monotone.
 
-MESuSiE defaults to covariance EM and retains the original likelihood and
-posterior. The R wrapper writes `mesusie_status.tsv` and `mesusie_elbo.tsv`
+MESuSiE defaults to covariance EM and retains the original Gaussian model.
+The development EM adapter evaluates the marginal likelihood with Cholesky
+log determinants and computes multivariate posterior moments by latent
+square-root conditioning, avoiding direct determinants and subtractive
+posterior covariance cancellation. It rejects substantive negative prior
+eigenvalues; only eigensolver-scale negative roundoff may be clipped to zero.
+This does not project or repair LD. The `native` optimizer mode retains the
+installed package's arithmetic as an explicit sensitivity control.
+The R wrapper writes `mesusie_status.tsv` and `mesusie_elbo.tsv`
 in its temporary directory; iteration counts and status are carried in the
 native `CredibleSet` and its `mesusie_runtime` parameters. Inner EM updates
 that exhaust the budget are counted separately and do not imply inner
@@ -117,12 +124,19 @@ update and streams configuration-level sufficient moments using log-scaled
 weights. It reuses a Cholesky factor for the small covariance solves and log
 determinant; dimensions above five use generic Armadillo operations. No SNPs
 or configurations are pruned, and float64, the inner iteration/tolerance
-settings, eigenvalue floor, native likelihood guard and outer stopping policy
+settings, eigenvalue floor, independent likelihood guard (absolute tolerance
+1e-6) and outer stopping policy
 are unchanged. Algebraic equivalence does not imply bitwise equality: tests
 compare covariance/likelihood against the frozen v0.9.7 kernel, and application
 validation must also check PIPs, CS membership and convergence. Compilation
 overhead can dominate tiny fits, so compute-only benchmarks must not be read
 as cold-start wall-time guarantees.
+
+For cross-host reproducibility on heterogeneous OpenBLAS CPUs, controlled
+comparisons use one thread and a common supported `OPENBLAS_CORETYPE` (for
+example, `Nehalem`). Thread count alone does not fix CPU-specific dispatch.
+This is a testing/launch setting, not a global environment mutation or an
+automatic backend setting imposed on users.
 
 CS/PIP parsing and the existing `empty_on_nonconvergence` behavior are unchanged.
 A corrected False may therefore activate that pre-existing setting for MESuSiE;

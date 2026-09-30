@@ -1,5 +1,5 @@
 # Process-local MESuSiE adapter: never modify the installed R namespace.
-# Keep the native posterior/likelihood; replace covariance optimization only.
+# Preserve the Gaussian model; use stable likelihood/posterior arithmetic for EM.
 build_credtools_mesusie <- function(script_dir, cache_dir, optimizer = "em",
                                     tol = 1e-3, coverage = .95,
                                     em_max_iter = 100L, em_tol = 1e-9) {
@@ -30,15 +30,12 @@ build_credtools_mesusie <- function(script_dir, cache_dir, optimizer = "em",
     # The cache belongs to this invocation; parallel jobs never share its index.
     Rcpp::sourceCpp(file.path(script_dir, "mesusie_covariance_em.cpp"),
                     env = env, cacheDir = cache_dir, rebuild = FALSE)
-    vec_cov <- function(v) {
-      r <- v / sqrt(outer(diag(v), diag(v)))
-      diag(r) <- log(diag(v))
-      r[upper.tri(r, diag = TRUE)]
-    }
+    Rcpp::sourceCpp(file.path(script_dir, "mesusie_numerics.cpp"),
+                    env = env, cacheDir = cache_dir, rebuild = FALSE)
+    env$mvlmm_reg <- function(betahat, shat2, V_mat)
+      env$mes_stable_mvlmm(betahat, shat2, V_mat)
     objective <- function(v, beta, se2, prior, configs) {
-      n <- ncol(beta)
-      MESuSiE:::loglik_cpp(vec_cov(v), beta, se2, prior, n,
-                          matrix(cumsum(seq_len(n))), configs)
+      env$mes_stable_loglik(beta, se2, v, prior, configs)
     }
     env$update_cov <- function(beta, se2, obj, effect) {
       old <- obj$V[[effect]]
@@ -49,7 +46,7 @@ build_credtools_mesusie <- function(script_dir, cache_dir, optimizer = "em",
                                     obj$column_config, em_max_iter, em_tol)
       value <- objective(fit$V, beta, se2, obj$pi, obj$column_config)
       if (!is.finite(value) || abs(value - fit$objective) >= 1e-6)
-        stop("MESuSiE EM objective disagrees with the native likelihood")
+        stop("MESuSiE EM objective disagrees with the stable Gaussian likelihood")
       oldvalue <- if (have) objective(old, beta, se2, obj$pi, obj$column_config) else Inf
       telemetry$inner_calls <- telemetry$inner_calls + 1L
       telemetry$inner_maxiter <- telemetry$inner_maxiter + as.integer(fit$status == 5L)
