@@ -104,7 +104,7 @@ nonnegative ELBO convergence rule in recent susieR, not an absolute-difference
 rule. It does not promise that all earlier ELBO steps were monotone.
 
 MESuSiE defaults to covariance EM and retains the original Gaussian model.
-The development EM adapter evaluates the marginal likelihood with Cholesky
+From v0.9.8, the EM adapter evaluates the marginal likelihood with Cholesky
 log determinants and computes multivariate posterior moments by latent
 square-root conditioning, avoiding direct determinants and subtractive
 posterior covariance cancellation. It rejects substantive negative prior
@@ -124,7 +124,7 @@ Runtime provenance also records `gaussian_numerics` (`cholesky_latent` or
 These are diagnostic settings, not a measurement of actual kernel dispatch or
 thread use; absent environment values are explicitly labeled `unset`.
 
-The development EM kernel caches data invariant within each single-effect
+From v0.9.8, the EM kernel caches data invariant within each single-effect
 update and streams configuration-level sufficient moments using log-scaled
 weights. It reuses a Cholesky factor for the small covariance solves and log
 determinant; dimensions above five use generic Armadillo operations. No SNPs

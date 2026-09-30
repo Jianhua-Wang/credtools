@@ -3,7 +3,7 @@
 This page gives the short release story. For the full raw changelog, see
 [`CHANGELOG.md`](https://github.com/Jianhua-Wang/credtools/blob/main/CHANGELOG.md).
 
-## Unreleased
+## 0.9.8
 
 Accelerate MESuSiE covariance EM without pruning SNPs/configurations or changing
 the model, priors, precision, tolerances or iteration budgets. Evaluate the EM

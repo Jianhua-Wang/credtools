@@ -2,13 +2,18 @@
 
 ## [Unreleased]
 
+## [0.9.8] (2026-09-30)
+
 ### Fixed
+
 - Evaluate the unchanged MESuSiE EM Gaussian likelihood using Cholesky log determinants and the multivariate posterior using latent square-root conditioning. Avoid invalid direct determinants and cancellation in the native formulas for ill-conditioned positive-semidefinite prior covariances; keep the independent EM objective guard and its tolerance. The `native` optimizer mode remains an original-arithmetic control. This is not an LD repair or a guarantee of convergence under mismatched/indefinite LD.
 
 ### Added
+
 - Record MESuSiE Gaussian arithmetic (`cholesky_latent` or `native`), the R BLAS library and requested BLAS/thread environment settings in `mesusie_status.tsv` and `mesusie_runtime`. These fields provide provenance; environment settings are not a certificate of actual dispatch or thread counts, and credtools does not override them.
 
 ### Performance
+
 - Accelerate MESuSiE covariance EM by caching per-update invariant terms, reusing small Cholesky solves and streaming configuration-level moments. Preserve float64, the likelihood, priors, iteration limits, tolerances, covariance eigenvalue floor and outer/adaptive stopping policy; retain all SNPs and ancestry configurations.
 - Add numerical regression checks against the frozen v0.9.7 kernel for one through seven populations, including nearly singular covariance and zero-prior configurations. Floating-point agreement is checked within explicit tolerances, not claimed to be bitwise identical. Native adapter and fine-mapping integration tests remain in place.
 
