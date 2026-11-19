@@ -1845,18 +1845,21 @@ def susie_get_cs(
     if not np.any(include_mask):
         return ([[] for i in range(len(include_mask))], None, None, include_mask)
 
+    min_purity = purity
     if calculate_purity:
         purity = np.array(
             [
                 (
-                    get_purity_x(cs[i], R_list, purity, n_purity, X_list)
+                    get_purity_x(cs[i], R_list, min_purity, n_purity, X_list)
                     if include_mask[i]
                     else np.nan
                 )
                 for i in range(len(cs))
             ]
         )
-        include_mask[purity < purity] = False
+        # Compare with the threshold, not with the purity array itself (the
+        # array used to shadow the threshold, which made this filter a no-op).
+        include_mask[purity < min_purity] = False
     else:
         purity = np.array([np.nan for i in range(len(cs))])
 

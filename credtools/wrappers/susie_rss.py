@@ -433,13 +433,15 @@ def get_purity(
     if len(pos) > n:
         pos = np.random.choice(pos, n, replace=False)
 
+    # Take the strict upper triangle by index, as susieR does with upper.tri().
+    # Filtering np.triu() output on value != 0 would also drop true zero
+    # correlations and overstate the minimum absolute correlation.
+    upper = np.triu_indices(len(pos), k=1)
     if Xcorr is None:
         X_sub = X[:, pos]
-        value = np.abs(np.triu(np.corrcoef(X_sub.T), k=1))
+        value = np.abs(np.corrcoef(X_sub.T)[upper])
     else:
-        value = np.abs(np.triu(Xcorr[np.ix_(pos, pos)], k=1))
-
-    value = value[value != 0]
+        value = np.abs(Xcorr[np.ix_(pos, pos)][upper])
 
     if squared:
         value = value**2

@@ -238,9 +238,10 @@ def run_multisusie(
     }
     logger.info(f"Parameters: {json.dumps(parameters, indent=4)}")
 
+    # Keep the intersected loci: z and LD below must come from the same variants.
+    loci = [intersect_sumstat_ld(locus) for locus in locus_set.loci]
     all_variants = []
-    for locus in locus_set.loci:
-        locus = intersect_sumstat_ld(locus)
+    for locus in loci:
         all_variants.append(
             locus.sumstats[
                 [ColName.SNPID, ColName.CHR, ColName.BP, ColName.EA, ColName.NEA]
@@ -268,7 +269,7 @@ def run_multisusie(
 
     z_list = []
     R_list = []
-    for locus in locus_set.loci:
+    for locus in loci:
         sumstat = locus.sumstats.copy()
         ldmap = locus.ld.map
         ld = locus.ld.r
@@ -277,13 +278,18 @@ def run_multisusie(
         z = all_variants[ColName.SNPID].map(sumstat[ColName.Z]).values
         z_list.append(z)
         expand_ld = np.zeros((all_variants.shape[0], all_variants.shape[0]))
-        intersec_index = ldmap[ldmap["SNPID"].isin(all_variants["SNPID"])].index
-        ldmap = ldmap.loc[intersec_index]
+        intersec_index = np.flatnonzero(
+            ldmap[ColName.SNPID].isin(all_variants[ColName.SNPID]).to_numpy()
+        )
+        ldmap = ldmap.iloc[intersec_index]
         ld = ld[intersec_index, :][:, intersec_index]
         study_indices = np.array([variant_to_index[snp] for snp in ldmap["SNPID"]])
         idx_i, idx_j = np.meshgrid(study_indices, study_indices)
         expand_ld[idx_i, idx_j] += ld.astype(np.float32)
-        np.fill_diagonal(expand_ld, 1)
+        # Variants absent from this population keep an all-zero LD row/column,
+        # diagonal included, and a NaN z. MultiSuSiE then treats them as missing
+        # (X'X diagonal of 0) instead of as observed zero effects at full N.
+        expand_ld[study_indices, study_indices] = 1
         R_list.append(expand_ld)
 
     rho_array = np.full((len(locus_set.loci), len(locus_set.loci)), rho)
@@ -291,7 +297,7 @@ def run_multisusie(
     ss_fit = multisusie_rss(
         z_list=z_list,
         R_list=R_list,
-        population_sizes=[locus.sample_size for locus in locus_set.loci],
+        population_sizes=[locus.sample_size for locus in loci],
         rho=rho_array,  # type: ignore
         L=max_causal,
         coverage=coverage,

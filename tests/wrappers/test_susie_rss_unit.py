@@ -288,6 +288,18 @@ class TestGetPurity:
         result = get_purity(pos, X=None, Xcorr=small_pd_matrix, squared=True)
         assert result[0] >= 0
 
+    def test_zero_correlation_kept(self):
+        """A pair with zero LD must give min |r| = 0, as in susieR."""
+        Xcorr = np.array([[1.0, 0.9, 0.0], [0.9, 1.0, 0.5], [0.0, 0.5, 1.0]])
+        result = get_purity(np.array([0, 1, 2]), X=None, Xcorr=Xcorr)
+        assert_allclose(result, [0.0, (0.9 + 0.0 + 0.5) / 3, 0.5])
+
+    def test_negative_correlation_uses_absolute_value(self):
+        """Purity uses |r| over the strict upper triangle only."""
+        Xcorr = np.array([[1.0, -0.8], [-0.8, 1.0]])
+        result = get_purity(np.array([0, 1]), X=None, Xcorr=Xcorr)
+        assert_allclose(result, [0.8, 0.8, 0.8])
+
 
 class TestSusieGetObjectiveAndPIP:
     """T4: susie_get_objective, susie_get_pip."""

@@ -552,6 +552,31 @@ class TestSusieGetCSMulti:
         assert mask[1] is False or mask[1] == False  # noqa: E712
 
 
+    def test_purity_threshold_filters_cs(self, small_K2_data):
+        """CSs below the purity threshold are excluded from the include mask."""
+        d = small_K2_data
+        s = S(
+            pop_sizes=d["pop_sizes"],
+            L=2,
+            XTX_list=d["XTX_list"],
+            scaled_prior_variance=0.2,
+            residual_variance=np.ones(d["K"], dtype=np.float32),
+            varY=np.ones(d["K"], dtype=np.float32),
+            prior_weights=np.ones(d["p"], dtype=np.float32) / d["p"],
+        )
+        s.alpha[0] = np.zeros(d["p"])
+        s.alpha[0][:2] = 0.5  # CS = variants 0 and 1
+        s.V[:, 1] = 0  # second effect inactive
+        R_list = [np.eye(d["p"]) for _ in range(d["K"])]  # no LD: purity 0
+        _, purity, _, mask = susie_get_cs(s, R_list, coverage=0.95, purity=0.5)
+        assert purity[0] == 0
+        assert not mask[0]
+        R_list = [np.ones((d["p"], d["p"])) for _ in range(d["K"])]  # perfect LD
+        _, purity, _, mask = susie_get_cs(s, R_list, coverage=0.95, purity=0.5)
+        assert purity[0] == 1
+        assert mask[0]
+
+
 class TestGetPurityX:
     """M9: get_purity_x."""
 

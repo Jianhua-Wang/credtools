@@ -753,7 +753,7 @@ def pipeline(
             save_meta_audit(locus, out_prefix)
             locus.sumstats.to_csv(f"{out_prefix}.sumstat", sep="\t", index=False)
             np.savez_compressed(
-                f"{out_prefix}.ld.npz", ld=locus.ld.r.astype(np.float16)
+                f"{out_prefix}.ld.npz", ld=locus.ld.r.astype(np.float32)
             )
             locus.ld.map.to_csv(f"{out_prefix}.ldmap", sep="\t", index=False)
 

@@ -239,8 +239,8 @@ def test_worker_roundtrip_and_mode_aware_recovery(tmp_path, weighting):
     prefix = rows[0][6]
     assert f"matched_{weighting}" in prefix
     stored = np.load(prefix + ".ld.npz")["ld"]
-    assert stored.dtype == np.float16
-    np.testing.assert_allclose(stored, meta_all(inputs, weighting).ld.r, atol=0.0005)
+    assert stored.dtype == np.float32
+    np.testing.assert_allclose(stored, meta_all(inputs, weighting).ld.r, atol=1e-6)
     ss = pd.read_csv(prefix + ".sumstats.gz", sep="\t")
     ldmap = pd.read_csv(prefix + ".ldmap.gz", sep="\t")
     assert ss.SNPID.equals(ldmap.SNPID)
@@ -412,8 +412,8 @@ def test_real_cli_load_merge_save_and_resume(tmp_path, weighting, expected_ld, m
     assert merged.sample_size.iloc[0] == 400
     prefix = merged.prefix.iloc[0]
     matrix = np.load(prefix + ".ld.npz")["ld"]
-    assert matrix.dtype == np.float16
-    assert float(matrix[0, 1]) == pytest.approx(expected_ld, abs=.0005)
+    assert matrix.dtype == np.float32
+    assert float(matrix[0, 1]) == pytest.approx(expected_ld, abs=1e-6)
     summary = pd.read_csv(prefix + ".sumstats.gz", sep="\t")
     np.testing.assert_allclose(summary.SE, 1 / np.sqrt(125), rtol=1e-6)
     from pathlib import Path

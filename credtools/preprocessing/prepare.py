@@ -249,7 +249,7 @@ def _prepare_single_locus(
         subprocess.run(f"gzip -f {output_prefix}.sumstats", shell=True, check=True)
 
         # Save LD matrix
-        np.savez_compressed(f"{output_prefix}.ld.npz", ld_matrix.astype(np.float16))
+        np.savez_compressed(f"{output_prefix}.ld.npz", ld_matrix.astype(np.float32))
 
         # Save LD map
         ldmap.to_csv(f"{output_prefix}.ldmap", sep="\t", index=False)

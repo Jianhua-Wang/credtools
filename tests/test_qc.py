@@ -1337,6 +1337,32 @@ class TestSaveCleanedLocus:
         save_cleaned_locus(single_locus, out_dir, "test_prefix")
         assert os.path.exists(os.path.join(out_dir, "test_prefix.ld.npz"))
 
+    def test_saves_ld_npz_float32(self, tmp_path, single_locus):
+        """LD is stored as float32: a round trip keeps the values and stays PSD."""
+        from credtools.qc import save_cleaned_locus
+
+        out_dir = str(tmp_path / "cleaned")
+        save_cleaned_locus(single_locus, out_dir, "test_prefix")
+        with np.load(os.path.join(out_dir, "test_prefix.ld.npz")) as data:
+            saved = data["ld"]
+        assert saved.dtype == np.float32
+        np.testing.assert_array_equal(saved, single_locus.ld.r.astype(np.float32))
+
+    def test_saved_ld_keeps_psd(self, tmp_path, single_locus):
+        """A PSD matrix stays PSD to float32 precision after saving."""
+        from credtools.qc import save_cleaned_locus
+
+        rng = np.random.default_rng(0)
+        n = single_locus.ld.r.shape[0]
+        x = rng.normal(size=(max(2 * n, 50), n))
+        r = np.corrcoef(x, rowvar=False)
+        single_locus.ld.r = r
+        out_dir = str(tmp_path / "psd")
+        save_cleaned_locus(single_locus, out_dir, "p")
+        with np.load(os.path.join(out_dir, "p.ld.npz")) as data:
+            saved = data["ld"].astype(np.float64)
+        assert np.linalg.eigvalsh(saved).min() > -1e-5
+
     def test_saves_ldmap(self, tmp_path, single_locus):
         """Verify an LD map file is saved with the correct prefix."""
         from credtools.qc import save_cleaned_locus

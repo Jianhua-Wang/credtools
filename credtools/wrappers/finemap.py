@@ -227,7 +227,7 @@ def run_finemap(
 
     # write ld file
     logger.info(f"Writing FINEMAP LD file to {temp_dir}/finemap.ld")
-    np.savetxt(f"{temp_dir}/finemap.ld", locus.ld.r, delimiter=" ", fmt="%0.4f")
+    np.savetxt(f"{temp_dir}/finemap.ld", locus.ld.r, delimiter=" ", fmt="%.7g")
     # TODO: write ld file only once for multiple tools
     # TODO: use BCOR file for LD
 

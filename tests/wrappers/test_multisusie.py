@@ -8,6 +8,8 @@ import pytest
 
 from credtools.constants import ColName, Method
 from credtools.credibleset import CredibleSet
+from credtools.ldmatrix import LDMatrix
+from credtools.locus import Locus, LocusSet
 from credtools.wrappers.multisusie import run_multisusie
 
 from .conftest import _make_locus, _make_locus_set
@@ -311,3 +313,88 @@ class TestRunMultisusieThreePop:
         assert len(captured_kwargs["R_list"]) == 3
         assert captured_kwargs["rho"].shape == (3, 3)
         assert result.n_cs == 1
+
+
+class TestMissingVariantInputs:
+    """Variants missing from a population must not enter as observed zeros."""
+
+    @staticmethod
+    def _capture(monkeypatch):
+        captured = {}
+
+        def capturing_mock(**kwargs):
+            captured.update(kwargs)
+            n = len(kwargs["z_list"][0])
+            return SimpleNamespace(pip=np.zeros(n), sets=([], np.array([]), [], []))
+
+        monkeypatch.setattr(
+            "credtools.wrappers.multisusie.multisusie_rss", capturing_mock
+        )
+        return captured
+
+    @staticmethod
+    def _subset(locus, keep):
+        """Locus restricted to the variants at positions ``keep`` (sumstats and LD)."""
+        keep = np.asarray(keep)
+        ld_map = locus.ld.map.iloc[keep].reset_index(drop=True)
+        return Locus(
+            locus.popu,
+            locus.cohort,
+            locus.sample_size,
+            locus.sumstats.iloc[keep].reset_index(drop=True),
+            locus._locus_start,
+            locus._locus_end,
+            ld=LDMatrix(ld_map, locus.ld.r[np.ix_(keep, keep)]),
+        )
+
+    def test_partial_overlap_masks_missing_variants(self, monkeypatch):
+        """A variant absent from one population has NaN z and an empty LD row."""
+        locus_a = self._subset(_make_locus(popu="EUR", seed=1, add_af2=True), range(15))
+        locus_b = self._subset(
+            _make_locus(popu="EAS", seed=2, add_af2=True), range(5, 20)
+        )
+        captured = self._capture(monkeypatch)
+        run_multisusie(LocusSet([locus_a, locus_b]))
+
+        snps_a = set(locus_a.sumstats[ColName.SNPID])
+        snps_b = set(locus_b.sumstats[ColName.SNPID])
+        union = sorted(snps_a | snps_b, key=lambda s: int(s.split("-")[1]))
+        assert len(union) == 20
+        for k, own in enumerate([snps_a, snps_b]):
+            z, R = captured["z_list"][k], captured["R_list"][k]
+            observed = np.array([s in own for s in union])
+            assert observed.sum() == 15
+            assert np.all(np.isfinite(z[observed]))
+            assert np.all(np.isnan(z[~observed]))
+            assert np.allclose(np.diag(R)[observed], 1.0)
+            assert np.all(R[~observed, :] == 0)
+            assert np.all(R[:, ~observed] == 0)
+
+    def test_sumstats_variants_missing_from_ld_are_masked(self, monkeypatch):
+        """Variants in the sumstats but not in the LD panel are dropped, not kept with z."""
+        full = _make_locus(popu="EUR", seed=1, add_af2=True)
+        n_keep = 17
+        ld_map = full.ld.map.iloc[:n_keep].reset_index(drop=True)
+        short = Locus(
+            full.popu,
+            full.cohort,
+            full.sample_size,
+            full.sumstats,
+            full._locus_start,
+            full._locus_end,
+            ld=LDMatrix(ld_map, full.ld.r[:n_keep, :n_keep]),
+        )
+        other = _make_locus(popu="EAS", seed=2, add_af2=True)
+        captured = self._capture(monkeypatch)
+        run_multisusie(LocusSet([short, other]))
+
+        dropped = set(full.sumstats[ColName.SNPID]) - set(ld_map[ColName.SNPID])
+        union = sorted(
+            set(full.sumstats[ColName.SNPID]), key=lambda s: int(s.split("-")[1])
+        )
+        miss = np.array([s in dropped for s in union])
+        assert miss.sum() == len(full.sumstats) - n_keep
+        z, R = captured["z_list"][0], captured["R_list"][0]
+        assert np.all(np.isnan(z[miss]))
+        assert np.all(np.diag(R)[miss] == 0)
+        assert np.allclose(np.diag(R)[~miss], 1.0)

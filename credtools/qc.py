@@ -1228,7 +1228,7 @@ def save_cleaned_locus(locus: Locus, output_dir: str, prefix: str) -> None:
     if locus.ld is not None:
         # Save LD matrix as compressed numpy array
         ld_path = os.path.join(output_dir, f"{prefix}.ld.npz")
-        np.savez_compressed(ld_path, ld=locus.ld.r.astype(np.float16))
+        np.savez_compressed(ld_path, ld=locus.ld.r.astype(np.float32))
         logger.info(f"Saved cleaned LD matrix to {ld_path}")
 
         # Save LD map

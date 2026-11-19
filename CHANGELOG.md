@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.9.9] (2026-11-19)
+
+### Fixed
+
+- MultiSuSiE wrapper: a variant absent from one population entered that population as an observed z = 0 at full sample size, because the expanded LD matrix had its diagonal set to 1 for every variant of the union. Missing variants now keep an all-zero LD row and column (diagonal included) and a NaN z, so MultiSuSiE treats them as missing. z, LD and sample sizes are now built from the same intersected loci. On real multi-population loci this removes many weak secondary credible sets without single-population support and stops prior variances being zeroed for populations whose lead variant is missing.
+- MultiSuSiE solver: the purity filter in `susie_get_cs` compared the purity array with itself (the threshold argument was shadowed), so it never removed a credible set. It now compares with the threshold. The central purity filter of `credtools` was already applied, so final credible sets are unchanged in normal use.
+- SuSiE `get_purity` dropped every zero entry after `np.triu`, which also removed true zero correlations and overstated the minimum absolute correlation. The strict upper triangle is now taken by index, as `upper.tri()` in susieR. Subsampling of large credible sets (`n_purity`) is unchanged.
+
+### Changed
+
+- LD matrices are written as float32 instead of float16 (`prepare`, `meta`, `qc` and fine-mapping outputs). float16 rounding added full-rank noise that made saved LD matrices indefinite (minimum eigenvalues of about -0.001 to -0.03 for loci of a few thousand variants). Files are about twice the size of float16 files after compression. Reading is unchanged and still accepts float16 files.
+- The FINEMAP LD text file is written with 7 significant digits (`%.7g`) instead of 4 decimals.
+
 ## [0.9.8] (2026-09-30)
 
 ### Fixed

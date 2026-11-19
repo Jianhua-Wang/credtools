@@ -705,7 +705,7 @@ def meta_locus(
         locus.sumstats.to_csv(
             f"{out_prefix}.sumstats.gz", sep="\t", index=False, compression="gzip"
         )
-        np.savez_compressed(f"{out_prefix}.ld.npz", ld=locus.ld.r.astype(np.float16))
+        np.savez_compressed(f"{out_prefix}.ld.npz", ld=locus.ld.r.astype(np.float32))
         locus.ld.map.to_csv(
             f"{out_prefix}.ldmap.gz", sep="\t", index=False, compression="gzip"
         )
