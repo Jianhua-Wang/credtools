@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.10] (2026-11-24)
+
 ### Fixed
 
 - SuSiE-inf and SuSiE-ash: `estimate_residual_variance` defaulted to False, but susieR (0.16.1) only updates the variance components when it is TRUE, and for `unmappable_effects` "inf" / "ash" that is where tau^2 (and sigma^2) are estimated. With the old default tau^2 stayed 0 and sigma^2 stayed 1, so SuSiE-inf was plain SuSiE with PIP-based convergence (SuSiE-ash likewise had sigma^2 fixed at 1). The default is now True for both wrappers. Results of earlier SuSiE-inf / SuSiE-ash runs that used the default should be re-run.

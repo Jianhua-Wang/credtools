@@ -6,7 +6,7 @@ from rich.logging import RichHandler
 
 __author__ = """Jianhua Wang"""
 __email__ = "jianhua.mert@gmail.com"
-__version__ = "0.9.9"
+__version__ = "0.9.10"
 
 
 logging.basicConfig(
