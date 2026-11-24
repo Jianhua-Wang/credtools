@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- SuSiE-inf and SuSiE-ash: `estimate_residual_variance` defaulted to False, but susieR (0.16.1) only updates the variance components when it is TRUE, and for `unmappable_effects` "inf" / "ash" that is where tau^2 (and sigma^2) are estimated. With the old default tau^2 stayed 0 and sigma^2 stayed 1, so SuSiE-inf was plain SuSiE with PIP-based convergence (SuSiE-ash likewise had sigma^2 fixed at 1). The default is now True for both wrappers. Results of earlier SuSiE-inf / SuSiE-ash runs that used the default should be re-run.
+- The CLI (`fine-map`, `pipeline`) no longer forces `--estimate-residual-variance` to False for every tool: the option now defaults to unset, which resolves to True for `susie_inf` / `susie_ash` and False for all other tools (unchanged). `--no-estimate-residual-variance` turns it off explicitly.
+
+### Added
+
+- `estimate_residual_method` argument (`"MoM"` default, `"MLE"`, `"NIG"`) for `run_susie_inf` and `run_susie_ash`, passed to `susieR::susie_rss`.
+- The fitted `sigma2` and total `tau2` are written to the wrapper status file and stored in `CredibleSet.parameters` as `fitted_sigma2` / `fitted_tau2`.
+
 ## [0.9.9] (2026-11-19)
 
 ### Fixed

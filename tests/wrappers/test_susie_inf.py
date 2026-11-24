@@ -314,3 +314,120 @@ class TestRunSusieInfErrorHandling:
         )
         with pytest.raises(RuntimeError, match="SuSiE-inf R script failed"):
             run_susie_inf(locus_significant_for_susie_inf)
+
+
+class TestSusieInfResidualVarianceDefaults:
+    """Regression tests: susieR only estimates tau2/sigma2 when asked to."""
+
+    @staticmethod
+    def _capture(locus, monkeypatch, **kwargs):
+        snpids = locus.sumstats[ColName.SNPID].tolist()
+        inner = _make_mock_susie_inf_subprocess(snpids, n_cs=1)
+        captured = {}
+
+        def run(cmd, **kw):
+            captured["cmd"] = list(cmd)
+            return inner(cmd, **kw)
+
+        monkeypatch.setattr("credtools.wrappers.susie_inf.subprocess.run", run)
+        monkeypatch.setattr(
+            "credtools.wrappers.susie_inf._check_r_and_susie_inf", lambda: None
+        )
+        result = run_susie_inf(locus, **kwargs)
+        return result, captured["cmd"]
+
+    def test_defaults_estimate_variance_with_mom(
+        self, locus_significant_for_susie_inf, monkeypatch
+    ):
+        result, cmd = self._capture(locus_significant_for_susie_inf, monkeypatch)
+        assert cmd[cmd.index("--estimate_residual_variance") + 1] == "TRUE"
+        assert cmd[cmd.index("--estimate_residual_method") + 1] == "MoM"
+        assert result.parameters["estimate_residual_variance"] is True
+        assert result.parameters["estimate_residual_method"] == "MoM"
+
+    def test_method_passthrough(self, locus_significant_for_susie_inf, monkeypatch):
+        _, cmd = self._capture(
+            locus_significant_for_susie_inf,
+            monkeypatch,
+            estimate_residual_method="MLE",
+        )
+        assert cmd[cmd.index("--estimate_residual_method") + 1] == "MLE"
+
+    def test_invalid_method_rejected(self, locus_significant_for_susie_inf):
+        with pytest.raises(ValueError, match="estimate_residual_method"):
+            run_susie_inf(
+                locus_significant_for_susie_inf, estimate_residual_method="bogus"
+            )
+
+    def test_cli_resolution(self):
+        from credtools.cli import _resolve_estimate_residual_variance as res
+
+        assert res(None, "susie_inf") is True
+        assert res(None, "susie_ash") is True
+        assert res(None, "susie") is False
+        assert res(None, "multisusie") is False
+        assert res(False, "susie_inf") is False
+        assert res(True, "susie") is True
+
+
+def _r_has_susier_unmappable() -> bool:
+    import shutil
+
+    if shutil.which("Rscript") is None:
+        return False
+    out = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            "cat('unmappable_effects' %in% names(formals(susieR::susie_rss)))",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    return out.returncode == 0 and out.stdout.strip().endswith("TRUE")
+
+
+@pytest.mark.skipif(
+    not _r_has_susier_unmappable(), reason="R/susieR >= 0.16.1 not available"
+)
+class TestSusieInfRealR:
+    """End-to-end check with real susieR on simulated infinitesimal effects."""
+
+    @staticmethod
+    def _simulate_locus():
+        rng = np.random.default_rng(1)
+        n, p = 2000, 80
+        L = np.linalg.cholesky(0.5 * np.eye(p) + 0.5)
+        X = rng.standard_normal((n, p)) @ L.T
+        beta = np.zeros(p)
+        beta[10] = 0.4
+        y = X @ beta + X @ rng.normal(0, 0.03, p) + rng.standard_normal(n)
+        bh = X.T @ y / (X**2).sum(0)
+        res = y[:, None] - X * bh
+        se = np.sqrt((res**2).sum(0) / (n - 2) / (X**2).sum(0))
+        return X, bh, se, n
+
+    def test_tau2_positive_by_default(self, monkeypatch):
+        from scipy import stats
+
+        from .conftest import _make_locus
+
+        X, bh, se, n = self._simulate_locus()
+        p = X.shape[1]
+        locus = _make_locus(p_range=(1e-12, 1e-9), n_snps=p)
+        sumstats = locus.sumstats.copy()
+        sumstats[ColName.BETA] = bh
+        sumstats[ColName.SE] = se
+        sumstats[ColName.P] = 2 * stats.norm.sf(np.abs(bh / se))
+        sumstats[ColName.P] = sumstats[ColName.P].clip(upper=1e-9)
+        locus.sumstats = sumstats
+        locus.ld.r = np.corrcoef(X, rowvar=False)
+        locus._sample_size = n
+
+        on = run_susie_inf(locus, max_causal=5, max_iter=100)
+        assert on.parameters["fitted_tau2"] > 0
+        assert on.parameters["fitted_sigma2"] < 1.0
+
+        off = run_susie_inf(locus, max_causal=5, estimate_residual_variance=False)
+        assert off.parameters["fitted_tau2"] == 0
+        assert off.parameters["fitted_sigma2"] == 1.0

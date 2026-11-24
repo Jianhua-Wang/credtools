@@ -15,6 +15,7 @@ from credtools.locus import Locus, intersect_sumstat_ld
 
 logger = logging.getLogger("SUSIE_ASH")
 
+_VALID_RESIDUAL_METHODS = ("MoM", "MLE", "NIG")
 _R_SCRIPT_PATH = str(Path(__file__).parent / "susie_ash_wrapper.R")
 
 
@@ -58,7 +59,8 @@ def run_susie_ash(
     max_causal: int = 10,
     coverage: float = 0.95,
     max_iter: int = 100,
-    estimate_residual_variance: bool = False,
+    estimate_residual_variance: bool = True,
+    estimate_residual_method: str = "MoM",
     purity: float = 0.0,
     convergence_tol: float = 1e-3,
     significant_threshold: float = 5e-8,
@@ -84,7 +86,16 @@ def run_susie_ash(
     max_iter : int, optional
         Maximum number of IBSS iterations, by default 100.
     estimate_residual_variance : bool, optional
-        Whether to estimate residual variance from data, by default False.
+        Whether to estimate the residual variance (and, for the unmappable
+        effects models, the unmappable-effect variance tau^2) from data, by
+        default True. susieR only updates these variance components when this
+        flag is TRUE; with FALSE, ``unmappable_effects="ash"`` degenerates to
+        plain SuSiE (tau^2 = 0, sigma^2 = 1).
+    estimate_residual_method : str, optional
+        susieR ``estimate_residual_method``: one of ``"MoM"`` (method of
+        moments, the susieR / SuSiE-ash default), ``"MLE"`` or ``"NIG"``,
+        by default ``"MoM"``. Only used when ``estimate_residual_variance``
+        is True.
     purity : float, optional
         Minimum absolute correlation (susieR's ``min_abs_corr``) for credible
         sets, by default 0.0.
@@ -124,11 +135,17 @@ def run_susie_ash(
     fine-mapping with adaptive shrinkage and infinitesimal background
     effects. *bioRxiv* (2025), DOI: 10.1101/2025.11.25.690514.
     """
+    if estimate_residual_method not in _VALID_RESIDUAL_METHODS:
+        raise ValueError(
+            f"estimate_residual_method must be one of {_VALID_RESIDUAL_METHODS}, "
+            f"got {estimate_residual_method!r}"
+        )
     parameters = {
         "max_causal": max_causal,
         "coverage": coverage,
         "max_iter": max_iter,
         "estimate_residual_variance": estimate_residual_variance,
+        "estimate_residual_method": estimate_residual_method,
         "min_abs_corr": purity,
         "convergence_tol": convergence_tol,
         "estimate_prior_method": "optim",
@@ -205,6 +222,8 @@ def run_susie_ash(
             str(max_iter),
             "--estimate_residual_variance",
             str(estimate_residual_variance).upper(),
+            "--estimate_residual_method",
+            estimate_residual_method,
             "--min_abs_corr",
             str(purity),
             "--tol",
@@ -240,6 +259,17 @@ def run_susie_ash(
         converged = False
     else:
         converged = None
+
+    for key in ("sigma2", "tau2"):
+        try:
+            parameters[f"fitted_{key}"] = float(status[key])
+        except (KeyError, ValueError):
+            pass
+    logger.info(
+        "Fitted variance components: sigma2=%s, tau2=%s",
+        parameters.get("fitted_sigma2"),
+        parameters.get("fitted_tau2"),
+    )
 
     n_iter_str = status.get("niter", "")
     n_iter: Optional[int]

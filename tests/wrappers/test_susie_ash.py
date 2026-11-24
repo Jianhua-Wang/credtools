@@ -313,3 +313,14 @@ class TestRunSusieAshErrorHandling:
         )
         with pytest.raises(RuntimeError, match="SuSiE-ash R script failed"):
             run_susie_ash(locus_significant_for_susie_ash)
+
+
+def test_susie_ash_defaults_estimate_variance(monkeypatch):
+    """susieR only updates variance components when the flag is TRUE."""
+    import inspect
+
+    from credtools.wrappers.susie_ash import run_susie_ash
+
+    sig = inspect.signature(run_susie_ash).parameters
+    assert sig["estimate_residual_variance"].default is True
+    assert sig["estimate_residual_method"].default == "MoM"

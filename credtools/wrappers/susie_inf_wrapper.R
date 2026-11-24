@@ -42,6 +42,10 @@ L                          <- as.integer(params$L)
 coverage                   <- as.numeric(params$coverage)
 max_iter                   <- as.integer(params$max_iter)
 estimate_residual_variance <- as.logical(params$estimate_residual_variance)
+estimate_residual_method   <- as.character(params$estimate_residual_method)
+if (length(estimate_residual_method) == 0 || is.na(estimate_residual_method)) {
+  estimate_residual_method <- "MoM"
+}
 min_abs_corr               <- as.numeric(params$min_abs_corr)
 tol                        <- as.numeric(params$tol)
 # Use `optim` for the prior estimator: it is the only estimator supported by
@@ -55,6 +59,7 @@ cat(sprintf("  n: %d\n", n))
 cat(sprintf("  L: %d\n", L))
 cat(sprintf("  coverage: %f\n", coverage))
 cat(sprintf("  max_iter: %d\n", max_iter))
+cat(sprintf("  estimate_residual_variance: %s (%s)\n", estimate_residual_variance, estimate_residual_method))
 
 if (!requireNamespace("susieR", quietly = TRUE)) {
   stop("susieR R package is not installed. Please install it with:\n",
@@ -91,6 +96,7 @@ fit <- tryCatch({
     coverage                   = coverage,
     max_iter                   = max_iter,
     estimate_residual_variance = estimate_residual_variance,
+    estimate_residual_method   = estimate_residual_method,
     min_abs_corr               = min_abs_corr,
     tol                        = tol,
     estimate_prior_method      = estimate_prior_method,
@@ -139,7 +145,9 @@ status_path <- file.path(temp_dir, "susie_inf_status.txt")
 writeLines(
   c(
     sprintf("converged\t%s", if (converged) "TRUE" else "FALSE"),
-    sprintf("niter\t%s", if (is.na(niter_val)) "" else niter_val)
+    sprintf("niter\t%s", if (is.na(niter_val)) "" else niter_val),
+    sprintf("sigma2\t%s", if (is.null(fit$sigma2)) "" else format(as.numeric(fit$sigma2), digits = 10)),
+    sprintf("tau2\t%s", if (is.null(fit$tau2)) "" else format(sum(as.numeric(fit$tau2)), digits = 10))
   ),
   status_path
 )

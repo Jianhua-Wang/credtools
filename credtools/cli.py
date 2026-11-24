@@ -91,6 +91,19 @@ class CombinePIP(str, Enum):
     meta = "meta"
 
 
+def _resolve_estimate_residual_variance(value: Optional[bool], tool: str) -> bool:
+    """Resolve the tool-dependent default of ``estimate_residual_variance``.
+
+    susieR only estimates the variance components (sigma^2, and tau^2 for
+    ``unmappable_effects`` models) when ``estimate_residual_variance`` is TRUE,
+    so SuSiE-inf and SuSiE-ash default to True. All other tools keep False.
+    An explicit user choice is always respected.
+    """
+    if value is not None:
+        return value
+    return tool in ("susie_inf", "susie_ash")
+
+
 def setup_file_logging(log_file: Optional[str], verbose: bool = False) -> None:
     """Set up file and console logging configuration."""
     if log_file is None:
@@ -1451,8 +1464,13 @@ def run_fine_map(
     max_iter: int = typer.Option(
         100, "--max-iter", "-i", help="Maximum number of iterations."
     ),
-    estimate_residual_variance: bool = typer.Option(
-        False, "--estimate-residual-variance", "-er", help="Estimate residual variance."
+    estimate_residual_variance: Optional[bool] = typer.Option(
+        None,
+        "--estimate-residual-variance/--no-estimate-residual-variance",
+        "-er",
+        help="Estimate residual variance. Default: on for susie_inf and "
+        "susie_ash (required for their unmappable-effect variance to be "
+        "estimated), off for the other tools.",
     ),
     purity: float = typer.Option(
         0.0,
@@ -1572,7 +1590,9 @@ def run_fine_map(
         "combine_pip": combine_pip_value,
         "jaccard_threshold": jaccard_threshold,
         "max_iter": max_iter,
-        "estimate_residual_variance": estimate_residual_variance,
+        "estimate_residual_variance": _resolve_estimate_residual_variance(
+            estimate_residual_variance, tool_value
+        ),
         "purity": purity,
         "convergence_tol": convergence_tol,
         "tol": convergence_tol,
@@ -1789,11 +1809,13 @@ def run_pipeline(
         help="Maximum number of iterations.",
         rich_help_panel="SuSie",
     ),
-    estimate_residual_variance: bool = typer.Option(
-        False,
-        "--estimate-residual-variance",
+    estimate_residual_variance: Optional[bool] = typer.Option(
+        None,
+        "--estimate-residual-variance/--no-estimate-residual-variance",
         "-er",
-        help="Estimate residual variance.",
+        help="Estimate residual variance. Default: on for susie_inf and "
+        "susie_ash (required for their unmappable-effect variance to be "
+        "estimated), off for the other tools.",
         rich_help_panel="SuSie",
     ),
     purity: float = typer.Option(
@@ -2044,7 +2066,9 @@ def run_pipeline(
                 significant_threshold=significant_threshold,
                 # susie parameters
                 max_iter=max_iter,
-                estimate_residual_variance=estimate_residual_variance,
+                estimate_residual_variance=_resolve_estimate_residual_variance(
+                    estimate_residual_variance, getattr(tool, "value", tool)
+                ),
                 purity=purity,
                 convergence_tol=convergence_tol,
                 # ABF parameters
